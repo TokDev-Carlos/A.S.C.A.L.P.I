@@ -1,0 +1,45 @@
+# ASCALPI — cross-platform text normalization
+
+* text=auto
+
+# Linux / cross-platform source
+*.sh text eol=lf
+*.py text eol=lf
+*.json text eol=lf
+*.jsonc text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.xml text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.cs text eol=lf
+*.csproj text eol=lf
+*.props text eol=lf
+*.targets text eol=lf
+*.sln text eol=lf
+
+# Windows-native launchers/scripts
+*.ps1 text eol=crlf
+*.psm1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.vbs text eol=crlf
+
+# Binary formats
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.7z binary
+*.exe binary
+*.dll binary
+*.pdb binary
+*.db binary
+*.sqlite binary
+*.sqlite3 binary
+*.vhd binary
+*.vhdx binary
