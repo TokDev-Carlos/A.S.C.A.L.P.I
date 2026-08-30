@@ -1,0 +1,89 @@
+# ASCALPI — repository hygiene
+
+# Credentials and local secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+secrets/
+Secrets/
+credentials/
+Credentials/
+
+# IDE / editor state
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build outputs
+bin/
+obj/
+[Bb]uild/
+[Bb]uilds/
+[Dd]ist/
+[Dd]istribution/
+artifacts/
+Artifacts/
+
+# Python / Node caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+node_modules/
+
+# Package / tool caches
+.cache/
+.nuget/
+packages/
+
+# Runtime temporary state
+*.tmp
+*.temp
+*.bak
+*.old
+*.log
+*.pid
+*.lock
+*.db-wal
+*.db-shm
+
+# Local evidence, rollback and quarantine
+Evidence/
+evidence/
+Receipts/
+receipts/
+Quarantine/
+quarantine/
+Rollback/
+rollback/
+
+# WSL / virtual disks / container-local storage
+*.vhd
+*.vhdx
+*.qcow2
+*.img
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# Local links / shortcuts
+*.lnk
+
+# Local temporary work directories
+.tmp-*/
+.tmp/
+tmp/
+Temp/
