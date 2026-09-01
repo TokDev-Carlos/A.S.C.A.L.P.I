@@ -1,0 +1,1343 @@
+{
+  "schema_version": 1,
+  "origem": "CARREGAMENTOS-MT.xlsm / TOTAL PRODUZIDO",
+  "quantidade": 167,
+  "equipamentos": [
+    {
+      "codigo": "1",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "CENTRAL MÚLTIPLA\nINOX",
+      "valor_unit": 120416.47,
+      "origem_linha": 8,
+      "observacao": ""
+    },
+    {
+      "codigo": "2",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "ESQUI",
+      "valor_unit": 21634.23,
+      "origem_linha": 9,
+      "observacao": ""
+    },
+    {
+      "codigo": "3",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "CAMINHADA",
+      "valor_unit": 17468.25,
+      "origem_linha": 10,
+      "observacao": ""
+    },
+    {
+      "codigo": "4",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "MULTI",
+      "valor_unit": 27837.11,
+      "origem_linha": 11,
+      "observacao": ""
+    },
+    {
+      "codigo": "5",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "TRANSPORT",
+      "valor_unit": 18148.0,
+      "origem_linha": 12,
+      "observacao": ""
+    },
+    {
+      "codigo": "6",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "ALONGADOR",
+      "valor_unit": 13174.4,
+      "origem_linha": 13,
+      "observacao": ""
+    },
+    {
+      "codigo": "7",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "EQUILÍBRIO",
+      "valor_unit": 7397.83,
+      "origem_linha": 14,
+      "observacao": ""
+    },
+    {
+      "codigo": "8",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "TOTEM",
+      "valor_unit": 2491.24,
+      "origem_linha": 15,
+      "observacao": ""
+    },
+    {
+      "codigo": "9",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "BALANÇO INFANTIL",
+      "valor_unit": 19154.53,
+      "origem_linha": 16,
+      "observacao": ""
+    },
+    {
+      "codigo": "10",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "BALANÇO JUVENIL",
+      "valor_unit": 18930.45,
+      "origem_linha": 17,
+      "observacao": ""
+    },
+    {
+      "codigo": "11",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "BALANÇO QUÁDRUPLO",
+      "valor_unit": 29113.22,
+      "origem_linha": 18,
+      "observacao": ""
+    },
+    {
+      "codigo": "12",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "PLAYGROUND PEQUENO",
+      "valor_unit": 32150.2,
+      "origem_linha": 19,
+      "observacao": ""
+    },
+    {
+      "codigo": "13",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "PLAYGROUND GRANDE",
+      "valor_unit": 54168.72,
+      "origem_linha": 20,
+      "observacao": ""
+    },
+    {
+      "codigo": "14",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "GAIOLA LABIRINTO",
+      "valor_unit": 27080.0,
+      "origem_linha": 21,
+      "observacao": ""
+    },
+    {
+      "codigo": "15",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "TABLADO PIC NIC",
+      "valor_unit": 3886.56,
+      "origem_linha": 22,
+      "observacao": ""
+    },
+    {
+      "codigo": "16",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "PARACICLO 05 LUGARES",
+      "valor_unit": 4022.93,
+      "origem_linha": 23,
+      "observacao": ""
+    },
+    {
+      "codigo": "17",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "MESA DE PING PONG",
+      "valor_unit": 29500.04,
+      "origem_linha": 24,
+      "observacao": ""
+    },
+    {
+      "codigo": "18",
+      "grupo": "EQUIPAMENTOS PADRÃO - VALOR   GOVERNO DO RIO",
+      "nome": "FUTMESA",
+      "valor_unit": 30500.0,
+      "origem_linha": 25,
+      "observacao": ""
+    },
+    {
+      "codigo": "19",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "CENTRAL MÚLTIPLA",
+      "valor_unit": 48003.03,
+      "origem_linha": 27,
+      "observacao": ""
+    },
+    {
+      "codigo": "20",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "OPERAÇÕES 1",
+      "valor_unit": 21586.7,
+      "origem_linha": 28,
+      "observacao": ""
+    },
+    {
+      "codigo": "21",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "OPERAÇÕES 2",
+      "valor_unit": 22016.7,
+      "origem_linha": 29,
+      "observacao": ""
+    },
+    {
+      "codigo": "22",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "SIMULADOR DUPLO",
+      "valor_unit": 20913.32,
+      "origem_linha": 30,
+      "observacao": ""
+    },
+    {
+      "codigo": "23",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "MULTIPLAY RECREATIVO 1",
+      "valor_unit": 39611.42,
+      "origem_linha": 31,
+      "observacao": ""
+    },
+    {
+      "codigo": "24",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "MULTIPLAY RECREATIVO 2",
+      "valor_unit": 60399.37,
+      "origem_linha": 32,
+      "observacao": ""
+    },
+    {
+      "codigo": "25",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "BALANÇO MAMÃE E BEBÊ",
+      "valor_unit": 13887.85,
+      "origem_linha": 33,
+      "observacao": ""
+    },
+    {
+      "codigo": "26",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "BALANÇO INFANTIL",
+      "valor_unit": 14880.04,
+      "origem_linha": 34,
+      "observacao": ""
+    },
+    {
+      "codigo": "27",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "BALANÇO JUVENIL",
+      "valor_unit": 13587.26,
+      "origem_linha": 35,
+      "observacao": ""
+    },
+    {
+      "codigo": "28",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "GLOBO ARANHA",
+      "valor_unit": 47536.77,
+      "origem_linha": 36,
+      "observacao": ""
+    },
+    {
+      "codigo": "29",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "VAI E VEM INCLUSIVO\n(COM CERCADO)",
+      "valor_unit": 25174.9,
+      "origem_linha": 37,
+      "observacao": ""
+    },
+    {
+      "codigo": "30",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "TEA ACESSIBILIDADE 1\n(COM CORDAS)",
+      "valor_unit": 16337.05,
+      "origem_linha": 38,
+      "observacao": ""
+    },
+    {
+      "codigo": "31",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "TEA ACESSIBILIDADE 2\n(COM ARGOLAS)",
+      "valor_unit": 10378.0,
+      "origem_linha": 39,
+      "observacao": ""
+    },
+    {
+      "codigo": "32",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ARTEFATO INCLUSIVO TEA TIPO 1                                                     ZIG-ZAG",
+      "valor_unit": 4685.45,
+      "origem_linha": 40,
+      "observacao": ""
+    },
+    {
+      "codigo": "33",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ARTEFATO INCLUSIVO TEA TIPO 2                                                     X e O",
+      "valor_unit": 7629.14,
+      "origem_linha": 41,
+      "observacao": ""
+    },
+    {
+      "codigo": "34",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ARTEFATO INCLUSIVO TEA TIPO 3                                                     PAINEL INTERATIVO",
+      "valor_unit": 6094.95,
+      "origem_linha": 42,
+      "observacao": ""
+    },
+    {
+      "codigo": "35",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "BOUGAINVILLE FUNCIONAL 1",
+      "valor_unit": 28848.61,
+      "origem_linha": 43,
+      "observacao": ""
+    },
+    {
+      "codigo": "36",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "BOUGAINVILLE FUNCIONAL 2",
+      "valor_unit": 27808.75,
+      "origem_linha": 44,
+      "observacao": ""
+    },
+    {
+      "codigo": "37",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "BOUGAINVILLE FUNCIONAL 3",
+      "valor_unit": 26086.15,
+      "origem_linha": 45,
+      "observacao": ""
+    },
+    {
+      "codigo": "38",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "TABLADO INTERATIVO",
+      "valor_unit": 9186.0,
+      "origem_linha": 46,
+      "observacao": ""
+    },
+    {
+      "codigo": "39",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ESQUI\nINOX",
+      "valor_unit": 39520.51,
+      "origem_linha": 47,
+      "observacao": ""
+    },
+    {
+      "codigo": "40",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "CAMINHADA\nINOX",
+      "valor_unit": 31134.41,
+      "origem_linha": 48,
+      "observacao": ""
+    },
+    {
+      "codigo": "41",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "OPERAÇÕES 1\nINOX",
+      "valor_unit": 33208.69,
+      "origem_linha": 49,
+      "observacao": ""
+    },
+    {
+      "codigo": "42",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "OPERAÇÕES 2\nINOX",
+      "valor_unit": 34553.66,
+      "origem_linha": 50,
+      "observacao": ""
+    },
+    {
+      "codigo": "43",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "SIMULADOR DUPLO\nINOX",
+      "valor_unit": 32189.93,
+      "origem_linha": 51,
+      "observacao": ""
+    },
+    {
+      "codigo": "44",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ALONGADOR\nINOX",
+      "valor_unit": 15462.56,
+      "origem_linha": 52,
+      "observacao": ""
+    },
+    {
+      "codigo": "45",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "TRAVE\nINOX",
+      "valor_unit": 16567.97,
+      "origem_linha": 53,
+      "observacao": ""
+    },
+    {
+      "codigo": "46",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "TOTEM A.T.I\nINOX",
+      "valor_unit": 4128.8,
+      "origem_linha": 54,
+      "observacao": ""
+    },
+    {
+      "codigo": "47",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "MULTIPLAY RECREATIVO 1\nINOX",
+      "valor_unit": 62552.98,
+      "origem_linha": 55,
+      "observacao": ""
+    },
+    {
+      "codigo": "48",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "MULTIPLAY RECREATIVO 2\nINOX",
+      "valor_unit": 99461.7,
+      "origem_linha": 56,
+      "observacao": ""
+    },
+    {
+      "codigo": "49",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "BALANÇO MAMÃE E BEBÊ\nINOX",
+      "valor_unit": 23406.88,
+      "origem_linha": 57,
+      "observacao": ""
+    },
+    {
+      "codigo": "50",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "BALANÇO INFANTIL\nINOX",
+      "valor_unit": 24738.64,
+      "origem_linha": 58,
+      "observacao": ""
+    },
+    {
+      "codigo": "51",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "BALANÇO JUVENIL\nINOX",
+      "valor_unit": 23969.81,
+      "origem_linha": 59,
+      "observacao": ""
+    },
+    {
+      "codigo": "52",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "GLOBO ARANHA\nINOX",
+      "valor_unit": 88456.58,
+      "origem_linha": 60,
+      "observacao": ""
+    },
+    {
+      "codigo": "53",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "VAI E VEM INCLUSIVO\n(COM CERCADO)\nINOX",
+      "valor_unit": 34290.99,
+      "origem_linha": 61,
+      "observacao": ""
+    },
+    {
+      "codigo": "54",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "TEA ACESSIBILIDADE 1\n(COM CORDAS)\nINOX",
+      "valor_unit": 35840.5,
+      "origem_linha": 62,
+      "observacao": ""
+    },
+    {
+      "codigo": "55",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ARTEFATO INCLUSIVO TEA TIPO 1                                                     ZIG-ZAG\nINOX",
+      "valor_unit": 8706.56,
+      "origem_linha": 63,
+      "observacao": ""
+    },
+    {
+      "codigo": "56",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ARTEFATO INCLUSIVO TEA TIPO 2                                                     X e O\nINOX",
+      "valor_unit": 12128.72,
+      "origem_linha": 64,
+      "observacao": ""
+    },
+    {
+      "codigo": "57",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ARTEFATO INCLUSIVO TEA TIPO 3                                                     PAINEL INTERATIVO\nINOX",
+      "valor_unit": 8711.44,
+      "origem_linha": 65,
+      "observacao": ""
+    },
+    {
+      "codigo": "58",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "TEA ACESSIBILIDADE 2\n(COM ARGOLAS)\nINOX",
+      "valor_unit": 20837.39,
+      "origem_linha": 66,
+      "observacao": ""
+    },
+    {
+      "codigo": "59",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "PING-PONG \nINOX",
+      "valor_unit": 34757.41,
+      "origem_linha": 67,
+      "observacao": ""
+    },
+    {
+      "codigo": "60",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "FUTMESA \nINOX",
+      "valor_unit": 38892.27,
+      "origem_linha": 68,
+      "observacao": ""
+    },
+    {
+      "codigo": "61",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "BOUGAINVILLE FUNCIONAL 1\nINOX",
+      "valor_unit": 38136.41,
+      "origem_linha": 69,
+      "observacao": ""
+    },
+    {
+      "codigo": "62",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "BOUGAINVILLE FUNCIONAL 2\nINOX",
+      "valor_unit": 39427.42,
+      "origem_linha": 70,
+      "observacao": ""
+    },
+    {
+      "codigo": "63",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "BOUGAINVILLE FUNCIONAL 3\nINOX",
+      "valor_unit": 39593.51,
+      "origem_linha": 71,
+      "observacao": ""
+    },
+    {
+      "codigo": "64",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ASSENTO ESCANO GRANDE\n INOX",
+      "valor_unit": 9843.46,
+      "origem_linha": 72,
+      "observacao": ""
+    },
+    {
+      "codigo": "65",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ASSENTO ESCANO GRANDE COM ENCOSTO\n INOX",
+      "valor_unit": 14671.36,
+      "origem_linha": 73,
+      "observacao": ""
+    },
+    {
+      "codigo": "66",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ASSENTO ESCANO PEQUENO COM ENCOSTO\nINOX",
+      "valor_unit": 9706.66,
+      "origem_linha": 74,
+      "observacao": ""
+    },
+    {
+      "codigo": "67",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "TABLADO INTERATIVO\nINOX",
+      "valor_unit": 12537.44,
+      "origem_linha": 75,
+      "observacao": ""
+    },
+    {
+      "codigo": "68",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "BICICLETÁRIO 05 LUGARES\n INOX",
+      "valor_unit": 12477.71,
+      "origem_linha": 76,
+      "observacao": ""
+    },
+    {
+      "codigo": "69",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "GRADIL COMPLETO\nINOX",
+      "valor_unit": 7573.19,
+      "origem_linha": 77,
+      "observacao": ""
+    },
+    {
+      "codigo": "70",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "CORRIMÃO\nINOX",
+      "valor_unit": 0.0,
+      "origem_linha": 78,
+      "observacao": ""
+    },
+    {
+      "codigo": "71",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "MASTRO CENTRAL \nINOX",
+      "valor_unit": 0.0,
+      "origem_linha": 79,
+      "observacao": ""
+    },
+    {
+      "codigo": "72",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "MASTRO DIREITO \nINOX",
+      "valor_unit": 0.0,
+      "origem_linha": 80,
+      "observacao": ""
+    },
+    {
+      "codigo": "73",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "MASTRO ESQUERDO \nINOX",
+      "valor_unit": 0.0,
+      "origem_linha": 81,
+      "observacao": ""
+    },
+    {
+      "codigo": "74",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "COLETOR DE RESÍDUOS DUPLO\nINOX",
+      "valor_unit": 8770.47,
+      "origem_linha": 82,
+      "observacao": ""
+    },
+    {
+      "codigo": "75",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "COLETOR BASCULANTE\nINOX",
+      "valor_unit": 5766.3,
+      "origem_linha": 83,
+      "observacao": ""
+    },
+    {
+      "codigo": "76",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ARTEFATO DE INDICAÇÃO E ORIENTAÇÃO P/ ÁREAS PÚBLICAS 1\nINOX",
+      "valor_unit": 15371.3,
+      "origem_linha": 84,
+      "observacao": ""
+    },
+    {
+      "codigo": "77",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ARTEFATO DE INDICAÇÃO E ORIENTAÇÃO P/ ÁREAS PÚBLICAS 2\nINOX",
+      "valor_unit": 23950.56,
+      "origem_linha": 85,
+      "observacao": ""
+    },
+    {
+      "codigo": "78",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ARTEFATO DE INDICAÇÃO E ORIENTAÇÃO P/ ÁREAS PÚBLICAS 3\nINOX",
+      "valor_unit": 23652.38,
+      "origem_linha": 86,
+      "observacao": ""
+    },
+    {
+      "codigo": "79",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ARTEFATO DE INDICAÇÃO E ORIENTAÇÃO P/ ÁREAS PÚBLICAS 4\nINOX",
+      "valor_unit": 16823.58,
+      "origem_linha": 87,
+      "observacao": ""
+    },
+    {
+      "codigo": "80",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "TOTEM DE ÁREA\nARTEFATO DE INDICAÇÃO E ORIENTAÇÃO P/ ÁREAS PÚBLICAS 5\nINOX",
+      "valor_unit": 12995.6,
+      "origem_linha": 88,
+      "observacao": ""
+    },
+    {
+      "codigo": "81",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ARTEFATO DE INDICAÇÃO E ORIENTAÇÃO P/ ÁREAS PÚBLICAS 6\nINOX",
+      "valor_unit": 18930.25,
+      "origem_linha": 89,
+      "observacao": ""
+    },
+    {
+      "codigo": "82",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ARTEFATO DE INDICAÇÃO E ORIENTAÇÃO P/ ÁREAS PÚBLICAS 7\nINOX",
+      "valor_unit": 12368.31,
+      "origem_linha": 90,
+      "observacao": ""
+    },
+    {
+      "codigo": "83",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ARTEFATO DE INDICAÇÃO E ORIENTAÇÃO P/ ÁREAS PÚBLICAS 8\nINOX",
+      "valor_unit": 69851.83,
+      "origem_linha": 91,
+      "observacao": ""
+    },
+    {
+      "codigo": "84",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ARTEFATO DE INDICAÇÃO E ORIENTAÇÃO P/ ÁREAS PÚBLICAS 9\nINOX",
+      "valor_unit": 28946.95,
+      "origem_linha": 92,
+      "observacao": ""
+    },
+    {
+      "codigo": "85",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ARTEFATO DE INDICAÇÃO E ORIENTAÇÃO P/ ÁREAS PÚBLICAS 10\nINOX",
+      "valor_unit": 30997.28,
+      "origem_linha": 93,
+      "observacao": ""
+    },
+    {
+      "codigo": "86",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ARTEFATO DE INDICAÇÃO E ORIENTAÇÃO P/ ÁREAS PÚBLICAS 11\nINOX",
+      "valor_unit": 98912.6,
+      "origem_linha": 94,
+      "observacao": ""
+    },
+    {
+      "codigo": "87",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "ABRIGO AUTÔNOMO DE CONVIVÊNCIA E INTERAÇÃO\nINOX",
+      "valor_unit": 37360.4,
+      "origem_linha": 95,
+      "observacao": ""
+    },
+    {
+      "codigo": "88",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "PISO MSSD SBR MONOLITICO DUPLA CAMADA COLORIDO",
+      "valor_unit": 1696.0,
+      "origem_linha": 96,
+      "observacao": ""
+    },
+    {
+      "codigo": "89",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "PISO EPDM MONOLITICO DUPLA CAMADA COLORIDO",
+      "valor_unit": 3000.0,
+      "origem_linha": 97,
+      "observacao": ""
+    },
+    {
+      "codigo": "90",
+      "grupo": "EQUIPAMENTOS MODELO -   CIMASP",
+      "nome": "PISO EMBORRACHADO - 15 CM",
+      "valor_unit": 640.0,
+      "origem_linha": 98,
+      "observacao": ""
+    },
+    {
+      "codigo": "91",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "ESQUI\nGALVANIZADO A FOGO",
+      "valor_unit": 21544.23,
+      "origem_linha": 100,
+      "observacao": ""
+    },
+    {
+      "codigo": "92",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "CAMINHADA\nGALVANIZADO A FOGO",
+      "valor_unit": 17378.25,
+      "origem_linha": 101,
+      "observacao": ""
+    },
+    {
+      "codigo": "93",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "MULTI\nGALVANIZADO A FOGO",
+      "valor_unit": 27767.11,
+      "origem_linha": 102,
+      "observacao": ""
+    },
+    {
+      "codigo": "94",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "TRANSPORT\nGALVANIZADO A FOGO",
+      "valor_unit": 18000.0,
+      "origem_linha": 103,
+      "observacao": ""
+    },
+    {
+      "codigo": "95",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "ALONGADOR\nGALVANIZADO A FOGO",
+      "valor_unit": 13000.0,
+      "origem_linha": 104,
+      "observacao": ""
+    },
+    {
+      "codigo": "96",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "TRAVE\nGALVANIZADO A FOGO",
+      "valor_unit": 7327.1,
+      "origem_linha": 105,
+      "observacao": ""
+    },
+    {
+      "codigo": "97",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "TOTEM A.T.I\nGALVANIZADO A FOGO",
+      "valor_unit": 2311.24,
+      "origem_linha": 106,
+      "observacao": ""
+    },
+    {
+      "codigo": "98",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "BALANÇO INFANTIL\nGALVANIZADO A FOGO",
+      "valor_unit": 15990.0,
+      "origem_linha": 107,
+      "observacao": ""
+    },
+    {
+      "codigo": "99",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "BALANÇO JUVENIL\nGALVANIZADO A FOGO",
+      "valor_unit": 17950.0,
+      "origem_linha": 108,
+      "observacao": ""
+    },
+    {
+      "codigo": "100",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "PLAY KIDS\nGALVANIZADO A FOGO",
+      "valor_unit": 28950.0,
+      "origem_linha": 109,
+      "observacao": ""
+    },
+    {
+      "codigo": "101",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "ESCALADOR ESTAIADO\nGALVANIZADO A FOGO",
+      "valor_unit": 28254.73,
+      "origem_linha": 110,
+      "observacao": ""
+    },
+    {
+      "codigo": "102",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "BICICLETÁRIO 5 LUGARES\nGALVANIZADO A FOGO",
+      "valor_unit": 6642.52,
+      "origem_linha": 111,
+      "observacao": ""
+    },
+    {
+      "codigo": "103",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "ESQUI\nINOX",
+      "valor_unit": 42111.44,
+      "origem_linha": 112,
+      "observacao": ""
+    },
+    {
+      "codigo": "104",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "CAMINHADA\nINOX",
+      "valor_unit": 37471.88,
+      "origem_linha": 113,
+      "observacao": ""
+    },
+    {
+      "codigo": "105",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "MULTI\nINOX",
+      "valor_unit": 63719.62,
+      "origem_linha": 114,
+      "observacao": ""
+    },
+    {
+      "codigo": "106",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "TRANSPORT\nINOX",
+      "valor_unit": 52902.07,
+      "origem_linha": 115,
+      "observacao": ""
+    },
+    {
+      "codigo": "107",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "ALONGADOR\nINOX",
+      "valor_unit": 25184.75,
+      "origem_linha": 116,
+      "observacao": ""
+    },
+    {
+      "codigo": "108",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "TRAVE\nINOX",
+      "valor_unit": 18573.88,
+      "origem_linha": 117,
+      "observacao": ""
+    },
+    {
+      "codigo": "109",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "TOTEM A.T.I\nINOX",
+      "valor_unit": 4714.24,
+      "origem_linha": 118,
+      "observacao": ""
+    },
+    {
+      "codigo": "110",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "PLAY KIDS\nINOX",
+      "valor_unit": 53407.54,
+      "origem_linha": 119,
+      "observacao": ""
+    },
+    {
+      "codigo": "111",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "BALANÇO MAMÃE E BEBÊ\nINOX",
+      "valor_unit": 22584.57,
+      "origem_linha": 120,
+      "observacao": ""
+    },
+    {
+      "codigo": "112",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "DESLIZADOR KIDS \nINOX",
+      "valor_unit": 11780.88,
+      "origem_linha": 121,
+      "observacao": ""
+    },
+    {
+      "codigo": "113",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "CARROSSEL\nINOX",
+      "valor_unit": 23815.72,
+      "origem_linha": 122,
+      "observacao": ""
+    },
+    {
+      "codigo": "114",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "BALANÇO JUVENIL\nINOX",
+      "valor_unit": 15639.19,
+      "origem_linha": 123,
+      "observacao": ""
+    },
+    {
+      "codigo": "115",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "BICICLETÁRIO\nINOX",
+      "valor_unit": 7820.71,
+      "origem_linha": 124,
+      "observacao": ""
+    },
+    {
+      "codigo": "116",
+      "grupo": "EQUIPAMENTOS MODELO - MACAÉ",
+      "nome": "PING-PONG \nINOX",
+      "valor_unit": 33102.12,
+      "origem_linha": 125,
+      "observacao": ""
+    },
+    {
+      "codigo": "117",
+      "grupo": "",
+      "nome": "FUTMESA\nINOX",
+      "valor_unit": 37293.45,
+      "origem_linha": 126,
+      "observacao": ""
+    },
+    {
+      "codigo": "118",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "PARKLET\nINOX",
+      "valor_unit": 26940.0,
+      "origem_linha": 128,
+      "observacao": ""
+    },
+    {
+      "codigo": "119",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "PLAY KIDS\nINOX",
+      "valor_unit": 41945.0,
+      "origem_linha": 129,
+      "observacao": ""
+    },
+    {
+      "codigo": "120",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "MULTIPLAY STANDART\nINOX",
+      "valor_unit": 63900.0,
+      "origem_linha": 130,
+      "observacao": ""
+    },
+    {
+      "codigo": "121",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "VAI E VEM MAMÃE E BEBÊ\nINOX",
+      "valor_unit": 15976.0,
+      "origem_linha": 131,
+      "observacao": ""
+    },
+    {
+      "codigo": "122",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "DESLIZADOR KIDS\nINOX",
+      "valor_unit": 10943.0,
+      "origem_linha": 132,
+      "observacao": ""
+    },
+    {
+      "codigo": "123",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "CARROSSEL\nINOX",
+      "valor_unit": 18200.0,
+      "origem_linha": 133,
+      "observacao": ""
+    },
+    {
+      "codigo": "124",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "VAI E VEM DUPLO\nINOX",
+      "valor_unit": 11964.0,
+      "origem_linha": 134,
+      "observacao": ""
+    },
+    {
+      "codigo": "125",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "TABLADO PEBOLIM\nINOX",
+      "valor_unit": 23943.0,
+      "origem_linha": 135,
+      "observacao": ""
+    },
+    {
+      "codigo": "126",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "PING-PONG\nINOX",
+      "valor_unit": 27425.0,
+      "origem_linha": 136,
+      "observacao": ""
+    },
+    {
+      "codigo": "127",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "FUTMESA\nINOX",
+      "valor_unit": 28575.0,
+      "origem_linha": 137,
+      "observacao": ""
+    },
+    {
+      "codigo": "128",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "MESA INTERATIVA \nINOX",
+      "valor_unit": 9646.0,
+      "origem_linha": 138,
+      "observacao": ""
+    },
+    {
+      "codigo": "129",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "COLETOR DE RESÍDUOS\nINOX",
+      "valor_unit": 2689.0,
+      "origem_linha": 139,
+      "observacao": ""
+    },
+    {
+      "codigo": "130",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "BICICLETÁRIO HORIZONTAL\nINOX",
+      "valor_unit": 5974.0,
+      "origem_linha": 140,
+      "observacao": ""
+    },
+    {
+      "codigo": "131",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "BICICLETÁRIO VERTICAL\nINOX",
+      "valor_unit": 5866.0,
+      "origem_linha": 141,
+      "observacao": ""
+    },
+    {
+      "codigo": "132",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "SOMBREADOR ESPACIAL\nINOX",
+      "valor_unit": 21922.5,
+      "origem_linha": 142,
+      "observacao": ""
+    },
+    {
+      "codigo": "133",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "VAI E VEM DE CADEIRANTE\nINOX",
+      "valor_unit": 24824.0,
+      "origem_linha": 143,
+      "observacao": ""
+    },
+    {
+      "codigo": "134",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "GRAMA DECORATIVA",
+      "valor_unit": 130.89,
+      "origem_linha": 144,
+      "observacao": ""
+    },
+    {
+      "codigo": "135",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "TIPO 1: PLACA + MOLDURA + ADESIVO (2 FACES)\nINOX",
+      "valor_unit": 1158.94,
+      "origem_linha": 145,
+      "observacao": ""
+    },
+    {
+      "codigo": "136",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "TIPO 2: PLACA + MOLDURA + ADESIVO (2 FACES) + MASTRO (ESTRUTURA VERTICAL) \nINOX",
+      "valor_unit": 2993.95,
+      "origem_linha": 146,
+      "observacao": ""
+    },
+    {
+      "codigo": "137",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "TIPO 3: PLACA + MOLDURA + ADESIVO  (1FACE)\nINOX",
+      "valor_unit": 795.92,
+      "origem_linha": 147,
+      "observacao": ""
+    },
+    {
+      "codigo": "138",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "ADESIVO EM VINIL",
+      "valor_unit": 163.95,
+      "origem_linha": 148,
+      "observacao": ""
+    },
+    {
+      "codigo": "139",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "MASTRO EM AÇO \nINOX",
+      "valor_unit": 1913.97,
+      "origem_linha": 149,
+      "observacao": ""
+    },
+    {
+      "codigo": "140",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "TAMPA PLÁSTICA\nCONJUNTO DE 3 PEÇAS",
+      "valor_unit": 25.06,
+      "origem_linha": 150,
+      "observacao": "Valor original armazenado como texto: $ 25,06"
+    },
+    {
+      "codigo": "141",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "SUPOR DE FIXAÇÃO\nINOX",
+      "valor_unit": 0.0,
+      "origem_linha": 151,
+      "observacao": ""
+    },
+    {
+      "codigo": "142",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "1-TOWER\nINOX",
+      "valor_unit": 85000.0,
+      "origem_linha": 152,
+      "observacao": ""
+    },
+    {
+      "codigo": "143",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "2-THUNDER\nINOX",
+      "valor_unit": 86900.0,
+      "origem_linha": 153,
+      "observacao": ""
+    },
+    {
+      "codigo": "144",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "3-TONUS\nINOX",
+      "valor_unit": 83500.0,
+      "origem_linha": 154,
+      "observacao": ""
+    },
+    {
+      "codigo": "145",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "4-TITAN\nINOX",
+      "valor_unit": 85000.0,
+      "origem_linha": 155,
+      "observacao": ""
+    },
+    {
+      "codigo": "146",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "5-TAUROS\nINOX",
+      "valor_unit": 87000.0,
+      "origem_linha": 156,
+      "observacao": ""
+    },
+    {
+      "codigo": "147",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "6-TANK\nINOX",
+      "valor_unit": 88500.0,
+      "origem_linha": 157,
+      "observacao": ""
+    },
+    {
+      "codigo": "148",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "7-TECTON\nINOX",
+      "valor_unit": 85900.0,
+      "origem_linha": 158,
+      "observacao": ""
+    },
+    {
+      "codigo": "149",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "8-TRITON\nINOX",
+      "valor_unit": 86500.0,
+      "origem_linha": 159,
+      "observacao": ""
+    },
+    {
+      "codigo": "150",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "9-TORQUE\nINOX",
+      "valor_unit": 87800.0,
+      "origem_linha": 160,
+      "observacao": ""
+    },
+    {
+      "codigo": "151",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "10-CENTRAL CALISTÊNICA MÚLTIPLA\nINOX",
+      "valor_unit": 281000.0,
+      "origem_linha": 161,
+      "observacao": ""
+    },
+    {
+      "codigo": "152",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "11-BALANÇA SMART DIGITAL\nINOX",
+      "valor_unit": 107900.0,
+      "origem_linha": 162,
+      "observacao": ""
+    },
+    {
+      "codigo": "153",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "12-HOT SPOT WI-FI",
+      "valor_unit": 165500.0,
+      "origem_linha": 163,
+      "observacao": ""
+    },
+    {
+      "codigo": "154",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "TOTEM INFORMATIVO \nAÇO GYM \nINOX",
+      "valor_unit": 10100.0,
+      "origem_linha": 164,
+      "observacao": ""
+    },
+    {
+      "codigo": "155",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "LETREIRO DA AÇO GYM\nINOX",
+      "valor_unit": 63500.0,
+      "origem_linha": 165,
+      "observacao": ""
+    },
+    {
+      "codigo": "156",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "KIT PET PLACE\nCOMPLETO\nPEÇAS LOGO ABAIXO",
+      "valor_unit": 58500.0,
+      "origem_linha": 166,
+      "observacao": ""
+    },
+    {
+      "codigo": "157",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "KIT \n( VÃO 4 CONES )\nPET PLACE\n(CONES ZIG ZAG)",
+      "valor_unit": 0.0,
+      "origem_linha": 167,
+      "observacao": ""
+    },
+    {
+      "codigo": "158",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "( VAI 1 RAMPA )\nESTRUTURA RAMPA\nPET PLACE\n( RAMPA SOBE E DESCE)",
+      "valor_unit": 0.0,
+      "origem_linha": 168,
+      "observacao": ""
+    },
+    {
+      "codigo": "159",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "KIT\n( VÃO 3 TRAVES )\nPET PLACE\n(ARCOS DE ADESTRAMENTO)",
+      "valor_unit": 0.0,
+      "origem_linha": 169,
+      "observacao": ""
+    },
+    {
+      "codigo": "160",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "( VAI 1 ARCO P/ SALTO )\nSUPORTE OBSTACULOS\nPET PLACE\n(OBSTÁCULO P/ SALTO)",
+      "valor_unit": 0.0,
+      "origem_linha": 170,
+      "observacao": ""
+    },
+    {
+      "codigo": "161",
+      "grupo": "EQUIPAMENTOS MODELO    -    MOBILIÁRIO DE ANGRA    -    PLACAS   -   AÇO GYM",
+      "nome": "KIT\n( TUNEL + SUPORTES\n+ AROS)\nPET PLACE",
+      "valor_unit": 0.0,
+      "origem_linha": 171,
+      "observacao": ""
+    },
+    {
+      "codigo": "162",
+      "grupo": "EQUIPAMENTOS MODELO    -    CIOP ABRIGOS E PLACAS",
+      "nome": "ABRIGO TIPO I\nANTIGO - PADRÃO",
+      "valor_unit": 43000.0,
+      "origem_linha": 173,
+      "observacao": ""
+    },
+    {
+      "codigo": "163",
+      "grupo": "EQUIPAMENTOS MODELO    -    CIOP ABRIGOS E PLACAS",
+      "nome": "ABRIGO TIPO II\nANTIGO - PADRÃO",
+      "valor_unit": 59000.0,
+      "origem_linha": 174,
+      "observacao": ""
+    },
+    {
+      "codigo": "164",
+      "grupo": "EQUIPAMENTOS MODELO    -    CIOP ABRIGOS E PLACAS",
+      "nome": "ABRIGO TIPO I\nMODELO DE MARICÁ",
+      "valor_unit": 43000.0,
+      "origem_linha": 175,
+      "observacao": ""
+    },
+    {
+      "codigo": "165",
+      "grupo": "EQUIPAMENTOS MODELO    -    CIOP ABRIGOS E PLACAS",
+      "nome": "ABRIGO TIPO II\nMODELO CAXIAS",
+      "valor_unit": 59000.0,
+      "origem_linha": 176,
+      "observacao": ""
+    },
+    {
+      "codigo": "166",
+      "grupo": "",
+      "nome": "PLACA TIPO I\nINOX",
+      "valor_unit": 800.0,
+      "origem_linha": 177,
+      "observacao": ""
+    },
+    {
+      "codigo": "167",
+      "grupo": "EQUIPAMENTOS MODELO    -    CIOP ABRIGOS E PLACAS",
+      "nome": "PLACA TIPO II\nINOX",
+      "valor_unit": 2100.0,
+      "origem_linha": 178,
+      "observacao": ""
+    }
+  ]
+}

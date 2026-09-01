@@ -1,20 +1,37 @@
-# A.S.C.A.L.P.I
+# ASCALPI - Dev-Work
 
-**Sistema de Automação e Controle de Adventos Logísticos e Processos Industriais**
+This branch is the portable engineering representation of the current ASCALPI development environment.
 
-**Nome curto:** ASCALPI
+Versioned development components:
 
-Este repositório é a nova base oficial do projeto ASCALPI.
+- `1-Dev`
+- `2-Compiler`
+- `3-Git_Main`
+- `4-Control`
+- `5-Docs`
+- portable content under `WSL`
 
-## Branches permanentes
+Local-only machine state is intentionally excluded:
 
-- `main` — produto comercial homologado e distribuível.
-- `Dev-Work` — ambiente e fonte de desenvolvimento reproduzível.
+- `Git`
+- WSL virtual disks
+- credentials and secrets
+- machine identity
+- operational databases and user data
+- local logs and receipts
+- rollback state
+- `1-Dev` Runtime and compiled Host/Bin payload
+- `2-Compiler` local Runtime
+- transient compiler runs and handoff outputs
+- caches and temporary files
 
-Branches de trabalho criadas por agentes, I.A. ou tarefas específicas são temporárias e devem ser removidas após revisão, integração e encerramento da tarefa.
+Runtime policy:
 
-## Estado desta fundação
+- `1-Dev`: engineering source/scripts/config only; no complete Runtime payload;
+- `2-Compiler`: compiler logic/config only; no local Runtime payload;
+- `3-Git_Main`: the only complete Windows Runtime/executable payload in Dev-Work.
 
-O repositório foi iniciado de forma limpa. A estrutura funcional do sistema, os documentos mestres e o ambiente de desenvolvimento serão incorporados somente após a validação final do ambiente local atual.
+Large executable/runtime/archive assets that remain intentionally versioned
+under `3-Git_Main` are transported through Git LFS.
 
-Não devem ser importados automaticamente caches, credenciais, bancos locais, evidências de máquina, quarentenas, artefatos regeneráveis ou outros resíduos dos repositórios anteriores.
+The Dev-Work bootstrap does not write to `main`.

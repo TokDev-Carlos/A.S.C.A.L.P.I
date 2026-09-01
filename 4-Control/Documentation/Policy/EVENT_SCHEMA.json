@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "CJL-EVENT-SCHEMA-001",
+  "type": "object",
+  "required": [
+    "event_id",
+    "timestamp_sp",
+    "cycle_id",
+    "type",
+    "status",
+    "severity",
+    "stage",
+    "component",
+    "summary",
+    "cause_class"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "minLength": 8
+    },
+    "timestamp_sp": {
+      "type": "string",
+      "minLength": 20
+    },
+    "cycle_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "correlation_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "INFO",
+        "PENDING",
+        "BLOCK"
+      ]
+    },
+    "severity": {
+      "enum": [
+        "INFO",
+        "WARNING",
+        "ERROR",
+        "CRITICAL"
+      ]
+    },
+    "stage": {
+      "type": "string"
+    },
+    "component": {
+      "type": "string"
+    },
+    "action": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "details": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cause_class": {
+      "enum": [
+        "SYSTEM",
+        "CONFIGURATION",
+        "INTEGRATION",
+        "SECURITY",
+        "USER_INPUT",
+        "EXPECTED_NEGATIVE_TEST",
+        "PROCEDURE",
+        "UNKNOWN",
+        "NOT_APPLICABLE"
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source_commit": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source_branch": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reusable_knowledge": {
+      "type": "boolean"
+    },
+    "knowledge_title": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "validated_rule": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "limitation": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "related_failure_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": true
+}

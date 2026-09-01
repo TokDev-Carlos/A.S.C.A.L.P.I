@@ -1,0 +1,16 @@
+{
+    "created_at_sp":  "2026-08-29T22:08:47.8470953-03:00",
+    "docs_root":  "C:\\.Dev CJL\\5-Docs",
+    "files":  [
+                  {
+                      "filename":  "Execution_Contract.md",
+                      "sha256":  "c457845a71eb345a4bc8b8b66066b2ab13a212d17329086ff5627d06c5cc0246",
+                      "original_attributes":  "Archive"
+                  },
+                  {
+                      "filename":  "Souvenir.md",
+                      "sha256":  "ec82725c0d7c98f02c02520a285635e977ce9615c21acc875ecf45981b2d8257",
+                      "original_attributes":  "Archive"
+                  }
+              ]
+}

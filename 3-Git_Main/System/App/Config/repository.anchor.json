@@ -1,0 +1,13 @@
+{
+  "format": 2,
+  "product": "CJL System",
+  "product_code": "CJL",
+  "business_id": "BA-01",
+  "revision": 24,
+  "transaction_file_sha256": "327b194dc1680765e8c7b8a0bfee35096d5468700621f936960b3d631177331a",
+  "snapshot_sha256": "0a09f6e44c3836978345ecd69d562235d5970499efdd9abea00c1e17a3ed903f",
+  "previous_anchor_sha256": "9f857e9348b02b3f754d00a817aaabc3766e4a3277574036a52ab865f1da83cd",
+  "checkpoint_at": "2026-08-16T14:22:23-03:00",
+  "timezone": "America/Sao_Paulo",
+  "purpose": "CJL_BASE5_REPOSITORY_CHECKPOINT"
+}

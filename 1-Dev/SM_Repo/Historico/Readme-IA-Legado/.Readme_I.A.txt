@@ -1,0 +1,2 @@
+-esse é o histórico dos pedidos e relatórios gerados das demantas que o usuário solicita
+-para acumulo histórico e documental dos procedimentos adotas e do que a I.A executa

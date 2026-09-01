@@ -1,0 +1,14 @@
+param([Parameter(Mandatory=$true)][string]$Root,[Parameter(Mandatory=$true)][string]$Patch,[int]$WaitPid=0,[int]$WaitHostPid=0,[switch]$Restart)
+Set-StrictMode -Version 2.0;$ErrorActionPreference='Stop';$Root=[IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($Root)).TrimEnd('\');$Patch=[IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($Patch))
+$StateDir=Join-Path $Root 'Updates\State';$LogDir=Join-Path $Root 'Logs\Updates';New-Item -ItemType Directory -Force -Path $StateDir,$LogDir|Out-Null
+function NowSP{try{$tz=[TimeZoneInfo]::FindSystemTimeZoneById('E. South America Standard Time');return [TimeZoneInfo]::ConvertTime([DateTimeOffset]::UtcNow,$tz)}catch{return [DateTimeOffset]::UtcNow.ToOffset([TimeSpan]::FromHours(-3))}}
+$stamp=(NowSP).ToString('yyyyMMdd_HHmmss');$Log=Join-Path $LogDir ('CJL_UPD_'+$stamp+'.log');$Op=Join-Path $StateDir 'operation.json'
+function Ascii([string]$s){return [Text.Encoding]::ASCII.GetString([Text.Encoding]::ASCII.GetBytes($s))}
+function Save([string]$status,[string]$phase,[string]$msg,[int]$code=-1){$o=[ordered]@{format=1;product='CJL System';status=$status;phase=$phase;patch=[IO.Path]::GetFileName($Patch);started_at=$script:started;updated_at=(NowSP).ToString('o');message=(Ascii $msg);exit_code=$code;log=$Log};[IO.File]::WriteAllText($Op,(($o|ConvertTo-Json -Depth 6)+[Environment]::NewLine),(New-Object Text.UTF8Encoding($false)))}
+function Log([string]$s){$line='[{0}] {1}' -f (NowSP).ToString('yyyy-MM-dd HH:mm:ss.fff zzz'),(Ascii $s);Add-Content -LiteralPath $Log -Value $line -Encoding ASCII}
+function WaitPid([int]$id,[string]$label){if($id-le 0){return};$end=[DateTime]::UtcNow.AddSeconds(120);while([DateTime]::UtcNow-lt$end){if(-not(Get-Process -Id $id -ErrorAction SilentlyContinue)){Log "$label encerrado PID=$id";return};Start-Sleep -Milliseconds 500};throw "$label nao encerrou PID=$id"}
+$script:started=(NowSP).ToString('o');$code=1
+try{Save 'WAITING' 'PROCESS_EXIT' 'Aguardando processos CJL liberarem arquivos.';WaitPid $WaitPid 'Backend';if($WaitHostPid-ne$WaitPid){WaitPid $WaitHostPid 'Host'};Save 'APPLYING' 'PATCH' 'Aplicando patch CJL.';$Apply=Join-Path $Root 'Updates\Apply-Master.ps1';$out=@(& powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File $Apply -Root $Root -Patch $Patch 2>&1);$code=[int]$LASTEXITCODE;foreach($x in $out){Log([string]$x)};if($code-ne 0){throw "Aplicador retornou $code"};Save 'SUCCEEDED' 'DONE' 'Atualizacao concluida e validada.' 0}
+catch{Log('FALHA: '+$_.Exception.Message);Save 'FAILED' 'ROLLBACK_OR_ABORT' $_.Exception.Message 1;$code=1}
+finally{if($Restart-and$code-eq 0){$Launcher=Join-Path $Root 'CJL.exe';if(Test-Path -LiteralPath $Launcher -PathType Leaf){try{Start-Process -FilePath $Launcher -WorkingDirectory $Root|Out-Null;Log 'CJL System reiniciado.'}catch{Log('AVISO reinicio: '+$_.Exception.Message)}}}}
+exit $code

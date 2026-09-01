@@ -1,0 +1,10 @@
+{
+    "format":  2,
+    "product":  "CJL System",
+    "host_contract":  "1",
+    "binary":  "CJL.exe",
+    "binary_sha256":  "6b4d1d3d716a4fe4b3b670c8f658f4f8eab9a1cd6c0bb24f229abaee512350ab",
+    "created_at":  "2026-08-16T14:24:29.9733535-03:00",
+    "timezone":  "America/Sao_Paulo",
+    "note":  "Launcher publico Base 5 vinculado ao Host Contract."
+}

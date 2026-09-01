@@ -1,0 +1,68 @@
+{
+  "format": 5,
+  "product": "CJL System",
+  "core_protocol": 1,
+  "layout": 5,
+  "python_core": {
+    "root": "App",
+    "authority": "BUSINESS_AND_DATA_CORE",
+    "stable_contract": true
+  },
+  "windows_host": {
+    "current": "DOTNET10_WPF_WEBVIEW2",
+    "framework": "net10.0-windows10.0.19041.0",
+    "language": "C#",
+    "architecture": "win-x64",
+    "self_contained": true,
+    "binary_root": "Host/Bin",
+    "source_root": "Dev/Host",
+    "bridge": "Host/Bridge/host_bridge.py",
+    "public_entrypoint": "CJL.exe",
+    "responsibilities": [
+      "PROCESS_SUPERVISION",
+      "MASTER_DIRECT_EXECUTION",
+      "WINDOW_LIFECYCLE",
+      "INSTALL_UPDATE_REPAIR",
+      "UNINSTALL",
+      "LOCAL_RESOURCES",
+      "NATIVE_NOTIFICATIONS",
+      "LOCAL_UPDATE_ORCHESTRATION",
+      "DEVELOPMENT_SNAPSHOT",
+      "MASTER_PATCH_IMPORT_AND_EXTERNAL_WORKER",
+      "SM_REPO_ARCHIVE"
+    ],
+    "forbidden": [
+      "BUSINESS_RULES",
+      "REPOSITORY_SCHEMA",
+      "AUDIT_AUTHORITY",
+      "CENTRAL_DATA_OWNERSHIP"
+    ]
+  },
+  "ui": {
+    "technology": "HTML_CSS_JAVASCRIPT",
+    "renderer": "WEBVIEW2",
+    "windows_shell": "STANDARD_BORDERED_WPF_MAXIMIZED",
+    "startup_surface": "BRANDED_LOADING_SHELL"
+  },
+  "station_layout": {
+    "default_install_root": "C:/CJL",
+    "app": "App",
+    "host": "Host",
+    "runtime": "Runtime",
+    "config": "Config",
+    "machine_state": "%ProgramData%/CJL",
+    "user_transient_state": "%LOCALAPPDATA%/CJL"
+  },
+  "transport": {
+    "current": "LOOPBACK_HTTP",
+    "binding": "127.0.0.1",
+    "auth": "INSTANCE_TOKEN+SESSION+CSRF"
+  },
+  "host_contract": 1,
+  "update_contract": 1,
+  "remote_contract": 1,
+  "history": {
+    "active": false,
+    "archive_root": "../SM_Repo/Legacy"
+  }
+}

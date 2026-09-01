@@ -1,0 +1,81 @@
+{
+  "format": 1,
+  "product": "CJL System",
+  "policy_id": "CJL_DATA_POLICY_V1",
+  "system_data": {
+    "definition": "Artefatos que definem/reproduzem o comportamento do produto e a release.",
+    "snapshot": "INCLUDE",
+    "paths": [
+      "App",
+      "Host/Bridge",
+      "Dev/Host",
+      "Dev/Tools",
+      "Docs",
+      "Updates/State",
+      "Updates/Apply-Master.ps1",
+      "Updates/Apply-Worker.ps1",
+      "Logs/System",
+      "CJL.root.json",
+      "CJL.exe",
+      "COPYRIGHT.txt",
+      "LICENSE.txt"
+    ],
+    "database": "SCHEMA_CONTRACT_ONLY_NO_ROWS"
+  },
+  "operational_user_data": {
+    "definition": "Registros e arquivos criados/alterados pelo uso normal do sistema.",
+    "snapshot": "EXCLUDE",
+    "roots": [
+      "Data",
+      "Shared",
+      "Repo",
+      "Export",
+      "Temp"
+    ],
+    "examples": [
+      "usuarios_e_credenciais_reais",
+      "clientes",
+      "obras",
+      "carregamentos",
+      "rotas",
+      "frota",
+      "viagens",
+      "custos",
+      "anexos",
+      "evidencias",
+      "documentos_gerados",
+      "auditoria_de_negocio",
+      "rascunhos",
+      "caches"
+    ]
+  },
+  "generated_or_heavy_system_components": {
+    "snapshot": "EXCLUDE_WITH_INTEGRITY_METADATA",
+    "roots": [
+      "Runtime",
+      "Host/Bin"
+    ]
+  },
+  "logs": {
+    "snapshot_include": [
+      "Logs/System"
+    ],
+    "snapshot_exclude": [
+      "Logs/Updates",
+      "Logs/Bootstrap",
+      "Logs/RemoteAdmin",
+      "logs_de_usuario_ou_negocio"
+    ],
+    "rule": "Somente log técnico controlado e sem credenciais/dados de negócio integra Snapshot."
+  },
+  "secrets": {
+    "snapshot": "EXCLUDE",
+    "suffixes": [
+      ".key",
+      ".pem",
+      ".p12",
+      ".pfx",
+      ".kdbx"
+    ]
+  }
+}

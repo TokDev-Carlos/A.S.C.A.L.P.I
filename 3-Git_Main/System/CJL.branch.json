@@ -1,0 +1,14 @@
+{
+  "format": 1,
+  "product": "CJL System",
+  "branch": "MAIN",
+  "role": "PRODUCTION",
+  "master_id": "CJL-MST-20260816-F34A42AB35A8",
+  "root_fingerprint": "A22E32A10C1C64BEAA0CDF99",
+  "root_hint": "C:\\.Dev CJL\\3-Git_Main\\System",
+  "created_at": "2026-08-28T20:49:45-03:00",
+  "timezone": "America/Sao_Paulo",
+  "patch_contract": "ROOT_RELATIVE_FORMAT_7",
+  "promotion_contract": "SAME_ZIP_SHA256_DEV_TO_MAIN",
+  "production_data_allowed": true
+}

@@ -1,0 +1,99 @@
+{
+  "policy_id": "CJL-DOCUMENT-POLICY-001",
+  "status": "OPERATOR_DEFINED",
+  "timezone": "America/Sao_Paulo",
+  "roots": {
+    "cjl_root": "C:\\.Dev CJL",
+    "control_root": "C:\\.Dev CJL\\4-Control\\Documentation",
+    "docs_root": "C:\\.Dev CJL\\5-Docs",
+    "evidence_root": "C:\\CJL_Work_Evidence\\Documentation"
+  },
+  "document_classes": {
+    "static_default": {
+      "description": "All documentation is static by default after homologation.",
+      "automatic_write": false,
+      "operator_explicit_order_required": true
+    },
+    "evolutive_documents": [
+      {
+        "filename": "Black_Book.md",
+        "class": "AUTO_EVOLUTIVE",
+        "automatic_write": true,
+        "role": "contextual failures, rejected procedures, correction lifecycle"
+      },
+      {
+        "filename": "White_Book.md",
+        "class": "AUTO_EVOLUTIVE",
+        "automatic_write": true,
+        "role": "proven reusable engineering knowledge"
+      }
+    ],
+    "hard_locked_known_documents": [
+      "Execution_Contract.md",
+      "Souvenir.md"
+    ],
+    "static_patterns": [
+      "*.md"
+    ],
+    "static_exceptions": [
+      "Black_Book.md",
+      "White_Book.md"
+    ]
+  },
+  "machine_state_files": {
+    "documentation": false,
+    "files": [
+      "events.jsonl",
+      "processed-events.jsonl",
+      "pending-sync.jsonl",
+      "document-state.json",
+      "correlation-map.json"
+    ]
+  },
+  "hard_locked_engine_governance": [
+    "Policy\\DOCUMENT_POLICY.json",
+    "Policy\\EVENT_RULES.json",
+    "Policy\\EVENT_SCHEMA.json",
+    "Policy\\BOOK_ENTRY_SCHEMA.json"
+  ],
+  "write_rules": {
+    "static_documents": "DENY",
+    "black_book": "ALLOW_BY_VALID_EVENT_ONLY",
+    "white_book": "ALLOW_BY_VALID_PROOF_EVENT_ONLY",
+    "policy_self_modification": "DENY",
+    "engine_self_policy_escalation": "DENY",
+    "force_push": "DENY",
+    "rewrite_event_history": "DENY"
+  },
+  "operator_override": {
+    "automatic": false,
+    "must_be_separate_command": true,
+    "must_create_backup": true,
+    "must_show_diff": true,
+    "must_revalidate": true,
+    "must_rebaseline_after_approval": true,
+    "must_never_be_called_by_event_processor": true
+  },
+  "remote_book_sync": {
+    "enabled": false,
+    "mode": "QUEUE_ONLY",
+    "reason": "Git documentation cleanup and final structure are pending explicit Operator work.",
+    "current_reference_only": {
+      "repository": "TokDev-Carlos/CJL-System",
+      "branch": "main",
+      "black_book_path": "Knowledge/Black_Book/VOLUME-001.md",
+      "white_book_path": "Knowledge/White_Book/VOLUME-001.md"
+    }
+  },
+  "atomicity": {
+    "book_write": "TEMP_VALIDATE_ATOMIC_REPLACE",
+    "event_ledger": "APPEND_ONLY",
+    "concurrency_lock_required": true,
+    "backup_before_book_replace": true
+  },
+  "legacy_book_policy": {
+    "preserve_existing_content": true,
+    "do_not_reformat_legacy_entries": true,
+    "automatic_lifecycle_update_only_for_engine_managed_marked_entries": true
+  }
+}

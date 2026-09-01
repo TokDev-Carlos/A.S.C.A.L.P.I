@@ -1,0 +1,19 @@
+CJL-Control v1.1.2 REVIEW
+Date: 2026-08-28
+Timezone: America/Sao_Paulo
+
+Findings corrected:
+1. Nested stage arrays could be flattened by PowerShell enumeration.
+2. Option 16 was incorrectly READY while option 15 was LOCKED.
+3. Option 09 depended on Get-FileHash, previously unavailable on this machine in older audit context.
+4. MessageBox integer overloads were replaced with explicit enums.
+5. Multiline expression construction was simplified for Windows PowerShell 5.1.
+6. Event and state JSON encoding now uses UTF-8 without BOM.
+
+Still intentionally disabled:
+02,04,07,10,11,12,13,15,16,17,18,19,20,21.
+
+Compiler remains PAUSED.
+No GitHub write.
+No production write.
+No patch apply.

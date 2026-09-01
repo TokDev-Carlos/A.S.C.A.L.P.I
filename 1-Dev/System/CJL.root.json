@@ -1,0 +1,21 @@
+{
+  "format": 1,
+  "product": "CJL System",
+  "product_code": "CJL",
+  "role": "MASTER",
+  "root_contract": 5,
+  "master_id": "CJL-MST-20260816-F34A42AB35A8",
+  "previous_master_id": "SISLOGIS-MST-20260813-CRJ-7F17A4C9",
+  "business_id": "BA-01",
+  "version": "5.00.006",
+  "structural_id": "ES-05",
+  "incremental_id": "IN-00",
+  "security_id": "SE-006",
+  "migrated_from": "C:\\SYS\\Carregamento_Log",
+  "source_snapshot_sha256": "884bf01cb61df817c7d65a8d415f83f02a2acecec4fa0bbdef09b067097e2175",
+  "created_at": "2026-08-16T14:22:23-03:00",
+  "timezone": "America/Sao_Paulo",
+  "version_full": "1.5.00.006",
+  "branch": "MAIN",
+  "branch_contract": 1
+}

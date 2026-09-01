@@ -1,4 +1,4 @@
-# ASCALPI — cross-platform text normalization
+# ASCALPI Dev-Work cross-platform normalization + Git LFS R1
 
 * text=auto
 
@@ -18,28 +18,42 @@
 *.props text eol=lf
 *.targets text eol=lf
 *.sln text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
 
-# Windows-native launchers/scripts
+# Windows-native scripts
 *.ps1 text eol=crlf
 *.psm1 text eol=crlf
 *.cmd text eol=crlf
 *.bat text eol=crlf
 *.vbs text eol=crlf
 
-# Binary formats
+# Git LFS - portable executable/runtime/archive payload
+*.exe filter=lfs diff=lfs merge=lfs -text
+*.dll filter=lfs diff=lfs merge=lfs -text
+*.pyd filter=lfs diff=lfs merge=lfs -text
+*.pdb filter=lfs diff=lfs merge=lfs -text
+*.jar filter=lfs diff=lfs merge=lfs -text
+*.war filter=lfs diff=lfs merge=lfs -text
+*.zip filter=lfs diff=lfs merge=lfs -text
+*.7z filter=lfs diff=lfs merge=lfs -text
+*.rar filter=lfs diff=lfs merge=lfs -text
+*.gz filter=lfs diff=lfs merge=lfs -text
+*.tgz filter=lfs diff=lfs merge=lfs -text
+*.bz2 filter=lfs diff=lfs merge=lfs -text
+*.xz filter=lfs diff=lfs merge=lfs -text
+*.dat filter=lfs diff=lfs merge=lfs -text
+
+# Other binary formats
 *.png binary
 *.jpg binary
 *.jpeg binary
 *.gif binary
 *.ico binary
 *.pdf binary
-*.zip binary
-*.7z binary
-*.exe binary
-*.dll binary
-*.pdb binary
+*.xlsx binary
+*.xlsm binary
 *.db binary
 *.sqlite binary
 *.sqlite3 binary
-*.vhd binary
-*.vhdx binary

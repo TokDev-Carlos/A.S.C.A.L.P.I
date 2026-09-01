@@ -1,0 +1,200 @@
+LICENÇA CRJ DE USO PRIVADO, INTERNO E PRESTAÇÃO DE SERVIÇOS
+Versão documental 1.1 — 13 de agosto de 2026
+
+TITULAR EXCLUSIVO
+Nome: Carlos Alberto da Silva Pinto Júnior
+Identificação pública: CRJ
+Contato oficial: Carlosjr.projetos25@gmail.com
+
+AVISO
+Este Software é proprietário, com código-fonte disponível para consulta e
+modificação privada nos limites desta licença. Não é distribuído sob licença
+Open Source. O acesso ao código-fonte não transfere autoria, titularidade,
+direito de venda, redistribuição ou sublicenciamento.
+
+1. OBJETO
+
+Esta licença regula o uso do CJL System — Sistema de Logística e Controle de
+Carregamentos — incluindo seus módulos,
+código-fonte, executáveis, interfaces, configurações, documentação e
+atualizações próprias.
+
+Todos os direitos não concedidos expressamente permanecem reservados ao
+TITULAR.
+
+2. LICENÇA CONCEDIDA
+
+O TITULAR concede ao usuário uma autorização limitada, pessoal, não exclusiva,
+intransferível, revogável e não sublicenciável para:
+
+- usar o Software de forma pessoal, individual, interna ou privada;
+- estudar e auditar o código-fonte;
+- modificar o código exclusivamente para uso próprio e interno;
+- utilizar o Software como ferramenta na prestação de serviços remunerados;
+- produzir e entregar planilhas, relatórios, roteiros, documentos logísticos e
+  outros resultados gerados pelo funcionamento regular do Software;
+- manter uma cópia de segurança de uma instalação legitimamente obtida.
+
+A licença de uso não transfere a propriedade do Software.
+
+3. PRESTAÇÃO DE SERVIÇOS PERMITIDA
+
+É permitido utilizar o Software como ferramenta interna para executar uma
+prestação de serviços remunerada, desde que o objeto principal da contratação
+seja o serviço ou o resultado produzido, e não o acesso, a licença, a cópia ou
+o direito de uso do Software.
+
+São exemplos permitidos:
+
+- tratamento de planilhas e dados logísticos;
+- planejamento de carregamentos, rotas e utilização de frota;
+- preparação de documentos, evidências e relatórios operacionais;
+- execução de projeto ou operação logística contratada;
+- cobrança pelo trabalho, operação, análise, entrega ou resultado final.
+
+O usuário pode entregar ao cliente os resultados produzidos, mas não pode
+entregar o próprio Software, seu código-fonte, executáveis, instaladores,
+componentes internos, chaves ou meios de acesso.
+
+4. COMERCIALIZAÇÃO EXCLUSIVA
+
+A venda, o licenciamento comercial, a distribuição remunerada, a revenda, a
+sublicença, o aluguel, a hospedagem, a oferta como serviço e a concessão de
+acesso ao Software são direitos exclusivos do TITULAR.
+
+Terceiros somente poderão praticar esses atos mediante autorização comercial
+expressa, escrita, individualizada, vigente e verificável emitida pelo TITULAR.
+
+A ausência de autorização escrita significa ausência de direito de
+comercialização.
+
+5. REPRESENTANTE COMERCIAL AUTORIZADO
+
+Representante Comercial Autorizado é a pessoa física ou jurídica que recebeu
+do TITULAR instrumento escrito contendo, no mínimo, sua identificação, número
+da autorização, escopo, território, validade e poderes concedidos.
+
+O representante:
+
+- não se torna autor, proprietário ou titular do Software;
+- não pode transferir sua autorização;
+- não pode nomear outros representantes sem autorização expressa;
+- não pode alterar esta licença;
+- não pode registrar o Software, código, marca ou identidade em seu nome;
+- não pode comercializar após vencimento ou revogação;
+- não pode entregar versões adulteradas como oficiais.
+
+6. MODIFICAÇÕES
+
+Modificações são permitidas somente para uso próprio e interno. A modificação
+não autoriza distribuição, publicação, venda, sublicenciamento, hospedagem ou
+disponibilização da versão modificada.
+
+Avisos de autoria, licença, titularidade e copyright não podem ser removidos,
+ocultados ou adulterados.
+
+Contribuições destinadas à integração oficial ao produto deverão ser regidas
+por contrato escrito específico sobre os respectivos direitos patrimoniais.
+
+7. CONDUTAS PROIBIDAS
+
+Sem autorização escrita do TITULAR, é proibido:
+
+- vender, revender, alugar, arrendar ou sublicenciar o Software;
+- cobrar pelo download, pela cópia ou pelo acesso ao próprio Software;
+- redistribuir executáveis, instaladores, código-fonte ou pacotes;
+- publicar o Software em repositório público;
+- oferecer acesso pago, SaaS ou serviço remoto baseado no uso da interface;
+- incorporar o Software em produto comercial distribuído a terceiros;
+- compartilhar chave, token, credencial ou autorização;
+- remover ou contornar controles de licença ou integridade;
+- falsificar autorização do TITULAR;
+- remover copyright ou apresentar o Software como criação própria;
+- utilizar a identidade CRJ para comercialização sem autorização;
+- facilitar a violação desta licença por terceiros.
+
+8. AUTENTICIDADE E CONTROLES TÉCNICOS
+
+A Base oficial CJL System 5.00.005 (BA-01 / ES-05 / IN-00 / SE-005) utiliza
+manifestos integrais SHA-256 para verificar a camada App e o Runtime. A
+migração para a Base 5 registra checkpoint de proveniência por SHA-256 e
+preserva no SM_Repo as evidências históricas de releases anteriores.
+
+A existência de evidência RSA histórica não significa que a Base 5 esteja
+assinada pela chave anterior. O estado atual só poderá ser declarado
+criptograficamente assinado quando uma nova cadeia de assinatura oficial for
+formalmente criada, aplicada e verificável.
+
+Esses mecanismos permitem detectar alteração dos arquivos protegidos e manter
+continuidade auditável. Eles não transferem direitos, não autorizam
+redistribuição e não constituem promessa de impedir materialmente toda cópia.
+A retirada, substituição ou contorno desses controles não remove a titularidade
+e viola os termos desta licença.
+
+O TITULAR poderá implementar futuramente mecanismos adicionais, locais ou
+online, de ativação, validação, revogação, assinatura e controle de
+integridade. Quando implementados, deverão preservar os arquivos e dados
+legítimos do usuário. A licença não autoriza destruição, corrupção ou
+eliminação remota de dados do usuário.
+
+9. COMPONENTES DE TERCEIROS
+
+Bibliotecas, runtimes e demais componentes de terceiros permanecem sujeitos às
+suas próprias licenças. Esta licença regula somente os componentes sobre os
+quais o TITULAR detenha direitos.
+
+Os componentes de terceiros permanecem identificados por seus próprios
+pacotes, arquivos de licença e documentação quando aplicável. Nenhuma cláusula
+desta licença restringe direitos concedidos diretamente pelas licenças desses
+componentes independentes.
+
+10. ENCERRAMENTO
+
+A autorização de uso poderá ser encerrada em caso de violação desta licença.
+Encerrada a autorização, o usuário deverá cessar o uso não autorizado e remover
+cópias distribuídas ou mantidas em desacordo com estes termos.
+
+A regularização dependerá de autorização expressa do TITULAR.
+
+11. GARANTIA, DADOS E RESPONSABILIDADE
+
+Salvo contrato escrito em contrário, o Software é fornecido no estado em que se
+encontra. O usuário deve manter cópias de segurança de seus dados e conferir os
+resultados antes de utilizá-los em produção.
+
+Esta licença não cria obrigação automática de suporte, manutenção, treinamento
+ou atualização. Esses serviços poderão ser contratados separadamente.
+
+Garantias e responsabilidades obrigatórias previstas em lei permanecem
+aplicáveis quando não puderem ser afastadas contratualmente.
+
+12. LEGISLAÇÃO
+
+Esta licença será interpretada conforme a legislação brasileira aplicável,
+inclusive as Leis nº 9.609/1998, nº 9.610/1998 e nº 13.709/2018, sem afastar
+normas obrigatórias de contratos e defesa do consumidor.
+
+13. ACEITAÇÃO
+
+Ao instalar, executar, copiar, modificar ou utilizar o Software, o usuário
+declara ter lido e aceitado esta licença. Caso não aceite os termos, não deverá
+utilizar o Software.
+
+Autorizações especiais, comerciais ou de distribuição somente serão válidas
+quando emitidas por escrito pelo TITULAR.
+
+RESUMO
+
+Uso pessoal e interno: permitido.
+Uso para prestação de serviços: permitido.
+Cobrança pelo resultado produzido: permitida.
+Modificação para uso próprio: permitida.
+Venda ou licenciamento do Software: exclusivo do TITULAR.
+Venda por terceiros: somente com autorização escrita e vigente.
+Redistribuição: proibida sem autorização.
+Publicação do código: proibida sem autorização.
+SaaS ou acesso pago: proibido sem autorização.
+Remoção ou contorno de controles: proibido.
+
+© 2026 Carlos Alberto da Silva Pinto Júnior — CRJ.
+Todos os direitos reservados.

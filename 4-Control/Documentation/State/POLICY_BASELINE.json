@@ -1,0 +1,21 @@
+{
+  "created_at_sp": "2026-08-29T22:03:45.6733209-03:00",
+  "files": [
+    {
+      "path": "Policy\\DOCUMENT_POLICY.json",
+      "sha256": "a1ad3d5815d1107f3a1545075352d428804c00e4a7985902548288bace15f469"
+    },
+    {
+      "path": "Policy\\EVENT_RULES.json",
+      "sha256": "47d9fdfe3c2a900bcaefcbfd83c705701e0b65673a5de953a0485efb18857230"
+    },
+    {
+      "path": "Policy\\EVENT_SCHEMA.json",
+      "sha256": "f9883ad2860b3da2efcb586b78e8a05df0e234656b0eced37d728dc340e11564"
+    },
+    {
+      "path": "Policy\\BOOK_ENTRY_SCHEMA.json",
+      "sha256": "345fa0244e7b845a2727461afdf99b02993e005a001219c56be0f5df375288f0"
+    }
+  ]
+}

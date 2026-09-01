@@ -1,0 +1,8 @@
+{
+  "modo_padrao": "CARTOGRAFICO_HIBRIDO",
+  "geojson": "vendor/mapa/brasil.geojson",
+  "tile_url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+  "tile_min_zoom": 4,
+  "tile_max_zoom": 16,
+  "atribuicao": "© OpenStreetMap contributors"
+}

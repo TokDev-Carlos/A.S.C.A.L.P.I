@@ -1,0 +1,74 @@
+{
+  "format": 1,
+  "product": "CJL System",
+  "resources": [
+    {
+      "id": "LIBREOFFICE",
+      "name": "LibreOffice",
+      "description": "Conversão local de documentos para PDF. Opcional para o núcleo do CJL System.",
+      "version": "000001",
+      "required": false,
+      "package": "Repo/RecursosSistema/Pacotes/CJL_RECURSO_LIBREOFFICE_000001.zip",
+      "target": "LibreOffice",
+      "payload_root": "LibreOffice",
+      "sha256": "91b8060e71f89fbe356338f8e39d1a42d27a402bbb2c65e750a02fdc3b9c875d",
+      "minimum_files": 10000,
+      "package_size_bytes": 333022235,
+      "target_scope": "STATE",
+      "master_fallback": "Runtime/LibreOffice",
+      "critical_files": [
+        {
+          "path": "App/libreoffice/program/soffice.exe",
+          "sha256": "3c24436274cb9b5ccd363a517b377d07991eae82072690227e41c62ca9ca718b"
+        },
+        {
+          "path": "LibreOfficePortable.exe",
+          "sha256": "8308de6d16e74e15318feb04e80bf1612e8ff318706a16983cfc24114b808c6c"
+        }
+      ],
+      "user_visible": true
+    },
+    {
+      "id": "MAPA_OFFLINE_BR",
+      "name": "Mapa Offline Brasil",
+      "description": "Pacote cartográfico local detalhado para uso sem internet.",
+      "version": "000001",
+      "required": false,
+      "package": "Repo/RecursosSistema/Pacotes/CJL_RECURSO_MAPA_OFFLINE_BR_000001.zip",
+      "target": "MapaOffline/tiles",
+      "payload_root": "tiles",
+      "sha256": "",
+      "minimum_files": 1,
+      "target_scope": "STATE",
+      "user_visible": false
+    },
+    {
+      "id": "MOTOR_ROTAS_BR",
+      "name": "Motor de Rotas Brasil",
+      "description": "Motor rodoviário local para distância, geometria e tempo de viagem sem depender da internet.",
+      "version": "000001",
+      "required": false,
+      "package": "Repo/RecursosSistema/Pacotes/CJL_RECURSO_MOTOR_ROTAS_BR_000001.zip",
+      "target": "MotorRotas",
+      "payload_root": "MotorRotas",
+      "sha256": "",
+      "minimum_files": 1,
+      "target_scope": "STATE",
+      "user_visible": false
+    },
+    {
+      "id": "BASE_PEDAGIOS_BR",
+      "name": "Base de Pedágios Brasil",
+      "description": "Base local versionada de praças e pórticos de pedágio. Atualizável pelo administrador.",
+      "version": "2026-07-29",
+      "required": false,
+      "package": "Repo/RecursosSistema/Pacotes/CJL_RECURSO_PEDAGIOS_BR_20260729.zip",
+      "target": "Pedagios",
+      "payload_root": "Pedagios",
+      "sha256": "",
+      "minimum_files": 1,
+      "target_scope": "STATE",
+      "user_visible": false
+    }
+  ]
+}

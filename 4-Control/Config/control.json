@@ -1,0 +1,31 @@
+{
+  "brand": "ASCALPI",
+  "short_name": "ASCALPI",
+  "panel_title": "ASCALPI Control Center",
+  "workspace_root": "C:\\.Dev CJL",
+  "linux_root": "C:\\.Dev CJL\\1-Dev",
+  "compiler_root": "C:\\.Dev CJL\\2-Compiler",
+  "git_main_root": "C:\\.Dev CJL\\3-Git_Main",
+  "git_main_system": "C:\\.Dev CJL\\3-Git_Main\\System",
+  "control_root": "C:\\.Dev CJL\\4-Control",
+  "docs_root": "C:\\.Dev CJL\\5-Docs",
+  "wsl_distribution": "Ubuntu-24.04",
+  "linux_launcher": "C:\\.Dev CJL\\1-Dev\\INICIAR-CJL-LINUX.sh",
+  "linux_instance": "C:\\CJL_Work_Evidence\\Runtime-State\\1-Dev\\Instancia\\instance.json",
+  "git_main_bootstrap": "C:\\.Dev CJL\\3-Git_Main\\System\\Host\\Bin\\CJL.Bootstrap.exe",
+  "evidence_root": "C:\\CJL_Work_Evidence\\Control",
+  "documentation_state": "C:\\.Dev CJL\\4-Control\\Documentation\\State",
+  "compiler_execution": "PAUSED",
+  "github_write": false,
+  "production_write": false,
+  "window": {
+    "mode": "maximized",
+    "resizable": true,
+    "native_frame": true
+  },
+  "ui": {
+    "button_motion": true,
+    "page_motion": true,
+    "explorer_focus": true
+  }
+}

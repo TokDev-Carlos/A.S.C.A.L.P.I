@@ -1,0 +1,1 @@
+Denne udvidelse integreres i Calc og tilbyder nye problemløser-motorer til optimering af modeller inden for ikke-lineær programmering.

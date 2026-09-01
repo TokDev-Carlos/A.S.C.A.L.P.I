@@ -1,0 +1,42 @@
+CJL System - SISTEMA DE LOGISTICA E CONTROLE DE CARREGAMENTOS
+
+Copyright (c) 2026 Carlos Alberto da Silva Pinto Junior - CRJ.
+Todos os direitos reservados.
+
+CRIADOR E TITULAR EXCLUSIVO
+Carlos Alberto da Silva Pinto Junior
+Identificacao publica: CRJ
+Contato oficial: Carlosjr.projetos25@gmail.com
+
+CJL System, sua arquitetura, codigo-fonte, backend, interface, instaladores,
+documentacao, identidade visual e atualizacoes proprias sao software
+proprietario. O acesso aos arquivos nao transfere autoria ou titularidade.
+
+O uso e regido integralmente por LICENSE.txt. Avisos de autoria, origem,
+licenca, integridade e copyright nao podem ser removidos, ocultados ou
+adulterados.
+
+IDENTIFICACAO DA BASE OFICIAL
+Produto: CJL System
+Titular: CRJ
+Baseline de negocio: BA-01
+Estrutural: ES-05
+Incremental: IN-00
+Seguranca: SE-006
+Versao: 1.5.00.006
+
+Mestre: identificado por App/Config/master.id
+
+INTEGRIDADE E PROVENIENCIA
+A Base 5 valida a camada App e o Runtime por manifestos integrais SHA-256.
+A migracao estrutural registra um checkpoint SHA-256 de proveniencia em
+App/Config/provenance.json e no SM_Repo. A evidencia RSA das linhagens
+anteriores, quando existente e validada na origem, e preservada somente como
+evidencia historica no SM_Repo e nao e apresentada como assinatura da Base 5.
+
+Patches futuros devem obedecer ao Security Gate do CJL System e ao contrato de
+versao BA/ES/IN/SE vigente. Componentes de terceiros permanecem sujeitos as
+respectivas licencas.
+
+Hashes, checkpoints e trilhas de auditoria sao provas tecnicas de integridade
+e continuidade; nao transferem autoria nem direitos de distribuicao.

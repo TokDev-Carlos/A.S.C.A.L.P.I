@@ -1,0 +1,22 @@
+{
+  "format": 5,
+  "product": "CJL System",
+  "host_contract": "1",
+  "framework": ".NET 10",
+  "sdk": "10.0.400",
+  "architecture": "win-x64",
+  "self_contained": true,
+  "webview2_package": "1.0.4129.50",
+  "build_mode": "targeted_stop03_bootstrap",
+  "source_tree_sha256": "e906de812cf9ad692b1c055d17c182ba9b9d6c2d15a6ebd545a383a912d5afb3",
+  "built_at": "2026-08-28T20:16:19.2941595-03:00",
+  "timezone": "America/Sao_Paulo",
+  "build_log": "C:\\CJL_Work_Evidence\\Organization\\STOP-03\\20260828T201157960_ADMIN_CANONICAL_REPAIR\\build",
+  "files": {
+    "CJL.Bootstrap.exe": "7ce6e21219b393d0c472eeb93feae76520f14e833b25b3bbd66846e5637d2be7",
+    "CJL.Host.exe": "5f66c207947517a51b008dc3cd73e1b2a5a924db8e86b89335c6963c49143d02",
+    "CJL.Setup.exe": "a3c3d3e44a8c48b82ef2dece7b53e0a59b0b838ed33119947e651db732caa8ba",
+    "CJL.Uninstall.exe": "774de1f7efbf10a684740dcdf7d8995db3834a93d2084bc52c7b3cdc4c3e0592",
+    "CJL.Updater.exe": "67b298b38105e79642d96d3567d5b92591b7411d1ce673fd9ed69114050c5c9f"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "format": 1,
+  "product": "CJL System",
+  "version_full": "1.5.00.006",
+  "version_core": "5.00.006",
+  "business": "BA-01",
+  "structural": "ES-05",
+  "incremental": "IN-01",
+  "security": "SE-006",
+  "compat_sequence": 21,
+  "build": 20260816234116,
+  "branch_contract": 1,
+  "data_policy": "CJL_DATA_POLICY_V1",
+  "rules_last": "R-0296",
+  "rules_count": 296,
+  "host_rebuild": false
+}

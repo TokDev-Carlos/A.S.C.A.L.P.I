@@ -1,0 +1,47 @@
+{
+  "schema_id": "CJL-BOOK-ENTRY-SCHEMA-001",
+  "black_entry": {
+    "required": [
+      "id",
+      "event_id",
+      "correlation_id",
+      "date",
+      "area",
+      "status",
+      "context",
+      "expected_result",
+      "failed_result",
+      "cause",
+      "evidence",
+      "lesson"
+    ],
+    "managed_markers": [
+      "<!-- CJL:BLACK:{id}:BEGIN -->",
+      "<!-- CJL:BLACK:{id}:END -->"
+    ]
+  },
+  "white_entry": {
+    "required": [
+      "id",
+      "event_id",
+      "date_proven",
+      "status",
+      "area",
+      "problem_solved",
+      "proven_rule",
+      "proof",
+      "validated_use",
+      "limitation"
+    ],
+    "managed_markers": [
+      "<!-- CJL:WHITE:{id}:BEGIN -->",
+      "<!-- CJL:WHITE:{id}:END -->"
+    ]
+  },
+  "rendering": {
+    "preserve_legacy_content": true,
+    "append_new_entries": true,
+    "update_only_managed_marker_blocks": true,
+    "utf8_no_bom": true
+  }
+}

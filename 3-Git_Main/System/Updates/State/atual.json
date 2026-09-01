@@ -1,0 +1,42 @@
+{
+  "format": 4,
+  "product": "CJL System",
+  "product_code": "CJL",
+  "business": 1,
+  "business_id": "BA-01",
+  "version": "5.00.006",
+  "structural": 5,
+  "incremental": 0,
+  "security": 6,
+  "patches": {
+    "business": "BA-01",
+    "structural": "ES-05",
+    "incremental": "IN-01",
+    "security": "SE-006"
+  },
+  "compat_sequence": 21,
+  "schema": 15,
+  "runtime": 1,
+  "build": 20260816234116,
+  "master_id": "CJL-MST-20260816-F34A42AB35A8",
+  "channel": "STABLE",
+  "minimum_station_version": "5.00.006",
+  "minimum_station_compat": 21,
+  "last_update_mode": "CRITICAL",
+  "last_update_type": "IN",
+  "timezone": "America/Sao_Paulo",
+  "last_patch_id": "CJL_B01_E05_I01_S006_BRANCH_FOUNDATION_20260816234116",
+  "security_gate": {
+    "required": true,
+    "reviewed": true,
+    "baseline_before": "SE-004",
+    "baseline_after": "SE-005",
+    "security_changed": true,
+    "note": "Base 5: identidade CJL, raiz C:/CJL/System, SM_Repo, updater externo unico, validacao strict e fundacao de administracao remota."
+  },
+  "archive_policy": "SM_REPO_V1",
+  "snapshot_retention": "SYSTEM_LATEST_ONLY_SM_REPO_HISTORY",
+  "version_full": "1.5.00.006",
+  "branch": "MAIN",
+  "branch_role": "PRODUCTION"
+}

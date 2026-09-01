@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0f5da8">
+  <title>CJL System — CONTROLE DE CARREGAMENTOS</title>
+  <link rel="icon" type="image/png" href="cjl-icon.png">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body class="auth-pending">
+<section id="loginScreen" class="login-screen" aria-label="ACESSO AO CJL System">
+  <div class="login-card">
+    <div class="login-brand"><span class="brand-mark"><img src="cjl-icon.png" alt=""></span><div><h2>CJL System</h2><p>CONTROLE DE CARREGAMENTOS</p></div></div>
+    <form id="loginForm" autocomplete="off">
+      <span class="section-kicker">ACESSO INDIVIDUAL</span>
+      <h3>INFORME SEU PIN</h3>
+      <p>CADA PIN NUMÉRICO IDENTIFICA AUTOMATICAMENTE O USUÁRIO RESPONSÁVEL.</p>
+      <label>PIN<input name="senha" type="password" inputmode="numeric" pattern="[0-9]{4,32}" minlength="4" maxlength="32" autocomplete="current-password" required autofocus></label>
+      <button class="btn primary large" type="submit"><svg><use href="#i-lock"/></svg>ENTRAR NO SISTEMA</button>
+    </form>
+    <form id="changePasswordForm" autocomplete="off" hidden>
+      <span class="section-kicker">PRIMEIRO ACESSO</span>
+      <h3>CRIE SEU PIN DEFINITIVO</h3>
+      <p>USE SOMENTE NÚMEROS, COM NO MÍNIMO 4 DÍGITOS. O PIN PROVISÓRIO DEIXARÁ DE FUNCIONAR.</p>
+      <label>NOVO PIN<input name="nova_senha" type="password" inputmode="numeric" pattern="[0-9]{4,32}" minlength="4" maxlength="32" autocomplete="new-password" required></label>
+      <label>CONFIRMAR NOVO PIN<input name="confirmacao" type="password" inputmode="numeric" pattern="[0-9]{4,32}" minlength="4" maxlength="32" autocomplete="new-password" required></label>
+      <button class="btn success large" type="submit"><svg><use href="#i-shield"/></svg>CONFIRMAR NOVO PIN</button>
+    </form>
+    <section id="loginResourcesSection" class="login-resources" aria-label="RECURSOS DISPONÍVEIS">
+      <button class="btn soft" id="toggleLoginResources" type="button"><svg><use href="#i-gear"/></svg>RECURSOS DISPONÍVEIS</button>
+      <div id="loginResourcesPanel" hidden><div id="loginResourcesList" class="resource-list"></div></div>
+    </section>
+    <button class="btn shutdown login-close-system" id="loginCloseSystem" type="button"><svg><use href="#i-power"/></svg>ENCERRAR SISTEMA</button>
+    <p id="loginMessage" class="login-message">A ESTAÇÃO PODE LER O CACHE QUANDO A REDE ESTIVER INDISPONÍVEL.</p>
+  </div>
+</section>
+<svg class="icon-sprite" aria-hidden="true">
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24"><path d="M3 5h11v11H3zM14 9h4l3 4v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M4 21V5l8-3 8 3v16M8 8h2M14 8h2M8 12h2M14 12h2M8 16h2M14 16h2"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="m4 7 8-4 8 4-8 4zM4 7v10l8 4 8-4V7M12 11v10"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 13.5v-3l2-1.5-2-3.5-2.5 1A8 8 0 0 0 14 5l-.4-3h-4L9 5a8 8 0 0 0-2.5 1.5L4 5.5 2 9l2 1.5v3L2 15l2 3.5 2.5-1A8 8 0 0 0 9 19l.6 3h4l.4-3a8 8 0 0 0 2.5-1.5l2.5 1 2-3.5z"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4L3 10M3 5v5h5M4 13a8 8 0 0 0 14.5 4L21 14M21 19v-5h-5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="m4 20 4-1 11-11-3-3L5 16zM14 7l3 3"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M4 3h13l3 3v15H4zM8 3v6h8V3M8 17h8"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7h7l2-2h9v14H3z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+  <symbol id="i-money" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m5 5 14 14M19 5 5 19"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-route" viewBox="0 0 24 24"><circle cx="5" cy="18" r="2"/><circle cx="19" cy="6" r="2"/><path d="M7 18h4a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h8"/></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24"><path d="m4 15 2-6h12l2 6v4H4zM7 9l2-3h6l2 3"/><circle cx="7" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></symbol>
+  <symbol id="i-factory" viewBox="0 0 24 24"><path d="M3 21V10l6 3V9l6 4V5h6v16zM7 17h2M13 17h2M18 9h3"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="2"/><path d="m4 17 5-5 4 4 2-2 5 5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 20c0-4 2-6 6-6s6 2 6 6M15 15c4 0 6 2 6 5"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 2v10M6.3 5.7a8 8 0 1 0 11.4 0"/></symbol>
+</svg>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-mark"><img src="cjl-icon.png" alt=""></span>
+      <div><h1>CJL System</h1><p>CONTROLE DE CARREGAMENTOS · VERSÃO RESOLVIDA PELO SISTEMA</p></div>
+    </div>
+    <div class="top-actions">
+      <span id="systemStatus" class="system-status"><i></i><b>SISTEMA PRONTO</b></span>
+      <span id="currentUser" class="user-chip"><svg><use href="#i-users"/></svg><b>—</b></span>
+      <button class="btn soft small" id="backupTop" data-permission="SYSTEM_ADMIN"><svg><use href="#i-save"/></svg>BACKUP</button>
+      <button class="btn ghost small" id="refreshTop"><svg><use href="#i-refresh"/></svg>ATUALIZAR</button>
+      <button class="btn ghost small" id="aboutSystem"><svg><use href="#i-shield"/></svg>SOBRE</button>
+      <button class="btn ghost small" id="logoutSystem"><svg><use href="#i-lock"/></svg>SAIR</button>
+      <button class="btn shutdown small" id="shutdownSystem"><svg><use href="#i-power"/></svg>ENCERRAR SISTEMA</button>
+    </div>
+  </div>
+</header>
+<aside id="updateBanner" class="update-banner" hidden>
+  <div><b>ATUALIZAÇÃO DO CJL System DISPONÍVEL</b><span id="updateBannerText">O MESTRE POSSUI UMA VERSÃO MAIS RECENTE.</span></div>
+  <button class="btn primary small" id="applyStationUpdate" type="button"><svg><use href="#i-refresh"/></svg>ATUALIZAR E REINICIAR</button>
+</aside>
+
+<nav class="module-nav" aria-label="MÓDULOS PRINCIPAIS">
+  <button class="module-tab active" data-module="lucro"><svg><use href="#i-chart"/></svg><span>VISÃO GERAL</span><small>LUCRO E INDICADORES</small></button>
+  <button class="module-tab" data-module="rotas"><svg><use href="#i-route"/></svg><span>ROTAS E FROTA</span><small>MAPA E VEÍCULOS</small></button>
+  <button class="module-tab" data-module="carregamentos"><svg><use href="#i-truck"/></svg><span>CARREGAMENTOS</span><small>CRIAR E ACOMPANHAR</small></button>
+  <button class="module-tab" data-module="cadastros"><svg><use href="#i-building"/></svg><span>OBRAS E CADASTROS</span><small>BASE OPERACIONAL</small></button>
+</nav>
+
+<main>
+  <section class="module active" id="module-lucro">
+    <div class="page-shell">
+      <section class="page-heading overview-heading">
+        <div><span class="eyebrow">MÓDULO 1 · INDICADORES</span><h2 id="financePageTitle">RESULTADO DA EMPRESA POR PERÍODO E ESTADO</h2><p id="financePageSubtitle">VISÃO ADMINISTRATIVA E LOGÍSTICA DE CARREGAMENTOS, PAGAMENTOS E CUSTOS.</p></div>
+        <div class="heading-actions"><button class="btn soft active-view" id="openFinanceOverview"><svg><use href="#i-chart"/></svg>VISÃO GERAL</button><button class="btn soft" id="openFinanceWorks"><svg><use href="#i-list"/></svg>VER OBRAS</button></div>
+      </section>
+
+      <section class="finance-view" id="financeOverviewView">
+        <section class="filter-strip finance-filter-strip card-lite">
+          <label>ANO<select id="profitYear"></select></label>
+          <label>MÊS<select id="profitMonth"><option value="">TODOS</option><option value="1">JANEIRO</option><option value="2">FEVEREIRO</option><option value="3">MARÇO</option><option value="4">ABRIL</option><option value="5">MAIO</option><option value="6">JUNHO</option><option value="7">JULHO</option><option value="8">AGOSTO</option><option value="9">SETEMBRO</option><option value="10">OUTUBRO</option><option value="11">NOVEMBRO</option><option value="12">DEZEMBRO</option></select></label>
+          <label>ESTADO<select id="profitUf"><option value="">TODOS</option></select></label>
+          <label>GRÁFICO<select id="financeChartType"></select></label>
+          <button class="btn primary" id="applyProfit"><svg><use href="#i-refresh"/></svg>APLICAR FILTROS</button>
+        </section>
+
+        <section id="financeAdministrativeBlock" class="finance-sector-block" data-permission="FINANCE_ADMIN">
+          <div class="sector-title"><div><span>ADMINISTRATIVO</span><h3>VALORES GERADOS, RECEBIDOS E A RECEBER</h3></div><small>DADOS RESTRITOS AO PERFIL FINANCEIRO / ADMINISTRADOR.</small></div>
+          <div class="kpi-grid finance-admin-kpis">
+            <article class="kpi kpi-blue"><span>RECEITA GERADA</span><strong id="kpiGenerated">R$ 0,00</strong><small>CARGAS EXPEDIDAS</small></article>
+            <article class="kpi kpi-green"><span>RECEITA PAGA</span><strong id="kpiPaid">R$ 0,00</strong><small>VALORES RECEBIDOS</small></article>
+            <article class="kpi kpi-green"><span>RESULTADO EM CAIXA</span><strong id="kpiProfitPaid">R$ 0,00</strong><small>PAGO MENOS CUSTO</small></article>
+            <article class="kpi kpi-purple"><span>A RECEBER</span><strong id="kpiReceivable">R$ 0,00</strong><small>GERADO MENOS PAGO</small></article>
+          </div>
+        </section>
+
+        <section id="financeLogisticsBlock" class="finance-sector-block" data-permission="FINANCE_ADMIN">
+          <div class="sector-title"><div><span>LOGÍSTICA</span><h3>CUSTO E RESULTADO OPERACIONAL</h3></div><small>INFORMAÇÕES CALCULADAS PELOS CARREGAMENTOS E VIAGENS.</small></div>
+          <div class="kpi-grid finance-logistics-kpis">
+            <article class="kpi kpi-orange"><span>CUSTO DE VIAGENS</span><strong id="kpiCost">R$ 0,00</strong><small>VINCULADO ÀS OBRAS</small></article>
+            <article class="kpi kpi-blue"><span>RESULTADO GERADO</span><strong id="kpiProfitGenerated">R$ 0,00</strong><small>GERADO MENOS CUSTO</small></article>
+          </div>
+        </section>
+
+        <section id="financeOperationalBlock" class="finance-sector-block" hidden>
+          <div class="sector-title"><div><span>VISÃO OPERACIONAL</span><h3>RESUMO DOS CARREGAMENTOS</h3></div><small>SEM PAGAMENTOS, SALDOS A RECEBER OU DADOS ADMINISTRATIVOS.</small></div>
+          <div class="kpi-grid finance-operational-kpis">
+            <article class="kpi kpi-blue"><span>VALOR CARREGADO</span><strong id="kpiLoaded">R$ 0,00</strong><small>CARREGAMENTOS NÃO CANCELADOS</small></article>
+            <article class="kpi kpi-orange"><span>CUSTO DE VIAGENS</span><strong id="kpiOperationalCost">R$ 0,00</strong><small>CUSTOS LOGÍSTICOS</small></article>
+            <article class="kpi kpi-green"><span>VALOR REAL</span><strong id="kpiRealValue">R$ 0,00</strong><small>CARREGADO MENOS CUSTO</small></article>
+          </div>
+        </section>
+
+        <div class="dashboard-grid">
+          <section class="card chart-card">
+            <div class="card-head"><div><span class="section-kicker">INDICADOR SELECIONADO</span><h3 id="profitChartTitle">EVOLUÇÃO DO PERÍODO</h3><p id="profitChartSubtitle">SELECIONE UM GRÁFICO PARA COMPARAR OS DADOS.</p></div><span class="badge blue" id="profitPeriodBadge">—</span></div>
+            <div id="profitChart" class="bar-chart"></div>
+          </section>
+          <section class="card" data-permission="PAYMENTS_MANAGE">
+            <div class="card-head"><div><span class="section-kicker">FINANCEIRO</span><h3>REGISTRAR VALOR PAGO</h3><p>INFORME SOMENTE O QUE FOI EFETIVAMENTE RECEBIDO DA OBRA.</p></div><span class="badge green">PAGO MANUAL</span></div>
+            <form id="revenueForm" class="form-grid">
+              <label class="span-2">OBRA<select name="obra_id" required></select></label>
+              <label>DATA DO PAGAMENTO<input type="date" name="data_competencia" required></label>
+              <label>VALOR PAGO (R$)<input type="number" min="0.01" step="0.01" name="valor" required></label>
+              <label class="span-2">DESCRIÇÃO<input name="descricao" data-upper placeholder="EX.: MEDIÇÃO 01 / PARCELA RECEBIDA"></label>
+              <button class="btn success span-2" type="submit"><svg><use href="#i-plus"/></svg>REGISTRAR PAGAMENTO</button>
+            </form>
+          </section>
+        </div>
+      </section>
+
+      <section class="finance-view card" id="financeWorksView" hidden>
+        <div class="card-head"><div><span class="section-kicker" id="profitWorksKicker">RESULTADO POR OBRA</span><h3 id="profitWorksTitle">VALORES CONSOLIDADOS POR OBRA</h3><p id="profitWorksSubtitle">OS CAMPOS EXIBIDOS RESPEITAM O PERFIL DO USUÁRIO.</p></div><span class="badge blue" id="profitRowsBadge">0 OBRAS</span></div>
+        <div class="table-wrap"><table><thead><tr id="profitTableHead"></tr></thead><tbody id="profitTable"></tbody></table></div>
+      </section>
+    </div>
+  </section>
+
+  <section class="module" id="module-carregamentos">
+    <div class="page-shell">
+      <section class="page-heading load-heading">
+        <div><span class="eyebrow">MÓDULO 3 · OPERAÇÃO</span><h2>CONTROLE DE CARREGAMENTOS</h2><p>PLANEJE, SEPARE ITENS, RELACIONE CUSTOS E ACOMPANHE A EXPEDIÇÃO.</p></div>
+        <div class="heading-actions"><button class="btn soft" id="openLoadsView"><svg><use href="#i-list"/></svg>VER CARREGAMENTOS</button><button class="btn primary" id="focusNewLoad"><svg><use href="#i-plus"/></svg>NOVO CARREGAMENTO</button></div>
+      </section>
+
+      <section class="card editor-card" id="loadEditorCard">
+        <div class="card-head editor-head">
+          <div><span class="section-kicker" id="loadFormKicker">NOVO REGISTRO</span><h3 id="loadFormTitle">CRIAR CARREGAMENTO</h3><p>LOCALIZAÇÃO É OPCIONAL. ESTADO, MUNICÍPIO, OBRA, OP E PELO MENOS UM ITEM SÃO OBRIGATÓRIOS.</p></div>
+          <span class="badge green" id="loadFormBadge">CADASTRO</span>
+        </div>
+        <form id="loadForm" class="load-form">
+          <input type="hidden" name="carregamento_id">
+          <fieldset>
+            <legend><span>1</span>DADOS DO CARREGAMENTO E DO VEÍCULO</legend>
+            <div class="form-grid cols-4">
+              <label>DATA DO CARREGAMENTO<input type="date" name="data" required></label>
+              <label>HORA PREVISTA<input type="time" name="hora"></label>
+              <label>STATUS<select name="status"><option>PLANEJADO</option><option>EM CARREGAMENTO</option><option>CARREGADO</option><option>EXPEDIDO</option><option>CANCELADO</option></select></label>
+              <label>MOTORISTA<input name="motorista" data-upper placeholder="NOME DO MOTORISTA"></label>
+              <label>VEÍCULO CADASTRADO<select name="caminhao_id" id="loadVehicleSelect"><option value="">PREENCHIMENTO MANUAL</option></select></label>
+              <label>CAMINHÃO / MODELO<input name="veiculo" data-upper placeholder="EX.: MERCEDES ATEGO"></label>
+              <label>PLACA<input name="placa" data-upper maxlength="10" placeholder="ABC-1D23"></label>
+              <label>CAMINHÃO<select name="propriedade"><option value="PROPRIO">PRÓPRIO</option><option value="ALUGADO">ALUGADO</option></select></label>
+              <label>TRANSPORTADORA / LOCADOR<input name="transportadora" data-upper placeholder="SE FOR ALUGADO"></label>
+              <label>DATA DE SAÍDA<input type="date" name="data_saida"></label>
+              <label>HORA DE SAÍDA<input type="time" name="hora_saida"></label>
+              <label>DATA PREVISTA DE RETORNO<input type="date" name="data_retorno"></label>
+              <label>SOLICITANTE<input name="solicitante" data-upper placeholder="RESPONSÁVEL PELA SOLICITAÇÃO"></label>
+              <label class="span-2">OBSERVAÇÃO<textarea name="observacao" data-upper rows="2" placeholder="INFORMAÇÃO GERAL DO CARREGAMENTO"></textarea></label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend><span>2</span>OBRAS E ITENS</legend>
+            <div class="works-toolbar"><div><b>OBRAS DESTE CARREGAMENTO</b><small>CADA OBRA POSSUI OP, LOCALIZAÇÃO E LISTA DE ITENS PRÓPRIOS. O CUSTO SERÁ RATEADO NA ETAPA SEGUINTE.</small></div><button type="button" class="btn soft" id="addLoadWork"><svg><use href="#i-plus"/></svg>ADICIONAR OBRA</button></div>
+            <div id="loadWorks" class="load-work-list"></div>
+          </fieldset>
+
+          <fieldset class="trip-cost-fieldset">
+            <legend><span>3</span>COMPOSIÇÃO DO CUSTO DA VIAGEM</legend>
+            <div class="cost-intro">
+              <div><b>FICHA COMPLETA DE CUSTOS</b><small>OS TOTAIS SÃO CALCULADOS AUTOMATICAMENTE A PARTIR DAS DESPESAS. NÃO HÁ CAMPO MANUAL PARA SOBRESCREVER O TOTAL.</small></div>
+              <span class="badge orange" id="costCalculationBadge">CÁLCULO AUTOMÁTICO</span>
+            </div>
+            <div class="trip-metrics-grid">
+              <label>QUANTIDADE DE FUNCIONÁRIOS<input type="number" min="0" step="1" name="funcionarios"></label>
+              <label>QUANTIDADE DE DIAS<input type="number" min="0" step="0.5" name="dias_viagem"></label>
+              <label>DISTÂNCIA TOTAL (KM)<input type="number" min="0" step="0.01" name="distancia_km"></label>
+              <div class="calculation-note"><svg><use href="#i-money"/></svg><span><b>BASE DA PLANILHA</b><small>PESSOAL, PEDÁGIO, COMBUSTÍVEL, DIÁRIA, HORA EXTRA E OUTRAS DESPESAS.</small></span></div>
+            </div>
+
+            <div class="cost-columns">
+              <section class="cost-sheet personnel-sheet">
+                <div class="cost-sheet-title"><div><span class="section-kicker">MONTAGEM</span><h4>GASTO POR FUNCIONÁRIO</h4></div><button class="btn soft small" type="button" id="addPersonnelCost"><svg><use href="#i-plus"/></svg>DESPESA</button></div>
+                <div class="cost-table-head"><span>DESPESA</span><span>REGRA</span><span>VALOR UNIT.</span><span>DIAS APLICADOS</span><span>USAR</span><span>TOTAL</span><span></span></div>
+                <div id="personnelCostRows" class="cost-rows"></div>
+                <div class="cost-sheet-footer"><span>TARIFA-BASE <b id="personnelBaseTotal">R$ 0,00</b></span><span>CUSTO APLICADO <b id="personnelCostTotal">R$ 0,00</b></span></div>
+              </section>
+
+              <section class="cost-sheet freight-sheet">
+                <div class="cost-sheet-title"><div><span class="section-kicker">TRANSPORTE</span><h4>CUSTO DO FRETE</h4></div><button class="btn soft small" type="button" id="addFreightCost"><svg><use href="#i-plus"/></svg>DESPESA</button></div>
+                <div class="cost-table-head"><span>DESPESA</span><span>BASE</span><span>VALOR UNIT.</span><span>DIAS / HORAS</span><span>USAR</span><span>TOTAL</span><span></span></div>
+                <div id="freightCostRows" class="cost-rows"></div>
+                <div class="cost-sheet-footer"><span>LINHAS <b id="freightRowsCount">0</b></span><span>CUSTO DO FRETE <b id="freightCostTotal">R$ 0,00</b></span></div>
+              </section>
+            </div>
+
+            <section class="allocation-panel">
+              <div class="allocation-title"><div><span class="section-kicker">VÍNCULO FINANCEIRO</span><h4>RATEIO AUTOMÁTICO PELO VALOR CALCULADO DOS ITENS</h4><p>CADA OBRA SOMA QUANTIDADE × VALOR UNITÁRIO DOS ITENS. O CUSTO É DISTRIBUÍDO SOBRE A SOMA DAS OBRAS.</p></div><span class="allocation-status" id="allocationStatus">AUTOMÁTICO</span></div>
+              <div class="allocation-table-head"><span>OBRA</span><span>VALOR DA OBRA</span><span>PARTICIPAÇÃO</span><span>FRETE RATEADO</span><span>TOTAL RATEADO</span><span>% SOBRE A OBRA</span></div>
+              <div id="allocationRows" class="allocation-rows"></div>
+            </section>
+
+            <div class="trip-cost-summary">
+              <article><span>CUSTO DE PESSOAL</span><strong id="summaryPersonnelCost">R$ 0,00</strong><small>VALOR × FUNCIONÁRIOS × DIAS</small></article>
+              <article><span>CUSTO DO FRETE</span><strong id="summaryFreightCost">R$ 0,00</strong><small>FIXOS, DIÁRIAS E EXTRAS</small></article>
+              <article class="grand-total"><span>CUSTO TOTAL DA VIAGEM</span><strong id="summaryTripCost">R$ 0,00</strong><small>PESSOAL + FRETE</small></article>
+            </div>
+          </fieldset>
+
+          <div class="form-actions sticky-actions">
+            <button type="button" class="btn ghost" id="cancelLoadEdit" hidden><svg><use href="#i-close"/></svg>CANCELAR EDIÇÃO</button>
+            <button class="btn primary large" type="submit" id="saveLoadButton"><svg><use href="#i-save"/></svg>CRIAR CARREGAMENTO</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card registry-card" id="loadRegistryCard" hidden>
+        <div class="card-head"><div><span class="section-kicker">ACOMPANHAMENTO POR STATUS</span><h3>CARREGAMENTOS REGISTRADOS</h3><p>ABRA OU RECOLHA CADA STATUS PELA SETA. TODOS OS CARDS E TODAS AS OBRAS FICAM DISPONÍVEIS.</p></div><span class="badge blue" id="loadsBadge">0 REGISTROS</span></div>
+        <div class="registry-filters">
+          <label class="search-field"><svg><use href="#i-search"/></svg><input id="loadSearch" placeholder="PESQUISAR ID, OBRA, MOTORISTA, PLACA..."></label>
+          <select id="loadYearFilter" aria-label="ANO DO CARREGAMENTO"></select>
+          <select id="loadMonthFilter" aria-label="MÊS DO CARREGAMENTO"><option value="">TODOS OS MESES</option><option value="01">JANEIRO</option><option value="02">FEVEREIRO</option><option value="03">MARÇO</option><option value="04">ABRIL</option><option value="05">MAIO</option><option value="06">JUNHO</option><option value="07">JULHO</option><option value="08">AGOSTO</option><option value="09">SETEMBRO</option><option value="10">OUTUBRO</option><option value="11">NOVEMBRO</option><option value="12">DEZEMBRO</option></select>
+          <select id="loadStatusFilter"><option value="">TODOS OS STATUS</option><option>PLANEJADO</option><option>EM CARREGAMENTO</option><option>CARREGADO</option><option>EXPEDIDO</option><option>CANCELADO</option></select>
+          <select id="loadUfFilter"><option value="">TODOS OS ESTADOS</option></select>
+        </div>
+        <div id="loadsGrid" class="load-cards-grid"></div>
+      </section>
+    </div>
+  </section>
+
+  <section class="module" id="module-rotas">
+    <div class="page-shell">
+      <section class="page-heading route-heading">
+        <div><span class="eyebrow">MÓDULO 2 · PLANEJAMENTO LOGÍSTICO</span><h2>ROTAS E FROTA</h2><p>O CARREGAMENTO NASCE AQUI DEPOIS DO CÁLCULO DA ROTA E SEGUE PARA COMPLEMENTAÇÃO NO MÓDULO CARREGAMENTOS.</p></div>
+        <div class="heading-actions"><button class="btn primary" id="newRoutePlanning"><svg><use href="#i-plus"/></svg>NOVO CARREGAMENTO</button><button class="btn soft" id="newVehicleButton"><svg><use href="#i-car"/></svg>NOVO VEÍCULO COMPLETO</button></div>
+      </section>
+      <div class="route-layout">
+        <section class="card route-planning-card">
+          <div class="card-head"><div><span class="section-kicker">PLANEJAMENTO ATUAL</span><h3>ORIGEM, PONTOS DE PARADA E CUSTOS</h3><p>DISTÂNCIA E TEMPO SÃO CALCULADOS AUTOMATICAMENTE; O MODO MANUAL SÓ APARECE QUANDO ESCOLHIDO.</p></div><span class="badge blue" id="routePointsBadge">0 PONTOS</span></div>
+          <details class="route-origin-panel compact" data-permission="SYSTEM_ADMIN">
+            <summary><span><b>FÁBRICA / ORIGEM</b><small>PONTO INICIAL DA ROTA</small></span><span class="route-symbol factory-symbol"><svg><use href="#i-factory"/></svg></span></summary>
+            <form id="factoryForm" class="form-grid cols-4 form-surface">
+              <label>TIPO<select name="origem_tipo"><option value="EMPRESA">EMPRESA</option><option value="FABRICA" selected>FÁBRICA</option><option value="UNIDADE">UNIDADE / GALPÃO</option></select></label>
+              <label>NOME<input name="nome" data-upper required></label>
+              <label>ENDEREÇO<input name="endereco" data-upper></label>
+              <label class="span-2">COORDENADAS / LOCALIZAÇÃO<div class="coordinate-picker"><input name="localizacao" id="factoryLocation" placeholder="EX.: -22,68187976, 43,29610634"><button class="icon-button" id="factoryMapButton" type="button" title="ESCOLHER NO MAPA"><svg><use href="#i-pin"/></svg></button></div></label>
+              <button class="btn primary" type="submit"><svg><use href="#i-save"/></svg>SALVAR ORIGEM</button>
+            </form>
+          </details>
+          <div class="route-toolbar form-surface"><label>CARREGAMENTO<select id="routeLoadSelect"><option value="">NOVO CARREGAMENTO / SELECIONE UM EXISTENTE</option></select></label><label>VEÍCULO<select id="routeVehicleSelect"><option value="">SELECIONE O VEÍCULO</option></select></label><button class="btn soft" id="newPendingVehicleButton" type="button"><svg><use href="#i-plus"/></svg>VEÍCULO RÁPIDO</button><button class="btn soft" id="fitRouteMap" type="button"><svg><use href="#i-route"/></svg>AJUSTAR MAPA</button><button class="btn ghost" id="openGoogleRoute" type="button" title="ABRE UMA ROTA ONLINE EXTERNA SOMENTE PARA CONFERÊNCIA; NÃO É O MOTOR OFICIAL DO CJL System"><svg><use href="#i-pin"/></svg>CONFERIR ROTA EXTERNA</button></div>
+          <section id="routeNewLoadPanel" class="route-new-load form-surface" hidden>
+            <div><b>NOVO CARREGAMENTO</b><small>SELECIONE AS OBRAS / PONTOS DE PARADA. O REGISTRO PLANEJADO SÓ SERÁ CRIADO DEPOIS QUE O CÁLCULO FOR CONCLUÍDO.</small></div>
+            <div id="routeDraftWorks" class="route-draft-works"></div>
+          </section>
+          <form id="routePlannerForm" class="route-planner form-surface">
+            <div class="route-planner-grid">
+              <label>ORDEM DOS PONTOS<select name="ordem_modo" id="routeOrderMode"><option value="OTIMIZADA">OTIMIZADA POR PROXIMIDADE</option><option value="CADASTRO">ORDEM INFORMADA</option><option value="MANUAL">ORDEM MANUAL</option></select></label>
+              <label>RETORNO À ORIGEM<select name="retorno_origem"><option value="0">NÃO</option><option value="1">SIM</option></select></label>
+              <label>DISTÂNCIA<select name="distancia_modo" id="routeDistanceMode"><option value="ESTIMADA">AUTOMÁTICA</option><option value="MANUAL">INFORMAR MANUALMENTE</option></select></label>
+              <label id="routeManualDistanceField" hidden>DISTÂNCIA MANUAL (KM)<input name="distancia_manual_km" type="number" min="0" step="0.01"></label>
+              <label>COMBUSTÍVEL<select name="combustivel_modo" id="routeFuelMode"><option value="ESTIMADO">AUTOMÁTICO</option><option value="MANUAL">MANUAL</option></select></label>
+              <label id="routeManualFuelField" hidden>CUSTO MANUAL DO COMBUSTÍVEL<input name="custo_combustivel_manual" type="number" min="0" step="0.01"></label>
+              <label>PREÇO DO COMBUSTÍVEL<input name="preco_combustivel" type="number" min="0" step="0.001" placeholder="USADO NO CÁLCULO AUTOMÁTICO"></label>
+              <label>PEDÁGIO<select name="pedagio_modo" id="routeTollMode"><option value="ESTIMADO">AUTOMÁTICO PELA BASE LOCAL</option><option value="MANUAL">MANUAL</option></select></label>
+              <label id="routeManualTollField" hidden>CUSTO MANUAL DO PEDÁGIO<input name="custo_pedagio_manual" type="number" min="0" step="0.01"></label>
+              <button class="btn primary" type="submit"><svg><use href="#i-route"/></svg>CALCULAR ROTA E SALVAR</button>
+            </div>
+            <div id="routeManualOrder" class="route-manual-order" hidden></div>
+            <details class="route-technical-details"><summary>CONTINGÊNCIA TÉCNICA</summary><div><label>FATOR RODOVIÁRIO DE CONTINGÊNCIA<input name="fator_rodoviario" type="number" min="1" max="2" step="0.01" value="1.20"></label><p>ESTE FATOR SÓ É USADO QUANDO O MOTOR RODOVIÁRIO LOCAL NÃO ESTÁ DISPONÍVEL. NÃO É A DISTÂNCIA OFICIAL DA ROTA.</p></div></details>
+            <p class="route-calculation-note">O CJL System PREFERE O MOTOR RODOVIÁRIO LOCAL. SEM ELE, DISTÂNCIA E TEMPO SÃO IDENTIFICADOS COMO ESTIMATIVA DE CONTINGÊNCIA. TRÂNSITO EM TEMPO REAL EXIGE SERVIÇO ONLINE E NÃO É INFERIDO OFFLINE.</p>
+          </form>
+          <div id="routePlanSummary" class="route-plan-summary"><div class="empty-state"><b>NENHUMA ROTA CALCULADA</b><span>CRIE UM NOVO CARREGAMENTO OU SELECIONE UM PLANEJADO EXISTENTE.</span></div></div>
+          <div id="routeStops" class="route-stops"></div>
+          <div id="routePlanHistory" class="route-plan-history"></div>
+        </section>
+        <section class="card route-map-card">
+          <div class="card-head"><div><span class="section-kicker">MAPA OPERACIONAL</span><h3>VISUALIZAÇÃO DA ROTA</h3><p>ONLINE QUANDO DISPONÍVEL; A ESTRUTURA DE RECURSOS LOCAIS É USADA PARA MAPA E ROTEAMENTO OFFLINE.</p></div><span class="badge green" id="offlineMapStatus">CARREGANDO MAPA</span></div>
+          <div class="route-map-layout"><div><div class="route-legend"><span><i class="factory"></i>ORIGEM</span><span><i class="car"></i>CARRO</span><span><i class="truck"></i>CAMINHÃO</span><span><i class="work"></i>OBRA</span></div><div id="routeMap" class="route-map"></div></div><aside class="route-map-menu"><section><b>FÁBRICAS / EMPRESAS</b><div id="routeOriginsMenu"></div></section><section><b>OBRAS / LOCAIS</b><div id="routeWorksMenu"></div></section></aside></div>
+        </section>
+      </div>
+      <section class="card">
+        <div class="card-head"><div><span class="section-kicker">FROTA</span><h3>VEÍCULOS CADASTRADOS</h3><p>LOCALIZAÇÃO DO VEÍCULO É RESERVADA À FUTURA API DE TELEMETRIA E NÃO É EDITÁVEL PELO USUÁRIO.</p></div><span class="badge green" id="vehiclesBadge">0 VEÍCULOS</span></div>
+        <div class="table-wrap"><table><thead><tr><th>TIPO</th><th>PORTE / EIXOS</th><th>PLACA</th><th>MODELO</th><th>COMBUSTÍVEL / CONSUMO</th><th>MOTORISTA</th><th>PROPRIEDADE</th><th>STATUS</th><th>CADASTRO</th><th></th></tr></thead><tbody id="vehiclesTable"></tbody></table></div>
+      </section>
+    </div>
+  </section>
+
+  <section class="module" id="module-cadastros">
+    <div class="page-shell">
+      <section class="page-heading works-heading">
+        <div><span class="eyebrow">MÓDULO 4 · BASE OPERACIONAL</span><h2>OBRAS E CADASTROS</h2><p>QUADRO ÚNICO PARA OLHAR, CRIAR E ACOMPANHAR A ESTRUTURA DO SISTEMA.</p></div>
+      </section>
+
+      <nav class="subnav" aria-label="ÁREAS DE CADASTRO">
+        <button class="subtab active" data-cad-tab="obras"><svg><use href="#i-building"/></svg>OBRAS</button>
+        <button class="subtab" data-cad-tab="clientes"><svg><use href="#i-users"/></svg>CLIENTES</button>
+        <button class="subtab" data-cad-tab="itens"><svg><use href="#i-box"/></svg>ITENS E VALORES</button>
+        <button class="subtab" data-cad-tab="sistema" data-permission="SYSTEM_ADMIN"><svg><use href="#i-gear"/></svg>SISTEMA</button>
+      </nav>
+
+      <section class="cad-panel active" data-cad-panel="obras">
+        <div class="action-board">
+          <button class="action-tile blue" id="newWorkButton"><svg><use href="#i-plus"/></svg><span><b>CRIAR NOVA OBRA</b><small>ESTADO, MUNICÍPIO, OP E LOCALIZAÇÃO</small></span></button>
+          <article><span>OBRAS CADASTRADAS</span><strong id="worksCount">0</strong><small>REGISTROS TOTAIS</small></article>
+          <article><span>OBRAS ATIVAS</span><strong id="activeWorksCount">0</strong><small>EM ACOMPANHAMENTO</small></article>
+          <article><span>ESTADOS COM OBRAS</span><strong id="workStatesCount">0</strong><small>ABRANGÊNCIA ATUAL</small></article>
+        </div>
+        <section class="card">
+          <div class="card-head"><div><span class="section-kicker">QUADRO DE OBRAS</span><h3>ACOMPANHAMENTO GERAL</h3><p>PARTE INFERIOR COM OS DADOS ÚTEIS DE TODAS AS OBRAS.</p></div><span class="badge blue" id="worksBadge">0 OBRAS</span></div>
+          <div class="registry-filters">
+            <label class="search-field"><svg><use href="#i-search"/></svg><input id="workSearch" placeholder="PESQUISAR OBRA, MUNICÍPIO, OP OU CÓDIGO..."></label>
+            <select id="workUfFilter"><option value="">TODOS OS ESTADOS</option></select>
+            <select id="workStatusFilter"><option value="">TODOS OS STATUS</option><option>ATIVA</option><option>PAUSADA</option><option>CONCLUÍDA</option></select>
+          </div>
+          <div class="table-wrap"><table><thead><tr><th>ID</th><th>ESTADO</th><th>OBRA</th><th>MUNICÍPIO</th><th>OP PADRÃO</th><th>STATUS</th><th class="num">CARREGAMENTOS</th><th>ÚLTIMO</th><th></th></tr></thead><tbody id="worksTable"></tbody></table></div>
+        </section>
+      </section>
+
+      <section class="cad-panel" data-cad-panel="clientes">
+        <section class="card">
+          <div class="card-head"><div><span class="section-kicker">BASE COMERCIAL</span><h3>CLIENTES</h3><p>O MUNICÍPIO É USADO AUTOMATICAMENTE QUANDO A OBRA NÃO INFORMA UM CLIENTE.</p></div><button class="btn primary" id="newClientButton"><svg><use href="#i-plus"/></svg>NOVO CLIENTE</button></div>
+          <div class="registry-filters"><label class="search-field"><svg><use href="#i-search"/></svg><input id="clientSearch" placeholder="PESQUISAR CLIENTE, DOCUMENTO OU CONTATO..."></label><span class="badge blue" id="clientsBadge">0 CLIENTES</span></div>
+          <div class="table-wrap"><table><thead><tr><th>ID</th><th>CLIENTE</th><th>DOCUMENTO</th><th>CONTATO</th><th>TELEFONE</th><th>E-MAIL</th><th>STATUS</th><th></th></tr></thead><tbody id="clientsTable"></tbody></table></div>
+        </section>
+      </section>
+
+      <section class="cad-panel" data-cad-panel="itens">
+        <section class="card">
+          <div class="card-head"><div><span class="section-kicker">CATÁLOGO</span><h3>ITENS E VALORES</h3><p>BASE UTILIZADA PELO CHECKLIST DOS CARREGAMENTOS.</p></div><button class="btn primary" id="newItemButton"><svg><use href="#i-plus"/></svg>NOVO ITEM</button></div>
+          <div class="registry-filters">
+            <label class="search-field"><svg><use href="#i-search"/></svg><input id="itemSearch" placeholder="PESQUISAR CÓDIGO, GRUPO OU ITEM..."></label>
+            <select id="itemStatusFilter"><option value="active">ATIVOS</option><option value="all">TODOS</option><option value="inactive">INATIVOS</option></select>
+            <span class="badge blue" id="itemsBadge">0 ITENS</span>
+          </div>
+          <div class="table-wrap"><table><thead><tr><th>IMAGEM</th><th>CÓDIGO</th><th>GRUPO</th><th>ITEM</th><th class="num">VALOR UNITÁRIO</th><th>STATUS</th><th></th></tr></thead><tbody id="itemsTable"></tbody></table></div>
+        </section>
+      </section>
+
+      <section class="cad-panel" data-cad-panel="sistema" data-permission="SYSTEM_ADMIN">
+        <div id="systemKpis" class="kpi-grid"></div>
+        <div class="dashboard-grid">
+          <section class="card"><div class="card-head"><div><span class="section-kicker">MANUTENÇÃO</span><h3>AÇÕES SEGURAS</h3></div></div><div class="stack-actions"><button class="btn primary" id="backupSystem"><svg><use href="#i-save"/></svg>CRIAR BACKUP</button><button class="btn soft" id="openData"><svg><use href="#i-folder"/></svg>ABRIR PASTA DE DADOS</button></div><div id="systemPaths" class="path-list"></div></section>
+          <section class="card"><div class="card-head"><div><span class="section-kicker">PROTEÇÃO</span><h3>CAMPOS CONTROLADOS</h3></div></div><div id="protectedList" class="protected-list"></div></section>
+        </div>
+        <section class="card" id="masterPatchCard">
+          <div class="card-head">
+            <div><span class="section-kicker">ATUALIZAÇÕES DO MESTRE</span><h3>PATCHES BA · ES · IN · SE</h3><p>IMPORTE, VALIDE E APLIQUE O PATCH OFICIAL. O ZIP APLICADO E O SNAPSHOT ANTERIOR SÃO ARQUIVADOS NO SM_REPO.</p></div>
+            <span class="badge blue" id="masterPatchVersion">—</span>
+          </div>
+          <input id="masterPatchFile" type="file" accept=".zip,application/zip" hidden>
+          <div class="stack-actions">
+            <button class="btn primary" id="importMasterPatch"><svg><use href="#i-plus"/></svg>IMPORTAR PATCH</button>
+            <button class="btn soft" id="validateMasterPatch" disabled><svg><use href="#i-shield"/></svg>VALIDAR PATCH</button>
+            <button class="btn primary" id="applyMasterPatch" disabled><svg><use href="#i-refresh"/></svg>APLICAR ATUALIZAÇÃO</button>
+            <button class="btn ghost" id="removeMasterPatch" disabled><svg><use href="#i-close"/></svg>REMOVER DA FILA</button>
+          </div>
+          <div id="masterPatchStatus" class="path-list"><div class="path-row"><b>STATUS</b><code>CARREGANDO...</code></div></div>
+        </section>
+        <section class="card"><div class="card-head"><div><span class="section-kicker">AUDITORIA</span><h3>EVENTOS RECENTES</h3></div><button class="btn ghost small" id="refreshLogs"><svg><use href="#i-refresh"/></svg>ATUALIZAR</button></div><div id="logsList" class="logs-list"></div></section>
+        <div class="dashboard-grid admin-grid">
+          <section class="card">
+            <div class="card-head"><div><span class="section-kicker">ACESSOS</span><h3>USUÁRIOS E PINS</h3><p>O ADMINISTRADOR MESTRE PODE RESETAR OU REVOGAR PINS. O BANCO ARMAZENA SOMENTE HASH, NUNCA O PIN EM TEXTO ABERTO.</p></div><span class="badge blue" id="usersBadge">0 USUÁRIOS</span></div>
+            <form id="userForm" class="form-grid">
+              <input type="hidden" name="usuario_id">
+              <label>NOME<input name="nome" data-upper required></label>
+              <label>PERFIL<select name="perfil"><option value="USUARIO">USUÁRIO PADRÃO</option><option value="ADMIN">ADMINISTRADOR</option></select></label>
+              <label>PIN PROVISÓRIO<input name="senha" type="password" inputmode="numeric" pattern="[0-9]{4,32}" minlength="4" maxlength="32" autocomplete="new-password" placeholder="MÍNIMO 4 DÍGITOS NUMÉRICOS"></label>
+              <label>STATUS<select name="ativo"><option value="1">ATIVO</option><option value="0">INATIVO</option></select></label>
+              <button class="btn primary span-2" type="submit"><svg><use href="#i-save"/></svg>SALVAR USUÁRIO</button>
+            </form>
+            <div id="usersList" class="admin-list"></div>
+          </section>
+          <section class="card">
+            <div class="card-head"><div><span class="section-kicker">30 DIAS</span><h3>FILA DE EXCLUSÕES</h3><p>REVOGUE PARA RESTAURAR OU APROVE PARA REMOVER AGORA.</p></div><span class="badge orange" id="deletionsBadge">0 PENDENTES</span></div>
+            <div id="deletionsList" class="admin-list"></div>
+          </section>
+        </div>
+        <section class="card"><div class="card-head"><div><span class="section-kicker">TRILHA OFICIAL</span><h3>AUDITORIA POR USUÁRIO E ESTAÇÃO</h3></div><button class="btn ghost small" id="refreshOfficialAudit"><svg><use href="#i-refresh"/></svg>ATUALIZAR</button></div><div id="officialAuditList" class="logs-list"></div></section>
+      </section>
+    </div>
+  </section>
+</main>
+
+<dialog id="itemPickerDialog" class="dialog wide-dialog">
+  <div class="dialog-shell">
+    <header><div><span class="section-kicker">CHECKLIST DO CARREGAMENTO</span><h3 id="itemPickerTitle">SELECIONAR ITENS</h3><p>MARQUE OS ITENS E INFORME AS QUANTIDADES.</p></div><button class="icon-button dialog-close" type="button" aria-label="FECHAR"><svg><use href="#i-close"/></svg></button></header>
+    <div class="picker-toolbar"><label class="search-field"><svg><use href="#i-search"/></svg><input id="pickerSearch" placeholder="PESQUISAR ITEM..."></label><select id="pickerGroup"><option value="">TODOS OS GRUPOS</option></select><span class="selection-counter" id="pickerCounter">0 SELECIONADOS</span></div>
+    <div id="itemPickerList" class="item-picker-list"></div>
+    <footer><button class="btn ghost" type="button" id="cancelItemPicker">CANCELAR</button><button class="btn primary" type="button" id="applyItemPicker"><svg><use href="#i-check"/></svg>APLICAR ITENS</button></footer>
+  </div>
+</dialog>
+
+<dialog id="mapDialog" class="dialog map-dialog">
+  <div class="dialog-shell">
+    <header><div><span class="section-kicker">LOCALIZAÇÃO OPCIONAL</span><h3>LOCALIZAR OBRA NO MAPA</h3><p>ACEITA DECIMAL, DMS, DMM, SIRGAS 2000/UTM, LINK DE MAPA OU REFERÊNCIA CADASTRADA.</p></div><button class="icon-button dialog-close" type="button" aria-label="FECHAR"><svg><use href="#i-close"/></svg></button></header>
+    <div class="map-search-row"><label class="search-field"><svg><use href="#i-search"/></svg><input id="mapSearch" placeholder="COORDENADA, LINK, MUNICÍPIO, OBRA OU ENDEREÇO"></label><button class="btn primary" type="button" id="mapSearchButton">INTERPRETAR</button></div>
+    <div id="miniMap" class="mini-map"></div>
+    <p id="mapStatus" class="map-status">PESQUISE OU CLIQUE EM UM PONTO DO MAPA.</p>
+    <div class="coords-grid"><label>LATITUDE<input id="mapLat" type="number" step="any"></label><label>LONGITUDE<input id="mapLng" type="number" step="any"></label></div>
+    <footer><button class="btn ghost" type="button" id="clearMap">SEM LOCALIZAÇÃO</button><button class="btn soft" type="button" id="openOnlineMap">MAPA ONLINE</button><button class="btn primary" type="button" id="applyMap"><svg><use href="#i-pin"/></svg>USAR LOCAL SELECIONADO</button></footer>
+  </div>
+</dialog>
+
+<dialog id="loadDetailDialog" class="dialog detail-dialog">
+  <div class="dialog-shell">
+    <header><div><span class="section-kicker">REGISTRO COMPLETO</span><h3 id="loadDetailTitle">CARREGAMENTO</h3><p id="loadDetailSubtitle">—</p></div><button class="icon-button dialog-close" type="button" aria-label="FECHAR"><svg><use href="#i-close"/></svg></button></header>
+    <nav class="detail-menu"><button class="active" data-detail-tab="resumo">RESUMO</button><button data-detail-tab="obras">OBRAS E ITENS</button><button data-detail-tab="viagem">VIAGEM E CUSTOS</button><button data-detail-tab="fotos">FOTOS</button><button data-detail-tab="anexos">ANEXOS</button><button data-detail-tab="documentos">DOCUMENTOS</button></nav>
+    <div class="detail-panel active" data-detail-panel="resumo" id="loadDetailSummary"></div>
+    <div class="detail-panel" data-detail-panel="obras" id="loadDetailWorks"></div>
+    <div class="detail-panel" data-detail-panel="viagem" id="loadDetailTrip"></div>
+    <div class="detail-panel" data-detail-panel="fotos" id="loadDetailPhotos"></div>
+    <div class="detail-panel" data-detail-panel="anexos" id="loadDetailAttachments"></div>
+    <div class="detail-panel" data-detail-panel="documentos" id="loadDetailDocuments"></div>
+    <footer class="detail-footer"><div id="loadStatusAction" class="status-action"></div><div><button class="btn danger" type="button" id="deleteLoadFromDetail"><svg><use href="#i-close"/></svg>SOLICITAR EXCLUSÃO</button><button class="btn ghost dialog-close" type="button">FECHAR</button><button class="btn primary" type="button" id="editLoadFromDetail"><svg><use href="#i-edit"/></svg>EDITAR REGISTRO</button></div></footer>
+  </div>
+</dialog>
+
+<dialog id="expeditionConfirmDialog" class="dialog confirm-dialog">
+  <div class="dialog-shell">
+    <header><div><span class="section-kicker">AÇÃO IRREVERSÍVEL</span><h3>CONFIRMAR EXPEDIÇÃO</h3><p>ESTA CONFIRMAÇÃO SERÁ REGISTRADA NA AUDITORIA OFICIAL.</p></div><span class="confirm-warning-icon"><svg><use href="#i-lock"/></svg></span></header>
+    <div class="confirm-dialog-body">
+      <strong>DEPOIS DE MARCADO COMO EXPEDIDO, O CARREGAMENTO NÃO PODERÁ SER EDITADO.</strong>
+      <p>OBRAS, ITENS, CUSTOS, STATUS E ANEXOS FICARÃO BLOQUEADOS. CONFIRA TODAS AS INFORMAÇÕES ANTES DE CONTINUAR.</p>
+      <label class="confirm-check"><input type="checkbox" id="expeditionAcknowledgement">LI E ENTENDO QUE O BLOQUEIO É DEFINITIVO.</label>
+    </div>
+    <footer><button class="btn ghost" type="button" id="cancelExpedition">VOLTAR E REVISAR</button><button class="btn danger" type="button" id="confirmExpedition" disabled><svg><use href="#i-lock"/></svg>CONFIRMAR EXPEDIDO</button></footer>
+  </div>
+</dialog>
+
+<dialog id="workDialog" class="dialog form-dialog">
+  <form id="workForm" class="dialog-shell">
+    <header><div><span class="section-kicker">CADASTRO DE OBRA</span><h3 id="workDialogTitle">NOVA OBRA</h3><p>OS CAMPOS DE TEXTO SERÃO SALVOS EM MAIÚSCULAS.</p></div><button class="icon-button dialog-close" type="button" aria-label="FECHAR"><svg><use href="#i-close"/></svg></button></header>
+    <input type="hidden" name="obra_id">
+    <input type="hidden" name="cliente_id">
+    <div class="form-grid">
+      <label>ESTADO<select name="unidade_id" required></select></label>
+      <label>STATUS<select name="status"><option>ATIVA</option><option>PAUSADA</option><option>CONCLUÍDA</option></select></label>
+      <label class="span-2">NOME DA OBRA<input name="nome" data-upper required></label>
+      <label class="span-2">CLIENTE<input name="cliente_nome" list="clientNames" data-upper placeholder="SE VAZIO, SERÁ USADO O MUNICÍPIO"><datalist id="clientNames"></datalist></label>
+      <label>MUNICÍPIO<input name="municipio" data-upper required></label>
+      <label>OP PADRÃO<input name="op_padrao" data-upper required></label>
+      <label>CÓDIGO / CONTRATO<input name="codigo" data-upper></label>
+      <label class="span-2">ENDEREÇO / REFERÊNCIA<input name="endereco" data-upper></label>
+      <label>LATITUDE<input name="latitude" type="number" step="any"></label>
+      <label>LONGITUDE<input name="longitude" type="number" step="any"></label>
+    </div>
+    <footer><button class="btn ghost dialog-close" type="button">CANCELAR</button><button class="btn primary" type="submit"><svg><use href="#i-save"/></svg>SALVAR OBRA</button></footer>
+  </form>
+</dialog>
+
+<dialog id="itemDialog" class="dialog form-dialog">
+  <form id="itemForm" class="dialog-shell">
+    <header><div><span class="section-kicker">CATÁLOGO</span><h3 id="itemDialogTitle">NOVO ITEM</h3><p>O HISTÓRICO DE ALTERAÇÃO DE PREÇO É PRESERVADO.</p></div><button class="icon-button dialog-close" type="button" aria-label="FECHAR"><svg><use href="#i-close"/></svg></button></header>
+    <div class="form-grid">
+      <label>CÓDIGO<input name="codigo" data-upper required></label>
+      <label>GRUPO<input name="grupo" data-upper></label>
+      <label class="span-2">NOME DO ITEM<input name="nome" data-upper required></label>
+      <label>VALOR UNITÁRIO<input name="valor_unit" type="number" min="0" step="0.01"></label>
+      <label>STATUS<select name="ativo"><option value="1">ATIVO</option><option value="0">INATIVO</option></select></label>
+      <label class="span-2">OBSERVAÇÃO<textarea name="observacao" data-upper rows="3"></textarea></label>
+      <label class="span-2">MOTIVO DA ALTERAÇÃO<input name="motivo" data-upper placeholder="OBRIGATÓRIO AO ALTERAR VALOR"></label>
+      <label class="span-2">IMAGEM DO EQUIPAMENTO (PNG, JPG OU WEBP · ATÉ 4 MB)<input name="imagem" type="file" accept="image/png,image/jpeg,image/webp"></label>
+      <div class="item-image-editor span-2"><button type="button" id="itemImagePreviewButton" class="image-preview-button"><span id="itemImagePlaceholder">SEM IMAGEM</span><img id="itemImagePreview" alt="PRÉ-VISUALIZAÇÃO DO EQUIPAMENTO" hidden></button><label class="remove-image-option"><input type="checkbox" name="remover_imagem" value="1">REMOVER IMAGEM ATUAL</label><small>EXIBIÇÃO PADRÃO 3 × 4 CM. A IMAGEM ORIGINAL ABRE AMPLIADA.</small></div>
+    </div>
+    <footer><button class="btn ghost dialog-close" type="button">CANCELAR</button><button class="btn primary" type="submit"><svg><use href="#i-save"/></svg>SALVAR ITEM</button></footer>
+  </form>
+</dialog>
+
+<dialog id="clientDialog" class="dialog form-dialog">
+  <form id="clientForm" class="dialog-shell">
+    <header><div><span class="section-kicker">CADASTRO DE CLIENTE</span><h3 id="clientDialogTitle">NOVO CLIENTE</h3><p>CLIENTES PODEM SER ASSOCIADOS A VÁRIAS OBRAS.</p></div><button class="icon-button dialog-close" type="button" aria-label="FECHAR"><svg><use href="#i-close"/></svg></button></header>
+    <input type="hidden" name="cliente_id">
+    <div class="form-grid"><label class="span-2">NOME<input name="nome" data-upper required></label><label>DOCUMENTO<input name="documento" data-upper></label><label>CONTATO<input name="contato" data-upper></label><label>TELEFONE<input name="telefone"></label><label>E-MAIL<input name="email" type="email"></label><label>STATUS<select name="ativo"><option value="1">ATIVO</option><option value="0">INATIVO</option></select></label><label class="span-2">OBSERVAÇÃO<textarea name="observacao" data-upper rows="3"></textarea></label></div>
+    <footer><button class="btn ghost dialog-close" type="button">CANCELAR</button><button class="btn primary" type="submit"><svg><use href="#i-save"/></svg>SALVAR CLIENTE</button></footer>
+  </form>
+</dialog>
+
+<dialog id="vehicleDialog" class="dialog form-dialog">
+  <form id="vehicleForm" class="dialog-shell">
+    <header><div><span class="section-kicker">FROTA</span><h3 id="vehicleDialogTitle">NOVO VEÍCULO</h3><p>CADASTRO TÉCNICO COMPLETO PARA CÁLCULOS AUTOMÁTICOS DE ROTA E COMBUSTÍVEL.</p></div><button class="icon-button dialog-close" type="button" aria-label="FECHAR"><svg><use href="#i-close"/></svg></button></header>
+    <input type="hidden" name="caminhao_id">
+    <div class="form-grid form-surface"><label>PROPRIEDADE<select name="propriedade"><option value="PROPRIO">PRÓPRIO</option><option value="ALUGADO">ALUGADO</option></select></label><label>TIPO<select name="tipo"><option value="CAMINHAO_TRANSPORTE">CAMINHÃO DE TRANSPORTE</option><option value="CARRO_PASSEIO">CARRO DE PASSEIO</option></select></label><label>PERFIL<select name="perfil_codigo"><option value="CAMINHAO_3_4">CAMINHÃO 3/4</option><option value="CAMINHAO_TOCO">CAMINHÃO TOCO</option><option value="CAMINHAO_TRUCK" selected>CAMINHÃO TRUCK</option><option value="CARRETA">CARRETA</option><option value="CARRO_PASSEIO">CARRO DE PASSEIO</option></select></label><label>STATUS<select name="status"><option value="DISPONIVEL">DISPONÍVEL</option><option value="EM_ROTA">EM ROTA</option><option value="MANUTENCAO">MANUTENÇÃO</option><option value="INATIVO">INATIVO</option></select></label><label>APELIDO<input name="apelido" data-upper></label><label>CARROCERIA<input name="carroceria" data-upper></label><label>PORTE<select name="porte"><option value="LEVE">LEVE</option><option value="MEDIO">MÉDIO</option><option value="PESADO" selected>PESADO</option><option value="EXTRAPESADO">EXTRAPESADO</option></select></label><label>EIXOS<input name="eixos" type="number" min="2" max="9" step="1" required></label><label>PLACA<input name="placa" data-upper required></label><label>MODELO<input name="modelo" data-upper required></label><label>COMBUSTÍVEL<select name="combustivel"><option>DIESEL</option><option>GASOLINA</option><option>ETANOL</option><option>FLEX</option><option>ELETRICO</option><option>HIBRIDO</option></select></label><label>CONSUMO (KM/L OU KM/KWH)<input name="consumo_km_l" type="number" min="0" step="0.001"></label><label>TANQUE (L) / BATERIA (KWH)<input name="tanque_litros" type="number" min="0" step="0.01"></label><label>TRANSPORTADORA / LOCADOR<input name="transportadora" data-upper></label><label>MOTORISTA PADRÃO<input name="motorista_padrao" data-upper></label><label>CAPACIDADE<input name="capacidade" data-upper></label><label>CADASTRO<select name="ativo"><option value="1">ATIVO</option><option value="0">INATIVO</option></select></label><label class="span-2">OBSERVAÇÃO<textarea name="observacao" data-upper rows="3"></textarea></label></div>
+    <footer><button class="btn ghost dialog-close" type="button">CANCELAR</button><button class="btn primary" type="submit"><svg><use href="#i-save"/></svg>SALVAR VEÍCULO</button></footer>
+  </form>
+</dialog>
+
+<dialog id="pendingVehicleDialog" class="dialog form-dialog">
+  <form id="pendingVehicleForm" class="dialog-shell">
+    <header><div><span class="section-kicker">CADASTRO RÁPIDO</span><h3>NOVO VEÍCULO PENDENTE</h3><p>USE QUANDO O VEÍCULO AINDA NÃO TEM FICHA TÉCNICA. COMBUSTÍVEL E PEDÁGIO SERÃO EXIGIDOS MANUALMENTE ATÉ O CADASTRO SER COMPLETADO.</p></div><button class="icon-button dialog-close" type="button" aria-label="FECHAR"><svg><use href="#i-close"/></svg></button></header>
+    <div class="form-grid form-surface"><label>PROPRIEDADE<select name="propriedade"><option value="PROPRIO">PRÓPRIO</option><option value="ALUGADO">ALUGADO / TERCEIRO</option></select></label><label>TIPO<select name="tipo"><option value="CAMINHAO_TRANSPORTE">CAMINHÃO</option><option value="CARRO_PASSEIO">CARRO DE PASSEIO</option></select></label><label>APELIDO<input name="apelido" data-upper required></label><label>MODELO / REFERÊNCIA<input name="modelo" data-upper></label><label class="span-2">TRANSPORTADORA / PROPRIETÁRIO<input name="transportadora" data-upper></label></div>
+    <footer><button class="btn ghost dialog-close" type="button">CANCELAR</button><button class="btn primary" type="submit"><svg><use href="#i-save"/></svg>CRIAR PENDENTE</button></footer>
+  </form>
+</dialog>
+
+<dialog id="imageDialog" class="dialog image-dialog">
+  <div class="dialog-shell"><header><div><span class="section-kicker">IMAGEM DO EQUIPAMENTO</span><h3 id="imageDialogTitle">EQUIPAMENTO</h3></div><button class="icon-button dialog-close" type="button" aria-label="FECHAR"><svg><use href="#i-close"/></svg></button></header><div class="image-dialog-body"><img id="imageDialogContent" alt="IMAGEM AMPLIADA DO EQUIPAMENTO"></div><footer><button class="btn ghost dialog-close" type="button">FECHAR</button></footer></div>
+</dialog>
+
+<footer class="site-footer"><strong>© 2026 Carlos Alberto da Silva Pinto Júnior — CRJ</strong><span>Sistema proprietário de Logística e Controle de Carregamentos</span><small>CJL System — versão corrente fornecida pela autoridade canônica • Origem e autoria verificadas</small></footer>
+<section id="maintenanceScreen" class="maintenance-screen" hidden>
+  <div class="maintenance-card">
+    <span class="maintenance-icon"><svg><use href="#i-lock"/></svg></span>
+    <span class="section-kicker">MODO DESCONECTADO</span>
+    <h2 id="maintenanceTitle">ATUALIZAÇÃO CRÍTICA DO MESTRE</h2>
+    <p id="maintenanceText">ESTA ESTAÇÃO FOI DESCONECTADA PARA PROTEGER O BANCO E O REPOSITÓRIO OFICIAL.</p>
+    <small id="maintenanceDetail">AGUARDE A CONCLUSÃO DA ATUALIZAÇÃO.</small>
+    <button class="btn primary large" id="maintenanceUpdateButton" type="button" hidden><svg><use href="#i-refresh"/></svg>ATUALIZAR ESTAÇÃO E RECONECTAR</button>
+  </div>
+</section>
+<section id="closedScreen" class="closed-screen" hidden><div><span><svg><use href="#i-check"/></svg></span><h2>SISTEMA ENCERRADO</h2><p>DADOS CONFIRMADOS, BANCO VERIFICADO E PORTA LOCAL LIBERADA. VOCÊ JÁ PODE FECHAR ESTA ABA.</p></div></section>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="busyOverlay" class="busy-overlay" aria-hidden="true"><div class="spinner"></div><b id="busyLabel">PROCESSANDO...</b></div>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

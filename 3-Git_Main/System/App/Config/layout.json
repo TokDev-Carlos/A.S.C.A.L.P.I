@@ -1,0 +1,53 @@
+{
+  "format": 5,
+  "product": "CJL System",
+  "app": "App",
+  "host": "Host",
+  "runtime": "Runtime",
+  "seed_database": "Data/sistema.db",
+  "shared_data": "Shared",
+  "repository": "Repo",
+  "updates": "Updates",
+  "logs": "Logs",
+  "temp": "Temp",
+  "docs": "Docs",
+  "dev": "Dev",
+  "export": "Export",
+  "root_contract": {
+    "policy": "CURRENT_OPERATIONAL_STATE_ONLY_STRICT",
+    "allowed_directories": [
+      "App",
+      "Host",
+      "Runtime",
+      "Data",
+      "Shared",
+      "Repo",
+      "Updates",
+      "Logs",
+      "Temp",
+      "Docs",
+      "Dev",
+      "Export"
+    ],
+    "allowed_files": [
+      "CJL.exe",
+      "CJL.root.json",
+      "CJL.branch.json",
+      "COPYRIGHT.txt",
+      "LICENSE.txt"
+    ]
+  },
+  "product_code": "CJL",
+  "sm_repo": {
+    "mode": "SIBLING_OF_SYSTEM",
+    "folder": "SM_Repo",
+    "policy_version": 1,
+    "purpose": "HISTORY_RECOVERY_PROVENANCE"
+  },
+  "branching": {
+    "format": 1,
+    "marker": "CJL.branch.json",
+    "branch_specific_generated_file": true,
+    "patchable": false
+  }
+}

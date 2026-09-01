@@ -1,6 +1,17 @@
-# ASCALPI — repository hygiene
+# ASCALPI Dev-Work bootstrap policy R1
 
-# Credentials and local secrets
+# Git mailbox is local-only.
+/Git/
+
+# Machine / virtual-disk state.
+*.vhd
+*.vhdx
+*.qcow2
+*.img
+*.iso
+*.lnk
+
+# Secrets / credentials.
 .env
 .env.*
 !.env.example
@@ -8,82 +19,74 @@
 *.key
 *.pfx
 *.p12
-secrets/
-Secrets/
-credentials/
-Credentials/
+*.kdbx
+**/credentials/
+**/Credentials/
+**/secrets/
+**/Secrets/
 
-# IDE / editor state
-.vs/
-.vscode/
-.idea/
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
-
-# Build outputs
-bin/
-obj/
-[Bb]uild/
-[Bb]uilds/
-[Dd]ist/
-[Dd]istribution/
-artifacts/
-Artifacts/
-
-# Python / Node caches
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.mypy_cache/
-.venv/
-venv/
-node_modules/
-
-# Package / tool caches
-.cache/
-.nuget/
-packages/
-
-# Runtime temporary state
+# IDE and generated caches.
+**/.git/
+**/.vs/
+**/.idea/
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.cache/
+**/node_modules/
+**/.venv/
+**/obj/
+*.pyc
+*.pyo
+*.log
 *.tmp
 *.temp
 *.bak
 *.old
-*.log
 *.pid
 *.lock
 *.db-wal
 *.db-shm
 
-# Local evidence, rollback and quarantine
-Evidence/
-evidence/
-Receipts/
-receipts/
-Quarantine/
-quarantine/
-Rollback/
-rollback/
+# 1-Dev engineering only: runtime/executable payload is not versioned here.
+/1-Dev/SM_Repo/Backups/
+/1-Dev/SM_Repo/Receipts/
+/1-Dev/System/Runtime/
+/1-Dev/System/Host/Bin/
+/1-Dev/System/CJL.exe
+/1-Dev/System/Data/
+/1-Dev/System/Shared/
+/1-Dev/System/Repo/
+/1-Dev/System/Logs/
+/1-Dev/System/Temp/
+/1-Dev/System/Export/
+/1-Dev/System/Backup/
+/1-Dev/System/Updates/In/
 
-# WSL / virtual disks / container-local storage
-*.vhd
-*.vhdx
-*.qcow2
-*.img
+# Compiler engineering only: local compiler runtime and generated runs stay local.
+/2-Compiler/Builds/
+/2-Compiler/Compilador/
+/2-Compiler/Runtime/
+/2-Compiler/Patches/Inbox/
+/2-Compiler/Releases/Approved/
 
-# OS files
+# Git_Main local homologation state.
+/3-Git_Main/Evidence/
+/3-Git_Main/Evidencias/
+/3-Git_Main/Receipt/
+/3-Git_Main/Receipts/
+/3-Git_Main/Rollback/
+/3-Git_Main/System/Data/
+/3-Git_Main/System/Shared/
+/3-Git_Main/System/Repo/
+/3-Git_Main/System/Logs/
+/3-Git_Main/System/Temp/
+/3-Git_Main/System/Export/
+/3-Git_Main/System/Backup/
+/3-Git_Main/System/Updates/In/
+
+# OS noise.
 Thumbs.db
-ehthumbs.db
 Desktop.ini
 .DS_Store
-
-# Local links / shortcuts
-*.lnk
-
-# Local temporary work directories
-.tmp-*/
-.tmp/
-tmp/
-Temp/

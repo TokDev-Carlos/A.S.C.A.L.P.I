@@ -1,0 +1,31 @@
+{
+  "format": 1,
+  "product": "CJL System",
+  "engine": {
+    "preferred": "GRAPHHOPPER_LOCAL",
+    "local_endpoint": "http://127.0.0.1:8989/route",
+    "timeout_seconds": 5,
+    "resource_id": "MOTOR_ROTAS_BR"
+  },
+  "fallback": {
+    "mode": "GEODESIC_ESTIMATE",
+    "road_factor": 1.2
+  },
+  "average_speed_kmh": {
+    "car": 70,
+    "truck": 58
+  },
+  "road_base_version": "",
+  "external_route_optional": true,
+  "toll": {
+    "resource_id": "BASE_PEDAGIOS_BR",
+    "source": "ANTT + FONTES ESTADUAIS VERSIONADAS",
+    "last_reference": "2026-07-29"
+  },
+  "notes": [
+    "O motor rodoviário local é preferencial quando o recurso estiver instalado e em execução.",
+    "Sem motor local, a distância e o tempo aparecem explicitamente como estimativa de contingência.",
+    "O Fator Rodoviário existe somente como contingência técnica e não como cálculo principal.",
+    "Trânsito em tempo real não é inferido em modo offline."
+  ]
+}

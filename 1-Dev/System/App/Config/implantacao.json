@@ -1,0 +1,13 @@
+{
+  "format": 3,
+  "product": "CJL System",
+  "path_mode": "PORTABLE_SELECTED",
+  "master_id": "CJL-MST-20260816-F34A42AB35A8",
+  "allow_local_drive": true,
+  "allow_mapped_drive": true,
+  "allow_unc": true,
+  "automatic_drive_mapping": false,
+  "remember_selected_master": true,
+  "user_install_requires_selection": true,
+  "preferred_master_root": "C:/CJL/System"
+}

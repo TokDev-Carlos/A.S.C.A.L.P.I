@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>ASCALPI Control Center</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navegação principal">
+      <div class="brand-block">
+        <div class="brand-mark" aria-hidden="true"><span>A</span></div>
+        <div class="brand-copy"><div class="brand-name">ASCALPI</div><div class="brand-subtitle">Control Center</div></div>
+      </div>
+
+      <nav id="nav" class="nav-list">
+        <div class="nav-group-label">Operação</div>
+        <button class="nav-item active" data-page="dashboard"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z"/></svg><span>Visão geral</span></button>
+        <button class="nav-item" data-page="linux"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5 3 12l5 7 1.7-1.2L6 12l3.7-5.8L8 5Zm8 0-1.7 1.2L18 12l-3.7 5.8L16 19l5-7-5-7Zm-5.8 15 5.6-16h-2L8.2 20h2Z"/></svg><span>Desenvolvimento Linux</span></button>
+        <button class="nav-item" data-page="gitmain"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5 10.5 4v7H3V5.5Zm9-1.8L21 2v9h-9V3.7ZM3 12.5h7.5v7L3 18V12.5Zm9 0h9v9l-9-1.8v-7.2Z"/></svg><span>Homologação Windows</span></button>
+        <button class="nav-item" data-page="git"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.7 10.9 13.1 3.3a1.5 1.5 0 0 0-2.2 0L9.3 4.9l2 2a1.8 1.8 0 0 1 2.2 2.3l1.9 1.9a1.8 1.8 0 1 1-1.1 1.1l-1.8-1.8v4.7a1.8 1.8 0 1 1-1.5 0V10a1.8 1.8 0 0 1-.8-2.2l-2-2-4.9 5a1.5 1.5 0 0 0 0 2.1l7.6 7.8a1.5 1.5 0 0 0 2.2 0l7.6-7.7a1.5 1.5 0 0 0 0-2.1Z"/></svg><span>Repositório</span></button>
+
+        <div class="nav-group-label">Governança</div>
+        <button class="nav-item" data-page="wsl"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 6 6 6-6 6 1.6 1.6L13.2 12 5.6 4.4 4 6Zm9 12v2h8v-2h-8Z"/></svg><span>Infraestrutura WSL</span></button>
+        <button class="nav-item" data-page="docs"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6V2Zm8 2H8v16h10V8h-4V4Zm-4 8h6v2h-6v-2Zm0 4h6v2h-6v-2Z"/></svg><span>Documentação</span></button>
+        <button class="nav-item" data-page="logs"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4V4Zm2 3v2h8V7H6Zm0 4v2h12v-2H6Zm0 4v2h9v-2H6Z"/></svg><span>Evidências</span></button>
+        <button class="nav-item" data-page="settings"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.8 7.8 0 0 0 0-2l2-1.6-2-3.4-2.5 1a8 8 0 0 0-1.7-1L15 3h-4l-.4 3a8 8 0 0 0-1.7 1L6.4 6 4.4 9.4 6.5 11a7.8 7.8 0 0 0 0 2l-2.1 1.6 2 3.4 2.5-1a8 8 0 0 0 1.7 1l.4 3h4l.4-3a8 8 0 0 0 1.7-1l2.5 1 2-3.4-2.2-1.6ZM13 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/></svg><span>Configuração</span></button>
+      </nav>
+
+      <div class="sidebar-status">
+        <div class="status-line"><span id="connection-dot" class="dot pending"></span><div><strong id="connection-label">Conectando</strong><div class="muted">Servidor restrito a esta estação</div></div></div>
+        <div class="sidebar-meta"><span>Atualização automática</span><strong>15 segundos</strong></div>
+        <div id="side-clock" class="side-clock">--/--/---- --:--:--</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="title-block"><div class="eyebrow">Central de operações</div><h1 id="page-title">Visão geral</h1><p id="page-subtitle">Ambientes, governanção e evidências em um único ponto de controle.</p></div>
+        <div class="top-actions">
+          <div class="top-chip"><span class="chip-label">Escopo</span><strong id="environment-chip">Estação local</strong></div>
+          <div class="top-chip status-chip" id="status-chip"><span class="chip-label">Postura operacional</span><strong id="global-status">Verificando</strong></div>
+          <button class="icon-button" id="refresh-top" type="button" aria-label="Atualizar diagnóstico" title="Atualizar diagnóstico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.7 6.3A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.8-4.3L13 11h8V3l-3.3 3.3Z"/></svg></button>
+        </div>
+      </header>
+
+      <section id="content" class="content"></section>
+
+      <footer class="footer"><span class="footer-brand">ASCALPI Control Center</span><span class="footer-note">Governanção operacional para ambientes CJL</span><span class="footer-grow"></span><span id="last-sync">Aguardando primeira leitura</span></footer>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
