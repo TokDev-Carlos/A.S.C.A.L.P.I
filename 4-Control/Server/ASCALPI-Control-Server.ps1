@@ -210,7 +210,18 @@ function Get-WslState {
     return $state
 }
 
+# ASCALPI_GIT_POLICY_R1
 function Find-GitRoot {
+    try {
+        if ($Config.PSObject.Properties.Name -contains "git") {
+            $configured = [string]$Config.git.repository_root
+            if ($configured -and (Test-Path -LiteralPath (Join-Path $configured ".git") -PathType Container)) {
+                return $configured
+            }
+        }
+    } catch {}
+
+    # Legacy fallback remains for compatibility only.
     foreach ($candidate in @([string]$Config.git_main_root, [string]$Config.linux_root)) {
         if (Test-Path -LiteralPath (Join-Path $candidate ".git") -PathType Container) {
             return $candidate
@@ -219,25 +230,104 @@ function Find-GitRoot {
     return ""
 }
 
+function Get-GitRemoteHead([string]$Root, [string]$Branch) {
+    if (-not $Root -or -not $Branch) { return "" }
+    try {
+        $ref = "refs/heads/" + $Branch
+        $raw = ((& git.exe -C $Root ls-remote origin $ref 2>$null) -join "`n").Trim()
+        if ($LASTEXITCODE -ne 0 -or -not $raw) { return "" }
+        return ($raw -split "\s+")[0]
+    } catch {
+        return ""
+    }
+}
+
 function Get-GitState {
+    $devBranch = "Dev-Work"
+    $mainBranch = "main"
+    $repositoryFullName = "TokDev-Carlos/A.S.C.A.L.P.I"
+    $devInclude = @("1-Dev","2-Compiler","3-Git_Main","4-Control","5-Docs","WSL")
+    $mainInclude = @("3-Git_Main","5-Docs")
+    $localOnly = @()
+    $writeEnabled = $false
+    $forcePush = $false
+    $requirePreview = $true
+    $requireApproval = $true
+    $informationRoutes = $null
+
+    try {
+        if ($Config.PSObject.Properties.Name -contains "git") {
+            $repositoryFullName = [string]$Config.git.repository_full_name
+            $devBranch = [string]$Config.git.branch_dev_work
+            $mainBranch = [string]$Config.git.branch_main
+            $devInclude = @($Config.git.dev_work_include)
+            $mainInclude = @($Config.git.main_include)
+            $localOnly = @($Config.git.local_only)
+            $writeEnabled = [bool]$Config.git.write_enabled
+            $forcePush = [bool]$Config.git.force_push
+            $requirePreview = [bool]$Config.git.require_preview
+            $requireApproval = [bool]$Config.git.require_operator_approval
+        }
+        if ($Config.PSObject.Properties.Name -contains "information_policy") {
+            $informationRoutes = $Config.information_policy.routes
+        }
+    } catch {}
+
     $state = [ordered]@{
         status = "AUSENTE"
+        mode = "READ_ONLY"
         repository = ""
+        repository_full_name = $repositoryFullName
         branch = ""
         head_short = ""
         change_count = 0
         changes = @()
-        detail = "Nenhuma raiz Git foi identificada nos ambientes configurados."
+        detail = "O repositório Git oficial ainda não foi localizado."
+        dev_work = [ordered]@{
+            branch = $devBranch
+            head = ""
+            head_short = ""
+            status = "AUSENTE"
+            include = @($devInclude)
+            detail = "Estado remoto ainda não verificado."
+        }
+        main = [ordered]@{
+            branch = $mainBranch
+            head = ""
+            head_short = ""
+            status = "AUSENTE"
+            include = @($mainInclude)
+            detail = "Estado remoto ainda não verificado."
+        }
+        policy = [ordered]@{
+            write_enabled = $writeEnabled
+            force_push = $forcePush
+            require_preview = $requirePreview
+            require_operator_approval = $requireApproval
+            local_only = @($localOnly)
+        }
+        information = [ordered]@{
+            create_random_documents = $false
+            routes = $informationRoutes
+        }
     }
+
     if (-not (Get-Command git.exe -ErrorAction SilentlyContinue)) {
-        $state.detail = "O executável Git não foi localizado."; return $state
+        $state.detail = "O executável Git não foi localizado."
+        return $state
     }
+
     $root = Find-GitRoot
-    if (-not $root) { return $state }
+    if (-not $root) {
+        return $state
+    }
+
     try {
         $branch = ((& git.exe -C $root rev-parse --abbrev-ref HEAD 2>$null) -join "").Trim()
-        $head = ((& git.exe -C $root rev-parse --short HEAD 2>$null) -join "").Trim()
+        $headFull = ((& git.exe -C $root rev-parse HEAD 2>$null) -join "").Trim()
+        $headShort = if ($headFull.Length -ge 8) { $headFull.Substring(0,8) } else { $headFull }
         $lines = @((& git.exe -C $root status --porcelain=v1 2>$null) | Where-Object { $_ })
+
         $changes = @()
         foreach ($line in $lines) {
             if ($line.Length -ge 4) {
@@ -247,20 +337,50 @@ function Get-GitState {
                 }
             }
         }
+
+        $devHead = Get-GitRemoteHead -Root $root -Branch $devBranch
+        $mainHead = Get-GitRemoteHead -Root $root -Branch $mainBranch
+
         $state.status = if ($lines.Count -eq 0) { "PRONTO" } else { "WARNING" }
         $state.repository = $root
         $state.branch = $branch
-        $state.head_short = $head
+        $state.head_short = $headShort
         $state.change_count = $lines.Count
         $state.changes = $changes
-        $state.detail = if ($lines.Count -eq 0) { "Árvore de trabalho sem alterações." } elseif ($lines.Count -eq 1) { "1 alteração local detectada." } else { "$($lines.Count) alterações locais detectadas." }
+        $state.detail = if ($lines.Count -eq 0) {
+            "Repositório Git oficial localizado; árvore local sem alterações."
+        } elseif ($lines.Count -eq 1) {
+            "Repositório Git oficial localizado; 1 alteração local detectada."
+        } else {
+            "Repositório Git oficial localizado; $($lines.Count) alterações locais detectadas."
+        }
+
+        if ($devHead) {
+            $state.dev_work.head = $devHead
+            $state.dev_work.head_short = if ($devHead.Length -ge 8) { $devHead.Substring(0,8) } else { $devHead }
+            $state.dev_work.status = "PRONTO"
+            $state.dev_work.detail = "Ambiente portátil de engenharia."
+        } else {
+            $state.dev_work.status = "INCOMPLETO"
+            $state.dev_work.detail = "Branch remota Dev-Work não pôde ser lida."
+        }
+
+        if ($mainHead) {
+            $state.main.head = $mainHead
+            $state.main.head_short = if ($mainHead.Length -ge 8) { $mainHead.Substring(0,8) } else { $mainHead }
+            $state.main.status = "PRONTO"
+            $state.main.detail = "Linha homologada: 3-Git_Main + 5-Docs."
+        } else {
+            $state.main.status = "INCOMPLETO"
+            $state.main.detail = "Branch remota main não pôde ser lida."
+        }
     } catch {
         $state.status = "INCOMPLETO"
         $state.detail = $_.Exception.Message
     }
+
     return $state
 }
-
 function Get-DocsState {
     $docs = [ordered]@{
         status = "AUSENTE"
@@ -327,10 +447,13 @@ function Get-PanelStatus {
             compiler_root = [string]$Config.compiler_root
             git_main_root = [string]$Config.git_main_root
             docs_root = [string]$Config.docs_root
+            git_repository_root = if ($Config.PSObject.Properties.Name -contains "git") { [string]$Config.git.repository_root } else { "" }
         }
         policy = [ordered]@{
             github_write = [bool]$Config.github_write
             production_write = [bool]$Config.production_write
+            git_mode = if ($Config.PSObject.Properties.Name -contains "git") { [string]$Config.git.mode } else { "READ_ONLY" }
+            git_force_push = if ($Config.PSObject.Properties.Name -contains "git") { [bool]$Config.git.force_push } else { $false }
         }
     }
 }
@@ -404,6 +527,36 @@ function Open-FolderFocused([string]$Path) {
     return "OPENED"
 }
 
+function Resolve-ExistingDirectory([string]$Path, [string]$Label = "Diretório") {
+    $candidate = ([string]$Path).Trim()
+    if (-not $candidate) {
+        throw "$Label não informado."
+    }
+    if (-not (Test-Path -LiteralPath $candidate -PathType Container)) {
+        throw "$Label não localizado: $candidate"
+    }
+    return (Resolve-Path -LiteralPath $candidate -ErrorAction Stop).Path
+}
+
+function Open-GitTerminal([string]$RepositoryRoot) {
+    $root = Resolve-ExistingDirectory -Path $RepositoryRoot -Label "Repositório Git"
+    $powerShell = Get-Command powershell.exe -ErrorAction SilentlyContinue
+    if (-not $powerShell) {
+        throw "Windows PowerShell não localizado."
+    }
+
+    # The repository path is passed through WorkingDirectory, never embedded in
+    # the command string. This preserves spaces and prevents quoting failures.
+    Start-Process `
+        -FilePath $powerShell.Source `
+        -WorkingDirectory $root `
+        -WindowStyle Normal `
+        -ArgumentList @("-NoLogo", "-NoProfile", "-NoExit", "-Command", "git status")
+
+    Write-Event "GIT_TERMINAL_OPEN_REQUEST" "Git" "REQUESTED" $root
+    return $root
+}
+
 function Run-Action($Body) {
     $action = [string]$Body.action
     switch ($action) {
@@ -426,7 +579,7 @@ function Run-Action($Body) {
                 Write-Event "LINUX_OPEN_REQUEST" "1-Dev" "REQUESTED" $detail
                 return @{
                     ok = $true
-                    message = "Inicializacao do ambiente Linux solicitada."
+                    message = "Inicialização do ambiente Linux solicitada."
                     refresh = $true
                 }
             }
@@ -437,29 +590,93 @@ function Run-Action($Body) {
         }
         "linux.folder" {
             $focus = Open-FolderFocused ([string]$Config.linux_root)
-            return @{ ok=$true; message=("Diretorio 1-Dev: " + $focus); refresh=$false }
+            return @{ ok=$true; message=("Diretório 1-Dev: " + $focus); refresh=$false }
         }
         "gitmain.openSystem" {
             if (-not (Test-Path -LiteralPath ([string]$Config.git_main_bootstrap))){ throw "Bootstrap Git_Main ausente." }
             $args = '--master "' + [string]$Config.git_main_system + '" --open-master'
             Start-Process -FilePath ([string]$Config.git_main_bootstrap) -ArgumentList $args -WorkingDirectory ([string]$Config.git_main_system)
             Write-Event "GITMAIN_SYSTEM_OPEN_REQUEST" "3-Git_Main" "REQUESTED" $args
-            return @{ ok=$true; message="Abertura do sistema de homologacao solicitada." }
+            return @{ ok=$true; message="Abertura do sistema de homologação solicitada." }
         }
         "gitmain.openAdmin" {
             if (-not (Test-Path -LiteralPath ([string]$Config.git_main_bootstrap))){ throw "Bootstrap Git_Main ausente." }
             $args = '--master "' + [string]$Config.git_main_system + '"'
             Start-Process -FilePath ([string]$Config.git_main_bootstrap) -ArgumentList $args -WorkingDirectory ([string]$Config.git_main_system)
             Write-Event "GITMAIN_ADMIN_OPEN_REQUEST" "3-Git_Main" "REQUESTED" $args
-            return @{ ok=$true; message="Gerenciador da instalacao solicitado." }
+            return @{ ok=$true; message="Gerenciador da instalação solicitado." }
         }
         "gitmain.folder" {
             $focus = Open-FolderFocused ([string]$Config.git_main_root)
-            return @{ ok=$true; message=("Diretorio Git_Main: " + $focus); refresh=$false }
+            return @{ ok=$true; message=("Diretório Git_Main: " + $focus); refresh=$false }
         }
         "wsl.terminal" {
-            Start-Process -FilePath "wsl.exe" -ArgumentList @("-d",[string]$Config.wsl_distribution)
-            return @{ ok=$true; message="Terminal WSL aberto."; refresh=$false }
+            # ASCALPI_LINUX_MENU_R2
+            $menuWindows = Join-Path ([string]$Config.linux_root) "SM_Repo\Tools\Linux\ASCALPI-LINUX-MENU.sh"
+
+            if (-not (Test-Path -LiteralPath $menuWindows -PathType Leaf)) {
+                throw "Menu Linux ausente: $menuWindows"
+            }
+
+            $menuWsl = Convert-ToWslPath $menuWindows
+            $distribution = [string]$Config.wsl_distribution
+
+            if ([string]::IsNullOrWhiteSpace($distribution)) {
+                throw "Distribuicao WSL nao configurada."
+            }
+
+            if ($distribution.Contains('"') -or $menuWsl.Contains('"')) {
+                throw "Argumento inseguro para abertura do Terminal Linux."
+            }
+
+            $powerShell = Get-Command powershell.exe -ErrorAction SilentlyContinue
+
+            if ($null -eq $powerShell) {
+                throw "Windows PowerShell nao localizado para hospedar o Terminal Linux."
+            }
+
+            $safeDistribution = $distribution.Replace("'", "''")
+            $safeMenuWsl = $menuWsl.Replace("'", "''")
+            $terminalCommand = (
+                # ASCALPI_LINUX_VISIBLE_CONSOLE_R2
+                '$Host.UI.RawUI.WindowTitle = ''ASCALPI - Terminal Linux''; ' +
+                '& "$env:SystemRoot\System32\wsl.exe" -d ''' +
+                $safeDistribution +
+                ''' -- bash ''' +
+                $safeMenuWsl +
+                ''''
+            )
+            $encodedCommand = [Convert]::ToBase64String(
+                [Text.Encoding]::Unicode.GetBytes($terminalCommand)
+            )
+
+            $process = Start-Process `
+                -FilePath $powerShell.Source `
+                -ArgumentList @(
+                    "-NoLogo",
+                    "-NoProfile",
+                    "-NoExit",
+                    "-EncodedCommand",
+                    $encodedCommand
+                ) `
+                -WindowStyle Normal `
+                -PassThru
+
+            $detail = $menuWsl
+
+            if ($null -ne $process) {
+                $detail += " | process_id=" + [string]$process.Id
+            }
+
+            Write-Event "LINUX_TERMINAL_MENU_OPEN_REQUEST" "1-Dev" "REQUESTED" $detail
+
+            return @{
+                ok = $true
+                message = "Terminal Linux ASCALPI aberto."
+                refresh = $false
+                process_id = if ($null -ne $process) { [int]$process.Id } else { 0 }
+                terminal_host = "Windows PowerShell"
+            }
         }
         "docs.folder" {
             $focus = Open-FolderFocused ([string]$Config.docs_root)
@@ -489,8 +706,8 @@ function Run-Action($Body) {
         "git.terminal" {
             $root = Find-GitRoot
             if (-not $root) { throw "Repositório Git local não identificado." }
-            Start-Process -FilePath "powershell.exe" -ArgumentList @("-NoExit","-Command","Set-Location -LiteralPath '"+$root.Replace("'","''")+"'; git status")
-            return @{ ok=$true; message="Terminal Git aberto."; refresh=$false }
+            $openedRoot = Open-GitTerminal $root
+            return @{ ok=$true; message=("Terminal Git aberto em: " + $openedRoot); refresh=$false }
         }
         "status.refresh" { return @{ ok=$true; message="Status atualizado." } }
         default { throw "Ação não habilitada: $action" }

@@ -246,7 +246,7 @@ function actionCard(icon, title, detail, attributes) {
 }
 
 function renderDashboard() {
-  topTitle("Visão geral", "Ambientes, governanção e evidências em um único ponto de controle.");
+  topTitle("Visão geral", "Ambientes, governança e evidências em um único ponto de controle.");
   const s = state.status || {};
   const policyGit = s.policy?.github_write ? "Escrita habilitada" : "Escrita bloqueada";
   const policyProd = s.policy?.production_write ? "Escrita habilitada" : "Escrita bloqueada";
@@ -304,19 +304,104 @@ function renderGitMain() {
 }
 
 function renderGit() {
-  topTitle("Repositório", "Leitura do branch, revisão atual e alterações locais detectadas.");
+  // ASCALPI_GIT_POLICY_R1
+  topTitle("Repositório", "Leitura controlada de LOCAL, Dev-Work e main. Escrita permanece bloqueada.");
   const g = state.status?.git || {};
   const files = Array.isArray(g.changes) ? g.changes : [];
+  const dev = g.dev_work || {};
+  const main = g.main || {};
+  const policy = g.policy || {};
+  const info = g.information || {};
   const unavailable = !g.repository;
+
+  const policyRows = [
+    ["LOCAL", g.repository || "Caixa Git não localizada"],
+    ["Dev-Work", Array.isArray(dev.include) ? dev.include.join(" + ") : "Não informado"],
+    ["main", Array.isArray(main.include) ? main.include.join(" + ") : "Não informado"],
+    ["Modo Git do Painel", g.mode || "READ_ONLY"],
+    ["Escrita GitHub", policy.write_enabled ? "HABILITADA" : "BLOQUEADA"],
+    ["Force push", policy.force_push ? "HABILITADO" : "PROIBIDO"],
+    ["Preview antes de escrever", policy.require_preview ? "OBRIGATÓRIO" : "Não exigido"],
+    ["Aprovação do operador", policy.require_operator_approval ? "OBRIGATÓRIA" : "Não exigida"]
+  ];
+
+  const routeLabels = {
+    folder_purpose: "Função de pasta",
+    operational_rule: "Regra operacional",
+    ai_memory: "Memória durável para IA",
+    reusable_failure: "Falha/riscos reutilizáveis",
+    proven_solution: "Solução técnica comprovada",
+    technical_asset: "Ativo técnico útil",
+    transient_evidence: "Evidência transitória",
+    no_future_value: "Sem valor futuro"
+  };
+
+  const routes = info.routes && typeof info.routes === "object"
+    ? Object.entries(info.routes)
+    : [];
+
   content().innerHTML = `<div class="page">
-    <div class="card hero"><div class="hero-row"><div class="hero-status ${statusClass(g.status)}">${escapeHtml(displayStatus(g.status))}</div><div class="hero-message"><h2>${escapeHtml(g.repository || "Repositório não conectado")}</h2><p>${escapeHtml(g.detail || "Nenhuma raiz Git foi identificada nos ambientes configurados.")}</p></div></div><div class="info-strip"><span><strong>Branch:</strong> ${escapeHtml(g.branch || "Não disponível")}</span><span><strong>Revisão:</strong> <span class="mono">${escapeHtml(g.head_short || "Não disponível")}</span></span><span><strong>Alterações locais:</strong> ${escapeHtml(g.change_count ?? 0)}</span></div></div>
-    <div class="action-grid"><button class="btn primary" data-action="git.refresh">Revalidar repositório</button><button class="btn secondary" data-action="git.folder" ${unavailable ? "disabled" : ""}>Abrir diretório do repositório</button><button class="btn" data-action="git.terminal" ${unavailable ? "disabled" : ""}>Abrir terminal no repositório</button></div>
-    <div class="card table-card"><table class="table"><thead><tr><th>Situação</th><th>Arquivo</th></tr></thead><tbody>${files.length ? files.map((f) => `<tr><td class="mono">${escapeHtml(f.code)}</td><td class="mono">${escapeHtml(f.path)}</td></tr>`).join("") : '<tr><td colspan="2" class="empty">Nenhuma alteração disponível para apresentação.</td></tr>'}</tbody></table></div>
+    <div class="grid-3">
+      ${statusCard("LOCAL", "Repositório operacional / estação", g.detail, g.status)}
+      ${statusCard("DEV-WORK", `${escapeHtml(dev.branch || "Dev-Work")} / ${escapeHtml(dev.head_short || "sem leitura")}`, dev.detail || "Ambiente portátil de engenharia.", dev.status)}
+      ${statusCard("MAIN", `${escapeHtml(main.branch || "main")} / ${escapeHtml(main.head_short || "sem leitura")}`, main.detail || "Linha homologada.", main.status)}
+    </div>
+
+    <div class="card hero">
+      <div class="hero-row">
+        <div class="hero-status ${statusClass(g.status)}">${escapeHtml(displayStatus(g.status))}</div>
+        <div class="hero-message">
+          <h2>${escapeHtml(g.repository_full_name || "A.S.C.A.L.P.I")}</h2>
+          <p>${escapeHtml(g.repository || "Repositório operacional ainda não localizado.")}</p>
+        </div>
+      </div>
+      <div class="info-strip">
+        <span><strong>Branch local:</strong> ${escapeHtml(g.branch || "Não disponível")}</span>
+        <span><strong>Revisão local:</strong> <span class="mono">${escapeHtml(g.head_short || "Não disponível")}</span></span>
+        <span><strong>Alterações locais:</strong> ${escapeHtml(g.change_count ?? 0)}</span>
+      </div>
+    </div>
+
+    <div class="action-grid">
+      <button class="btn primary" data-action="git.refresh">Revalidar repositório</button>
+      <button class="btn secondary" data-action="git.folder" ${unavailable ? "disabled" : ""}>Abrir diretório do repositório</button>
+      <button class="btn" data-action="git.terminal" ${unavailable ? "disabled" : ""}>Abrir terminal no repositório</button>
+    </div>
+
+    <div class="section-heading"><div><h2>Política Git efetiva</h2><p>Composição das linhas e proteções aplicadas pelo painel.</p></div></div>
+    <div class="card table-card">
+      <table class="table">
+        <thead><tr><th>Regra</th><th>Valor efetivo</th></tr></thead>
+        <tbody>${policyRows.map((row) => `<tr><td>${escapeHtml(row[0])}</td><td class="mono">${escapeHtml(row[1])}</td></tr>`).join("")}</tbody>
+      </table>
+    </div>
+
+    <div class="section-heading"><div><h2>Informação útil</h2><p>Roteamento para documentos existentes, área técnica, evidência local ou descarte.</p></div></div>
+    <div class="card table-card">
+      <table class="table">
+        <thead><tr><th>Tipo</th><th>Destino</th></tr></thead>
+        <tbody>${routes.length
+          ? routes.map(([key, value]) => `<tr><td>${escapeHtml(routeLabels[key] || key)}</td><td class="mono">${escapeHtml(value)}</td></tr>`).join("")
+          : '<tr><td colspan="2" class="empty">Política de informação ainda não carregada.</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-heading"><div><h2>Alterações locais</h2><p>Consulta da árvore de trabalho da caixa Git oficial.</p></div></div>
+    <div class="card table-card">
+      <table class="table">
+        <thead><tr><th>Situação</th><th>Arquivo</th></tr></thead>
+        <tbody>${files.length
+          ? files.map((f) => `<tr><td class="mono">${escapeHtml(f.code)}</td><td class="mono">${escapeHtml(f.path)}</td></tr>`).join("")
+          : '<tr><td colspan="2" class="empty">Nenhuma alteração disponível para apresentação.</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+
     ${consoleCard(false)}
   </div>`;
   afterRender();
 }
-
 function renderWsl() {
   topTitle("Infraestrutura WSL", "Disponibilidade da distribuição que sustenta o desenvolvimento Linux.");
   const w = state.status?.wsl || {};

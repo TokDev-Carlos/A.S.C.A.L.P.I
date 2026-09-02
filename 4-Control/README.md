@@ -72,3 +72,49 @@ Production write   = NO
 - R2 rejeitada: não utilizada como base.
 
 Consulte `PATCH_HISTORY.md` para o histórico acumulativo.
+## Git e branches oficiais
+
+O módulo Git do Painel usa a caixa local `C:\.Dev CJL\Git\Repository\A.S.C.A.L.P.I` como repositório operacional. `1-Dev` e `3-Git_Main` não são mais procurados como raízes Git principais.
+
+Nesta revisão, Git permanece em modo **somente leitura** no Painel:
+
+```text
+GitHub write = NO
+Force push   = NO
+main write   = NO
+```
+
+### Dev-Work
+
+Representa o ambiente portátil de engenharia e pode conter:
+
+- `1-Dev`;
+- `2-Compiler` informacional/ferramentas úteis, sem Runtime local;
+- `3-Git_Main`, incluindo o Runtime Windows homologável;
+- `4-Control`;
+- `5-Docs`;
+- conteúdo portátil de `WSL`.
+
+### main
+
+A linha homologada é formada somente por:
+
+- `3-Git_Main`;
+- `5-Docs`.
+
+Promover `main` não significa fazer merge integral da `Dev-Work`.
+
+### Informação útil
+
+O Painel deve encaminhar informação durável para os documentos já existentes, sem criar documentação paralela:
+
+- função de pasta -> README existente da área;
+- regra operacional -> `5-Docs\Execution_Contract.md`;
+- memória durável para IA -> `5-Docs\Souvenir.md`;
+- falha ou risco reutilizável -> `5-Docs\Black_Book.md`;
+- solução técnica comprovada -> `5-Docs\White_Book.md`;
+- ativo técnico útil -> área técnica correspondente;
+- logs, receipts, checkpoints e evidência transitória -> `C:\.Dev CJL\Git`, somente local;
+- informação sem valor futuro -> descartar.
+
+A configuração executável destas regras fica em `Config\control.json`.

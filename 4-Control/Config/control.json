@@ -1,31 +1,82 @@
-{
-  "brand": "ASCALPI",
-  "short_name": "ASCALPI",
-  "panel_title": "ASCALPI Control Center",
-  "workspace_root": "C:\\.Dev CJL",
-  "linux_root": "C:\\.Dev CJL\\1-Dev",
-  "compiler_root": "C:\\.Dev CJL\\2-Compiler",
-  "git_main_root": "C:\\.Dev CJL\\3-Git_Main",
-  "git_main_system": "C:\\.Dev CJL\\3-Git_Main\\System",
-  "control_root": "C:\\.Dev CJL\\4-Control",
-  "docs_root": "C:\\.Dev CJL\\5-Docs",
-  "wsl_distribution": "Ubuntu-24.04",
-  "linux_launcher": "C:\\.Dev CJL\\1-Dev\\INICIAR-CJL-LINUX.sh",
-  "linux_instance": "C:\\CJL_Work_Evidence\\Runtime-State\\1-Dev\\Instancia\\instance.json",
-  "git_main_bootstrap": "C:\\.Dev CJL\\3-Git_Main\\System\\Host\\Bin\\CJL.Bootstrap.exe",
-  "evidence_root": "C:\\CJL_Work_Evidence\\Control",
-  "documentation_state": "C:\\.Dev CJL\\4-Control\\Documentation\\State",
-  "compiler_execution": "PAUSED",
-  "github_write": false,
-  "production_write": false,
-  "window": {
-    "mode": "maximized",
-    "resizable": true,
-    "native_frame": true
-  },
-  "ui": {
-    "button_motion": true,
-    "page_motion": true,
-    "explorer_focus": true
-  }
+﻿{
+    "brand":  "ASCALPI",
+    "short_name":  "ASCALPI",
+    "panel_title":  "ASCALPI Control Center",
+    "workspace_root":  "C:\\.Dev CJL",
+    "linux_root":  "C:\\.Dev CJL\\1-Dev",
+    "compiler_root":  "C:\\.Dev CJL\\2-Compiler",
+    "git_main_root":  "C:\\.Dev CJL\\3-Git_Main",
+    "git_main_system":  "C:\\.Dev CJL\\3-Git_Main\\System",
+    "control_root":  "C:\\.Dev CJL\\4-Control",
+    "docs_root":  "C:\\.Dev CJL\\5-Docs",
+    "wsl_distribution":  "Ubuntu-24.04",
+    "linux_launcher":  "C:\\.Dev CJL\\1-Dev\\INICIAR-CJL-LINUX.sh",
+    "linux_instance":  "C:\\CJL_Work_Evidence\\Runtime-State\\1-Dev\\Instancia\\instance.json",
+    "git_main_bootstrap":  "C:\\.Dev CJL\\3-Git_Main\\System\\Host\\Bin\\CJL.Bootstrap.exe",
+    "evidence_root":  "C:\\CJL_Work_Evidence\\Control",
+    "documentation_state":  "C:\\.Dev CJL\\4-Control\\Documentation\\State",
+    "compiler_execution":  "PAUSED",
+    "github_write":  false,
+    "production_write":  false,
+    "window":  {
+                   "mode":  "maximized",
+                   "resizable":  true,
+                   "native_frame":  true
+               },
+    "ui":  {
+               "button_motion":  true,
+               "page_motion":  true,
+               "explorer_focus":  true
+           },
+    "git":  {
+                "policy_revision":  "GIT-POLICY-R1",
+                "repository_full_name":  "TokDev-Carlos/A.S.C.A.L.P.I",
+                "mailbox_root":  "C:\\.Dev CJL\\Git",
+                "repository_root":  "C:\\.Dev CJL\\Git\\Repository\\A.S.C.A.L.P.I",
+                "outbox_dev_work":  "C:\\.Dev CJL\\Git\\Outbox\\Dev-Work",
+                "branch_dev_work":  "Dev-Work",
+                "branch_main":  "main",
+                "dev_work_include":  [
+                                         "1-Dev",
+                                         "2-Compiler",
+                                         "3-Git_Main",
+                                         "4-Control",
+                                         "5-Docs",
+                                         "WSL"
+                                     ],
+                "main_include":  [
+                                     "3-Git_Main",
+                                     "5-Docs"
+                                 ],
+                "local_only":  [
+                                   "Conteúdo local da caixa Git",
+                                   "Discos virtuais do WSL",
+                                   "Credenciais e segredos",
+                                   "Identidade da estação",
+                                   "Bancos operacionais e dados reais",
+                                   "Logs, recibos e checkpoints locais",
+                                   "Histórico transitório de compilação",
+                                   "Caches e estado temporário"
+                               ],
+                "mode":  "READ_ONLY",
+                "write_enabled":  false,
+                "force_push":  false,
+                "require_preview":  true,
+                "require_operator_approval":  true
+            },
+    "information_policy":  {
+                               "policy_revision":  "INFO-POLICY-R1",
+                               "create_random_documents":  false,
+                               "use_existing_authoritative_documents":  true,
+                               "routes":  {
+                                              "folder_purpose":  "README.md da área existente",
+                                              "operational_rule":  "5-Docs\\Execution_Contract.md",
+                                              "ai_memory":  "5-Docs\\Souvenir.md",
+                                              "reusable_failure":  "5-Docs\\Black_Book.md",
+                                              "proven_solution":  "5-Docs\\White_Book.md",
+                                              "technical_asset":  "Área técnica correspondente",
+                                              "transient_evidence":  "C:\\.Dev CJL\\Git (LOCAL_ONLY)",
+                                              "no_future_value":  "DESCARTAR"
+                                          }
+                           }
 }
