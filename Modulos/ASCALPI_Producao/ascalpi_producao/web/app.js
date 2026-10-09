@@ -1598,11 +1598,347 @@ gaveta.addEventListener('keydown', e => {
   else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primeiro.focus(); }
 });
 
-// ================================================================== telas da etapa 3
-for (const t of ['saldos', 'modelos', 'config']) {
-  TELAS[t] = TELAS[t] || (async tela => { tela.innerHTML = vazio('EM CONSTRUÇÃO', 'ESTA TELA CHEGA NA PRÓXIMA ETAPA.', 'hammer'); });
+// ================================================================== tela: SALDOS
+function classeSaldo(it) {
+  if (it.saldo === 'ACABOU') return 'acabou';
+  if (typeof it.saldo === 'number' && it.saldo < 0) return 'neg';
+  if (!(it.montante > 0)) return 'zero';
+  return 'ok';
 }
 
+function cartaoSaldo(it) {
+  const M = Math.max(0, it.montante || 0), R = it.quant || 0, P = it.previsao || 0;
+  const total = R + P;
+  // sem montante (bonificado ou item zerado) não há excedente a mostrar: só a proporção realizado/previsão
+  const controlado = M > 0 && !ehBonus(it.codigo);
+  const escala = (controlado ? Math.max(M, total) : total) || 1;
+  const r1 = controlado ? Math.min(R, M) : R, p1 = controlado ? Math.min(P, M - r1) : P, exc = controlado ? Math.max(0, total - M) : 0;
+  const w = v => `${(v / escala) * 100}%`;
+  const cls = classeSaldo(it);
+  const valor = it.saldo === 'ACABOU' ? 'ACABOU' : num(it.saldo);
+  const usado = M ? Math.round((total / M) * 100) : null;
+  const bonus = ehBonus(it.codigo);
+  return `<article class="saldo-card ${cls}" data-codigo="${esc(it.codigo)}">
+    <div class="saldo-cab">
+      <span class="cod${bonus ? ' bonus' : ''}">${esc(it.codigo)}</span>
+      <h3>${esc(it.equipamento)}${bonus ? ' <span class="badge purple">BONIFICADO</span>' : ''}</h3>
+      <div class="saldo-valor"><strong>${valor}</strong><small>${cls === 'zero' ? 'SEM MONTANTE' : 'SALDO'}</small></div>
+    </div>
+    <div class="medidor" role="img" aria-label="REALIZADO ${num(R)}, PREVISÃO ${num(P)}, MONTANTE ${num(M)}${exc ? `, EXCEDENTE ${num(exc)}` : ''}"
+      data-tip-titulo="ITEM ${esc(it.codigo)}${usado != null ? ` · ${usado}% USADO` : ''}" data-tip-valor="${esc(valor)} DE ${num(M)}"
+      data-tip-extra="REALIZADO ${num(R)} · PREVISÃO ${num(P)}${exc ? ` · EXCEDENTE ${num(exc)}` : ''}" data-tip-cor="var(--serie-real)">
+      ${r1 ? `<i class="real" style="width:${w(r1)}"></i>` : ''}${p1 ? `<i class="prev" style="width:${w(p1)}"></i>` : ''}${exc ? `<i class="exc" style="width:${w(exc)}"></i>` : ''}
+    </div>
+    <div class="saldo-numeros">
+      <div><span>MONTANTE</span><b>${num(M)}</b></div>
+      <div><span><i style="--cor:var(--serie-real)"></i>REALIZADO</span><b>${num(R)}</b></div>
+      <div><span><i style="--cor:var(--serie-prev)"></i>PREVISÃO</span><b>${num(P)}</b></div>
+    </div>
+    <div class="saldo-pe">${it.ajuste ? `<span class="ajuste-nota">AJUSTE MANUAL ${it.ajuste > 0 ? '+' : ''}${num(it.ajuste)}</span>` : ''}
+      ${it.sistema_previsao || it.sistema_instalado ? `<span class="mudo" style="font-size:10.5px;font-weight:700">SISTEMA: ${num(it.sistema_previsao)} PREV. · ${num(it.sistema_instalado)} INST.</span>` : ''}</div>
+    <button class="btn ghost small ajustar" type="button" data-ajustar="${esc(it.codigo)}">${ic('sliders')}AJUSTAR</button>
+  </article>`;
+}
+
+TELAS.saldos = async (tela, arg, q, vivo) => {
+  const prefs = await api('/api/prefeituras');
+  if (!vivo()) return;
+  const comContrato = prefs.filter(p => p.contratos > 0);
+  let pref = prefs.find(p => String(p.id) === q.p) || comContrato[0] || prefs[0];
+  let contratos = pref ? await api('/api/contratos?prefeitura_id=' + pref.id) : [];
+  let contrato = contratos.find(c => String(c.id) === q.c) || contratos[0];
+  let itens = contrato ? await api(`/api/contratos/${contrato.id}/saldo`) : [];
+  if (!vivo()) return;
+  let filtro = memoria.ler('saldos.filtro', 'todos');
+  let texto = '';
+
+  tela.innerHTML = `
+    ${heroi({
+      classe: 'saldos', olho: 'CONTRATOS E ATAS', titulo: 'SALDOS DOS CONTRATOS', icone: 'scale',
+      texto: 'SALDO = MONTANTE − (REALIZADO + PREVISÃO). O.P. INSTALADA CONTA EM REALIZADO; AS DEMAIS EM PREVISÃO. CANCELAR DEVOLVE O SALDO.',
+    })}
+    <div class="prefs-linha" role="group" aria-label="Prefeitura" id="s-prefs"></div>
+    <div id="s-contratos"></div>
+    <div id="s-corpo"></div>`;
+
+  function desenharPrefs() {
+    $('#s-prefs', tela).innerHTML = prefs.map(p => `<button type="button" class="pref-mini" data-pref="${p.id}" aria-pressed="${p.id === pref?.id}">
+      ${p.logo ? `<img src="/api/prefeituras/${p.id}/logo" alt="" data-icone="building" loading="lazy">` : ic('building')}${esc(p.nome)}</button>`).join('')
+      || vazio('NENHUMA PREFEITURA IMPORTADA', '', 'building');
+  }
+
+  function desenharContratos() {
+    $('#s-contratos', tela).innerHTML = contratos.length ? `<div class="saldos-topo">
+      <div class="segmentado" role="group" aria-label="Contrato">${contratos.map(c => `<button type="button" data-contrato="${c.id}" aria-pressed="${c.id === contrato?.id}">${ic('file')}ATA ${esc(c.ata)}<span class="conta">${c.itens}</span></button>`).join('')}</div>
+      ${contrato ? `<span class="mudo" style="font-size:11.5px;font-weight:700">${esc(contrato.nome || '')}${contrato.descricao ? ' · ' + esc(contrato.descricao) : ''}${contrato.importado_em ? ' · IMPORTADO EM ' + esc(dataBR(contrato.importado_em)) : ''}</span>` : ''}
+    </div>` : '';
+  }
+
+  function desenharCorpo() {
+    const c = $('#s-corpo', tela);
+    if (!contrato) { c.innerHTML = vazio('PREFEITURA SEM CONTRATO', 'OS CONTRATOS VÊM DA IMPORTAÇÃO DOS LIVROS DAS PREFEITURAS.', 'scale'); return; }
+    const neg = itens.filter(i => classeSaldo(i) === 'neg').length;
+    const acabou = itens.filter(i => classeSaldo(i) === 'acabou').length;
+    const comSaldo = itens.filter(i => classeSaldo(i) === 'ok').length;
+    const montante = itens.reduce((t, i) => t + Math.max(0, i.montante || 0), 0);
+    const usado = itens.reduce((t, i) => t + (i.montante > 0 ? i.quant + i.previsao : 0), 0);
+    const pct = montante ? Math.round((usado / montante) * 100) : 0;
+    const termos = norm(texto).split(/\s+/).filter(Boolean);
+    const lista = itens.filter(i => {
+      const k = classeSaldo(i);
+      if (filtro === 'negativos' && k !== 'neg') return false;
+      if (filtro === 'encerrados' && k !== 'acabou') return false;
+      if (filtro === 'com' && k !== 'ok') return false;
+      const alvo = norm(i.codigo + ' ' + i.equipamento);
+      return termos.every(t => alvo.includes(t));
+    });
+    const seg = [['todos', 'TODOS', itens.length, ''], ['negativos', 'NEGATIVOS', neg, 'ATRASADA'], ['encerrados', 'ENCERRADOS', acabou, 'CANCELADA'], ['com', 'COM SALDO', comSaldo, 'NA_OBRA']]
+      .map(([k, r, n, e]) => `<button type="button" data-filtro="${k}" aria-pressed="${k === filtro}"${e ? ` class="e-${e}"` : ''}>${e ? '<span class="ponto"></span>' : ''}${r}<span class="conta">${n}</span></button>`).join('');
+    c.innerHTML = `
+      <div class="kpis">
+        <div class="kpi e-NO_PRAZO"><div class="kpi-topo"><span>ITENS NO CONTRATO</span>${ic('list')}</div><strong>${itens.length}</strong><small>ATA ${esc(contrato.ata)}</small></div>
+        <div class="kpi e-ATRASADA"><div class="kpi-topo"><span>SALDO NEGATIVO</span>${ic('alert')}</div><strong>${neg}</strong><small>CONSUMIU MAIS QUE O MONTANTE</small></div>
+        <div class="kpi" style="--estado:var(--purple)"><div class="kpi-topo"><span>ENCERRADOS</span>${ic('lock')}</div><strong>${acabou}</strong><small>SALDO EXATAMENTE ZERO</small></div>
+        <div class="kpi e-NA_OBRA"><div class="kpi-topo"><span>USADO DO CONTRATO</span>${ic('chart')}</div><strong>${pct}%</strong><small>${num(usado)} DE ${num(montante)} UNIDADES</small></div>
+      </div>
+      <div class="saldos-topo">
+        <div class="segmentado" role="group" aria-label="Filtrar itens">${seg}</div>
+        <label class="busca" style="flex:1;min-width:220px;max-width:380px">${ic('search')}<input id="s-busca" type="search" autocomplete="off" placeholder="Buscar item ou código" aria-label="Buscar item" value="${esc(texto)}"></label>
+        <div class="legenda"><span><i style="--cor:var(--serie-real)"></i>REALIZADO</span><span><i style="--cor:var(--serie-prev)"></i>PREVISÃO</span>
+          <span><i style="--cor:var(--red)" class="exc-amostra"></i>EXCEDENTE</span><span><i class="trilho-amostra"></i>DISPONÍVEL</span></div>
+      </div>
+      <div class="saldos-cards">${lista.map(cartaoSaldo).join('') || vazio('NENHUM ITEM NESTE FILTRO', '', 'search')}</div>
+      <table class="sr"><caption>SALDO DOS ITENS DA ATA ${esc(contrato.ata)}</caption>
+        <tr><th>CÓDIGO</th><th>EQUIPAMENTO</th><th>MONTANTE</th><th>REALIZADO</th><th>PREVISÃO</th><th>SALDO</th></tr>
+        ${lista.map(i => `<tr><td>${esc(i.codigo)}</td><td>${esc(i.equipamento)}</td><td>${num(i.montante)}</td><td>${num(i.quant)}</td><td>${num(i.previsao)}</td><td>${esc(i.saldo)}</td></tr>`).join('')}</table>`;
+  }
+
+  async function trocarPref(id) {
+    pref = prefs.find(p => p.id === id);
+    contratos = await api('/api/contratos?prefeitura_id=' + id);
+    contrato = contratos[0];
+    itens = contrato ? await api(`/api/contratos/${contrato.id}/saldo`) : [];
+    trocarQuery({ p: id, c: contrato?.id || '' });
+    desenharPrefs(); desenharContratos(); desenharCorpo();
+  }
+
+  async function ajustar(codigo, botao) {
+    const it = itens.find(i => i.codigo === codigo);
+    const c = await dialogo({
+      titulo: `AJUSTAR ITEM ${it.codigo}`, sub: `${it.equipamento} · ATA ${contrato.ata}. O AJUSTE FICA REGISTRADO NA ATIVIDADE COM O MOTIVO.`,
+      corpo: `<div class="grade-2">
+          <label class="campo">MONTANTE (TOTAL DO CONTRATO)<input id="d-montante" inputmode="decimal" value="${esc(String(it.montante).replace('.', ','))}"></label>
+          <label class="campo">AJUSTE MANUAL (+ CONSOME / − DEVOLVE)<input id="d-ajuste" inputmode="decimal" value="${esc(String(it.ajuste).replace('.', ','))}"></label>
+        </div>
+        <p class="mudo" style="margin:0;font-size:11.5px">HOJE: REALIZADO ${num(it.quant)} · PREVISÃO ${num(it.previsao)} (JÁ INCLUI O AJUSTE ${num(it.ajuste)}) · SALDO ${esc(it.saldo === 'ACABOU' ? 'ACABOU' : num(it.saldo))}</p>
+        <label class="campo">MOTIVO (OBRIGATÓRIO)<textarea id="d-motivo" maxlength="200" placeholder="EX.: ADITIVO DE 25% NO CONTRATO"></textarea></label>`,
+      rotulo: 'SALVAR AJUSTE',
+      validar: c => {
+        const ok = v => /^-?\d+([.,]\d+)?$/.test(v.trim());
+        if (!ok($('#d-montante', c).value)) return 'MONTANTE INVÁLIDO.';
+        if (!ok($('#d-ajuste', c).value)) return 'AJUSTE INVÁLIDO (USE NÚMERO, PODE SER NEGATIVO).';
+        if (!$('#d-motivo', c).value.trim()) return 'INFORME O MOTIVO DO AJUSTE.';
+        return null;
+      },
+    });
+    if (!c) return;
+    const n = v => Number(v.trim().replace(',', '.'));
+    try {
+      itens = await ocupado(botao, () => api(`/api/contratos/${contrato.id}/ajuste`, {
+        metodo: 'POST', corpo: { codigo, montante: n($('#d-montante', c).value), ajuste: n($('#d-ajuste', c).value), motivo: $('#d-motivo', c).value.trim().toUpperCase() },
+      }));
+      desenharCorpo();
+      aviso(`SALDO DO ITEM ${codigo} AJUSTADO.`, 'ok');
+    } catch (e) { falha(e); }
+  }
+
+  tela.addEventListener('click', async e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    try {
+      if (b.dataset.pref) await trocarPref(Number(b.dataset.pref));
+      else if (b.dataset.contrato) {
+        contrato = contratos.find(c => c.id === Number(b.dataset.contrato));
+        itens = await api(`/api/contratos/${contrato.id}/saldo`);
+        trocarQuery({ c: contrato.id });
+        desenharContratos(); desenharCorpo();
+      } else if (b.dataset.filtro) {
+        filtro = b.dataset.filtro; memoria.gravar('saldos.filtro', filtro); desenharCorpo();
+      } else if (b.dataset.ajustar) await ajustar(b.dataset.ajustar, b);
+    } catch (erro) { falha(erro); }
+  });
+  tela.addEventListener('input', e => {
+    if (e.target.id !== 's-busca') return;
+    texto = e.target.value;
+    const pos = e.target.selectionStart;
+    desenharCorpo();
+    const novo = $('#s-busca', tela);
+    novo.focus(); novo.setSelectionRange(pos, pos);
+  });
+  desenharPrefs(); desenharContratos(); desenharCorpo();
+  requestAnimationFrame(() => $('.pref-mini[aria-pressed=true]', tela)?.scrollIntoView({ inline: 'center', block: 'nearest' }));
+};
+
+// ================================================================== tela: MODELOS
+TELAS.modelos = async (tela, arg, q, vivo) => {
+  const [modelos, prefs, contratos] = await Promise.all([api('/api/modelos?todos=1'), api('/api/prefeituras'), api('/api/contratos')]);
+  if (!vivo()) return;
+  const ativos = modelos.filter(m => m.ativo).length;
+  const semContrato = modelos.filter(m => m.ativo && !m.contrato_id).length;
+  let texto = '';
+
+  tela.innerHTML = `
+    ${heroi({
+      classe: 'modelos', olho: 'PREFEITURAS E FOTOS', titulo: 'MODELOS DE O.P.', icone: 'layers',
+      texto: `${plural(modelos.length, 'MODELO', 'MODELOS')} (ABAS "OP-" DOS LIVROS) · ${ativos} ATIVOS${semContrato ? ` · ${semContrato} SEM CONTRATO DE SALDO` : ''}. AS FOTOS E O LOGO SAEM DO PRÓPRIO MODELO.`,
+    })}
+    <div class="filtros"><label class="busca">${ic('search')}<input id="m-busca" type="search" autocomplete="off" placeholder="Buscar prefeitura, modelo ou ATA" aria-label="Buscar modelo"></label></div>
+    <div id="m-lista"></div>`;
+
+  function cartao(m) {
+    const opcoes = contratos.filter(c => c.prefeitura_id === m.prefeitura_id)
+      .map(c => `<option value="${c.id}"${c.id === m.contrato_id ? ' selected' : ''}>ATA ${esc(c.ata)} · ${c.itens} ITENS</option>`).join('');
+    const fotos = [0, 1, 2, 3].map(i => {
+      const l = m.fotos[i];
+      return `<span>${l != null ? `<img src="/api/modelos/${m.id}/foto/${l}" alt="" loading="lazy">` : ic('image')}</span>`;
+    }).join('');
+    return `<article class="modelo-card${m.ativo ? '' : ' inativo'}" data-modelo="${m.id}" data-busca="${esc(norm([m.prefeitura, m.aba, m.titulo, m.ata].join(' ')))}">
+      <div class="modelo-fotos" data-galeria="${m.id}" role="button" tabindex="0" aria-label="VER EQUIPAMENTOS DO MODELO ${esc(m.aba)}">${fotos}</div>
+      <div class="modelo-info">
+        <h3>${esc(m.aba)}</h3>
+        <div class="linha">
+          ${m.titulo ? `<span class="badge blue">${esc(m.titulo)}</span>` : ''}
+          <span class="badge slate">${ic('box')}${plural(m.equipamentos, 'EQUIP.', 'EQUIP.')}</span>
+          <span class="badge ${m.com_foto ? 'teal' : 'gray'}">${ic('camera')}${m.com_foto} COM FOTO</span>
+          <span class="badge purple">${ic('clipboard')}${plural(m.ops, 'O.P.', 'O.P.')}</span>
+          ${m.tipo_padrao ? `<span class="badge gray">${esc(m.tipo_padrao)}</span>` : ''}
+          ${m.contrato_id ? '' : `<span class="badge orange">${ic('alert')}SEM CONTRATO</span>`}
+        </div>
+        <button class="btn soft small" type="button" data-galeria="${m.id}" style="justify-self:start">${ic('eye')}VER EQUIPAMENTOS</button>
+      </div>
+      <div class="modelo-acoes">
+        <select data-contrato-de="${m.id}" aria-label="CONTRATO DO SALDO DO MODELO ${esc(m.aba)}"><option value="0"${m.contrato_id ? '' : ' selected'}>SEM CONTRATO</option>${opcoes}</select>
+        <label class="interruptor"><input type="checkbox" data-ativo="${m.id}"${m.ativo ? ' checked' : ''}><span>${m.ativo ? 'ATIVO' : 'INATIVO'}</span></label>
+      </div>
+    </article>`;
+  }
+
+  function desenhar() {
+    const termos = norm(texto).split(/\s+/).filter(Boolean);
+    const grupos = prefs.map(p => ({ p, ms: modelos.filter(m => m.prefeitura_id === p.id && termos.every(t => norm([m.prefeitura, m.aba, m.titulo, m.ata].join(' ')).includes(t))) }))
+      .filter(g => g.ms.length);
+    $('#m-lista', tela).innerHTML = grupos.map(({ p, ms }) => `<section class="grupo-pref" aria-labelledby="gp-${p.id}">
+      <header><span class="logo">${logoPref(p)}</span><div><h2 id="gp-${p.id}">${esc(p.nome)}</h2>
+        <p>${plural(ms.length, 'MODELO', 'MODELOS')} · ${plural(p.contratos, 'CONTRATO', 'CONTRATOS')} · ${plural(p.ops, 'O.P.', 'O.P.')}</p></div></header>
+      <div class="modelos-grade">${ms.map(cartao).join('')}</div></section>`).join('')
+      || vazio('NENHUM MODELO ENCONTRADO', texto ? 'TENTE OUTRA BUSCA.' : 'USE O IMPORTAR_LEGADO.CMD PARA TRAZER AS ABAS "OP-" DOS LIVROS.', 'layers');
+  }
+
+  async function galeria(id) {
+    const m = await api('/api/modelos/' + id);
+    const figuras = m.linhas.map(l => `<figure>
+      <div>${l.foto ? `<img src="/api/modelos/${m.id}/foto/${l.linha}" alt="${esc(l.equipamento)}" loading="lazy">` : ic('image')}</div>
+      <figcaption><span class="cod${ehBonus(l.codigo) ? ' bonus' : ''}">${esc(l.codigo || '—')}</span><span>${esc(l.equipamento)}</span></figcaption></figure>`).join('');
+    dialogo({
+      titulo: `${m.aba} · ${m.prefeitura}`, sub: `${plural(m.linhas.length, 'EQUIPAMENTO', 'EQUIPAMENTOS')} · ${m.linhas.filter(l => l.foto).length} COM FOTO`,
+      corpo: `<div class="galeria">${figuras || vazio('MODELO SEM EQUIPAMENTOS', '', 'box')}</div>`, largo: true, semRodape: true,
+    });
+  }
+
+  async function salvar(id, campos, el) {
+    const m = modelos.find(x => x.id === id);
+    try {
+      const novo = await api('/api/modelos/' + id, { metodo: 'PATCH', corpo: campos });
+      m.ativo = novo.ativo; m.contrato_id = novo.contrato_id;
+      const c = contratos.find(x => x.id === m.contrato_id);
+      m.ata = c?.ata || null;
+      const card = el.closest('.modelo-card');
+      card.replaceWith(nodo(cartao(m)));
+      aviso(campos.ativo != null ? `MODELO ${m.aba} ${m.ativo ? 'ATIVADO' : 'DESATIVADO'}.` : `CONTRATO DO SALDO DE ${m.aba} ALTERADO.`, 'ok');
+    } catch (e) {
+      falha(e);
+      if (el.type === 'checkbox') el.checked = !el.checked; else el.value = String(m.contrato_id || 0);
+    }
+  }
+
+  tela.addEventListener('click', e => {
+    const g = e.target.closest('[data-galeria]');
+    if (g) galeria(Number(g.dataset.galeria)).catch(falha);
+  });
+  tela.addEventListener('keydown', e => {
+    const g = e.target.closest?.('.modelo-fotos[data-galeria]');
+    if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); galeria(Number(g.dataset.galeria)).catch(falha); }
+  });
+  tela.addEventListener('change', e => {
+    const el = e.target;
+    if (el.dataset.ativo) salvar(Number(el.dataset.ativo), { ativo: el.checked }, el);
+    else if (el.dataset.contratoDe) salvar(Number(el.dataset.contratoDe), { contrato_id: Number(el.value) }, el);
+  });
+  tela.addEventListener('input', e => { if (e.target.id === 'm-busca') { texto = e.target.value; desenhar(); } });
+  desenhar();
+};
+
+// ================================================================== tela: CONFIGURAÇÃO
+TELAS.config = async (tela, arg, q, vivo) => {
+  const [cfg, resumo, eventos] = await Promise.all([api('/api/config'), api('/api/resumo'), api('/api/eventos')]);
+  if (!vivo()) return;
+  const indisponivel = String(resumo.motor_pdf).startsWith('INDISPONÍVEL');
+  let quantos = 40;
+
+  tela.innerHTML = `
+    ${heroi({
+      classe: 'config', olho: 'PASTAS E PDF', titulo: 'CONFIGURAÇÃO', icone: 'gear',
+      texto: 'ONDE OS ARQUIVOS DAS O.P. SÃO PUBLICADOS E QUAL PROGRAMA GERA O PDF. A SENHA DOS .XLSX FICA SÓ NO CONFIG.JSON DESTE COMPUTADOR.',
+    })}
+    <div class="config-grade">
+      <form class="card" id="c-form" novalidate>
+        <div class="card-head" style="margin-bottom:0"><div><div class="kicker">PUBLICAÇÃO</div><h2>ARQUIVOS DAS O.P.</h2><p>CADA O.P. NOVA OU REVISADA GERA O .XLSX BLOQUEADO E O .PDF.</p></div></div>
+        <label class="interruptor"><input type="checkbox" id="c-publicar"${cfg.publicar ? ' checked' : ''}><span>PUBLICAR AUTOMATICAMENTE AO GERAR OU EDITAR</span></label>
+        <label class="campo">PASTA DOS .XLSX<input id="c-xlsx" value="${esc(cfg.pasta_xlsx)}" placeholder="${esc(resumo.pastas[0])}" autocomplete="off"></label>
+        <label class="campo">PASTA DOS .PDF<input id="c-pdf" value="${esc(cfg.pasta_pdf)}" placeholder="${esc(resumo.pastas[1])}" autocomplete="off"></label>
+        <label class="campo">MOTOR DE PDF<select id="c-motor">
+          ${[['auto', 'AUTOMÁTICO (EXCEL NO WINDOWS, SENÃO LIBREOFFICE)'], ['excel', 'MICROSOFT EXCEL (IGUAL AO VBA)'], ['libreoffice', 'LIBREOFFICE']]
+            .map(([v, r]) => `<option value="${v}"${cfg.motor_pdf === v ? ' selected' : ''}>${r}</option>`).join('')}</select></label>
+        <p class="mudo" style="margin:0;font-size:11.5px;font-weight:600">DEIXE A PASTA EM BRANCO PARA USAR O PADRÃO (DADOS\\DOCUMENTOS).</p>
+        <div><button class="btn primary" type="submit" id="c-salvar">${ic('save')}SALVAR CONFIGURAÇÃO</button></div>
+      </form>
+      <section class="card">
+        <div class="card-head" style="margin-bottom:0"><div><div class="kicker">SITUAÇÃO</div><h2>COMO ESTÁ AGORA</h2><p>VALORES EFETIVOS USADOS PELO SERVIDOR.</p></div>
+          <span class="badge ${indisponivel ? 'red' : 'green'}">${ic(indisponivel ? 'alert' : 'check')}PDF: ${esc(indisponivel ? 'INDISPONÍVEL' : String(resumo.motor_pdf).toUpperCase())}</span></div>
+        ${indisponivel ? `<div class="nota-legado" style="background:var(--red-soft);color:var(--red)">${ic('alert')}<span>${esc(resumo.motor_pdf)}</span></div>` : ''}
+        <div class="caminho"><b>.XLSX PUBLICADOS EM</b>${esc(resumo.pastas[0])}</div>
+        <div class="caminho"><b>.PDF PUBLICADOS EM</b>${esc(resumo.pastas[1])}</div>
+        <div class="kpis" style="margin:0;grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div class="kpi e-NO_PRAZO"><div class="kpi-topo"><span>PRÓXIMA O.P.</span>${ic('clipboard')}</div><strong>${esc(resumo.proximo_numero)}</strong><small>NUMERAÇÃO REINICIA TODO ANO</small></div>
+          <div class="kpi e-NA_OBRA"><div class="kpi-topo"><span>O.P. ATIVAS EM ${resumo.ano}</span>${ic('factory')}</div><strong>${resumo.ops_ano}</strong><small>${resumo.ops_sistema} GERADAS NO SISTEMA</small></div>
+          <div class="kpi e-INSTALADA"><div class="kpi-topo"><span>PREFEITURAS</span>${ic('building')}</div><strong>${resumo.prefeituras}</strong><small>IMPORTADAS DOS LIVROS</small></div>
+          <div class="kpi" style="--estado:var(--purple)"><div class="kpi-topo"><span>MODELOS ATIVOS</span>${ic('layers')}</div><strong>${resumo.modelos}</strong><small>ABAS "OP-"</small></div>
+        </div>
+      </section>
+    </div>
+    <section class="card" style="margin-top:18px" aria-labelledby="c-ativ">
+      <div class="card-head"><div><div class="kicker">HISTÓRICO</div><h2 id="c-ativ">ATIVIDADE</h2><p>TUDO QUE FOI FEITO NO SISTEMA (O.P., ACOMPANHAMENTO, SALDO, MODELOS, IMPORTAÇÃO).</p></div>
+        <span class="badge slate">${plural(eventos.length, 'REGISTRO', 'REGISTROS')}</span></div>
+      <div class="atividade" id="c-lista"></div>
+    </section>`;
+
+  function desenharAtividade() {
+    const mais = eventos.length > quantos ? `<div style="text-align:center;margin-top:10px"><button class="btn ghost small" type="button" data-mais>${ic('plus')}MOSTRAR MAIS</button></div>` : '';
+    $('#c-lista', tela).innerHTML = (eventos.slice(0, quantos).map(itemAtividade).join('') || vazio('SEM ATIVIDADE AINDA', '', 'history')) + mais;
+  }
+
+  $('#c-form', tela).addEventListener('submit', async e => {
+    e.preventDefault();
+    const corpo = { publicar: $('#c-publicar', tela).checked, pasta_xlsx: $('#c-xlsx', tela).value.trim(), pasta_pdf: $('#c-pdf', tela).value.trim(), motor_pdf: $('#c-motor', tela).value };
+    try {
+      await ocupado($('#c-salvar', tela), () => api('/api/config', { metodo: 'PUT', corpo }));
+      aviso('CONFIGURAÇÃO SALVA.', 'ok');
+      baseAtual = null; desenharTela(lerRota(), { manterRolagem: true });
+    } catch (erro) { falha(erro); }
+  });
+  tela.addEventListener('click', e => { if (e.target.closest('[data-mais]')) { quantos += 60; desenharAtividade(); } });
+  desenharAtividade();
+};
 
 // ================================================================== início
 addEventListener('hashchange', rotear);
