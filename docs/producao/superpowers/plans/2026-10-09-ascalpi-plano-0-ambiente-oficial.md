@@ -1,5 +1,7 @@
 # ASCALPI — Plano 0: Ambiente oficial no Windows — Implementation Plan
 
+> **Contexto atualizado em 09/10/2026:** este documento preserva o planejamento histórico de integração/ambiente. O módulo atual é independente e sua interface já está implementada. Para a próxima etapa, leia [a revisão e o plano de estabilização](../../revisao/PLANO_PARA_CLAUDE.md) e as instruções vigentes em `Modulos/ASCALPI_Producao/CLAUDE.md`. Não reaplicar tarefas antigas como se fossem lacunas atuais; bloqueio total do XLSX e edição só no sistema são decisões vigentes. Integração ao núcleo e instalador ficam após estabilização e aceite operacional.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans (escolhido: execução nativa). Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Transformar o núcleo CJL copiado em um ASCALPI instalável no padrão do UStracker: programa em `C:\Program Files\ASCALPI`, dados em `C:\ProgramData\ASCALPI\UserData` (junção), estado por usuário em `%LOCALAPPDATA%\ASCALPI`, caminhos de negócio escolhidos na instalação.
@@ -8,7 +10,7 @@
 
 **Tech Stack:** Python 3.14 (Runtime assinado do CJL), PowerShell 5.1, NSIS 3 (`C:\Program Files (x86)\NSIS\makensis.exe`), unittest.
 
-**Spec:** `docs/superpowers/specs/2026-10-09-ascalpi-v1-producao-design.md` seção 12. Referência: UStracker `installer/UStracker.nsi`, `installer/setup-data.ps1`, `installer/remove-data.ps1`, `src/ustracker/paths.py`.
+**Spec:** `docs/producao/superpowers/specs/2026-10-09-ascalpi-v1-producao-design.md` seção 12. Referência: UStracker `installer/UStracker.nsi`, `installer/setup-data.ps1`, `installer/remove-data.ps1`, `src/ustracker/paths.py`.
 
 **Ordem:** Plano 0 primeiro (a Task 1 daqui substitui a Task 1 do Plano 1); depois Plano 1 a partir da Task 2.
 

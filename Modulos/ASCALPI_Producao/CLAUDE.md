@@ -1,6 +1,6 @@
 # ASCALPI Produção — instruções do projeto
 
-Leia este arquivo inteiro e depois `CONTINUAR.md` (estado atual, API e desenho do `web/app.js` que falta) antes de qualquer ação.
+Leia este arquivo inteiro e depois `CONTINUAR.md` (estado atual, API e referência do `web/app.js` já implementado) antes de qualquer ação.
 
 ## 1. Objetivo
 
@@ -29,7 +29,7 @@ Módulo independente de **Ordens de Produção** do sistema **ASCALPI** (esse é
 | `imagens.py` | Fotos e logos extraídos dos desenhos das abas |
 | `servico.py` | Regras de aplicação: situação da O.P., painel, saldos, salvar/cancelar/publicar |
 | `servidor.py` | API HTTP (stdlib `ThreadingHTTPServer`) |
-| `web/` | `index.html` + `app.css` prontos; `app.js` a escrever |
+| `web/` | `index.html`, `app.css` e `app.js` implementados; estabilização e aceite operacional pendentes |
 | `tests/`, `ferramentas/` | Testes leves e dados de demonstração (aqui pode usar openpyxl) |
 
 ## 4. Como trabalhar (ordem de raciocínio)
@@ -70,3 +70,7 @@ Mensagem curta em português; terminar com as linhas de coautoria e sessão exig
 ## 9. Próximos marcos
 
 Interface completa → amostras reais de O.P. (3–5 xlsx + PDF) para comparação pixel a pixel → teste do PDF via Excel no Windows → ambiente oficial/instalador (Plano 0) → integração ao núcleo ASCALPI → nuvem → módulo Ordens de Compra.
+
+## 10. Revisão técnica de 09/10/2026
+
+Plano e evidências: [`PLANO_PARA_CLAUDE.md`](../../docs/producao/revisao/PLANO_PARA_CLAUDE.md). A revisão identificou falhas reproduzidas de publicação, concorrência, vínculo de contrato, validação e reimportação. O plano não significa que elas foram corrigidas. Priorizar estabilização antes de refatorar; preservar a interface existente. Os planos antigos de integração/instalador são marcos posteriores, não instruções para reconstruir o módulo atual.

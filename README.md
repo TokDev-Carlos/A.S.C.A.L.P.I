@@ -15,6 +15,10 @@ Branches de trabalho criadas por agentes, I.A. ou tarefas específicas são temp
 
 ## Estado desta fundação
 
-O repositório foi iniciado de forma limpa. A estrutura funcional do sistema, os documentos mestres e o ambiente de desenvolvimento serão incorporados somente após a validação final do ambiente local atual.
+O repositório foi iniciado de forma limpa. Nesta linha de desenvolvimento, o módulo independente de Ordens de Produção já está em `Modulos/ASCALPI_Producao`, com interface implementada e estabilização/aceite operacional pendentes. Isso não significa que o módulo já foi integrado ou homologado em `main`.
+
+- [Instruções do módulo](Modulos/ASCALPI_Producao/CLAUDE.md)
+- [Continuidade](Modulos/ASCALPI_Producao/CONTINUAR.md)
+- [Revisão técnica e plano para o Claude](docs/producao/revisao/PLANO_PARA_CLAUDE.md)
 
 Não devem ser importados automaticamente caches, credenciais, bancos locais, evidências de máquina, quarentenas, artefatos regeneráveis ou outros resíduos dos repositórios anteriores.

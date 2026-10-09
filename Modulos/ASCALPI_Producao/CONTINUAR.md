@@ -1,6 +1,15 @@
 # Continuar o módulo ASCALPI Produção na nuvem
 
-Estado em 09/10/2026, 21h30. Branch: `modulo/producao-op`.
+Estado registrado em 09/10/2026. Branch: `modulo/producao-op`.
+
+## Revisão independente — 09/10/2026
+
+- Base revisada: `b691e8e66edc65e515d8596d87288dc06101812c`.
+- Suíte existente: 18 testes, OK. Diagnóstico adicional: 10 cenários reproduzidos, 9 grupos de achados.
+- Próximo trabalho de código: corrigir publicação, integridade transacional, associação de contrato, validação e reimportação antes da refatoração geral.
+- Plano: [`PLANO_PARA_CLAUDE.md`](../../docs/producao/revisao/PLANO_PARA_CLAUDE.md).
+- A interface já foi implementada. As descrições detalhadas abaixo servem como referência; não são tarefas para reescrevê-la.
+- As capturas e validações de interface abaixo foram registradas pela sessão anterior; esta revisão não refez o aceite visual real. Os defeitos do plano ainda aguardam correção.
 
 ## O que é
 
@@ -20,9 +29,9 @@ python ferramentas/dados_demo.py /tmp/demo        # livro sintético (2 prefeitu
 python -m ascalpi_producao --dados /tmp/demo servir --porta 8765
 ```
 
-Os dados reais (27 livros `OK-*.xlsm`, o Controle e a pasta `dados/` importada) **não vão para o GitHub**: o repositório é público e contém dados de clientes. Na máquina do Carlos eles estão em `D:\PROGRAMAS\ASCALPI_Project\Modulos\ASCALPI_Producao\dados` (importados: 27 prefeituras, 45 modelos com o padrão "OP-" no nome da aba, 1.033 itens de contrato, 230 O.P. do histórico; próxima O.P. 258-26). Para testar com eles numa sessão em nuvem, anexe os arquivos na conversa.
+Os dados reais (27 livros `OK-*.xlsm`, o Controle e a pasta `dados/` importada) **não vão para o GitHub**: o repositório é público e contém dados de clientes. Na máquina do Carlos eles estão em `D:\PROGRAMAS\ASCALPI_Project\Modulos\ASCALPI_Producao\dados` (importados: 27 prefeituras, 45 modelos com o padrão "OP-" no nome da aba, 1.033 itens de contrato, 230 O.P. do histórico; próxima O.P. 258-26). Nesta revisão, os testes em nuvem usam somente dados sintéticos; a validação com arquivos reais fica para uma etapa local autorizada.
 
-## Progresso da tarefa atual: "interface em blocos" (~90%)
+## Progresso da interface em blocos: implementada; aceite operacional pendente
 
 | Etapa | Situação |
 |---|---|
@@ -30,7 +39,7 @@ Os dados reais (27 livros `OK-*.xlsm`, o Controle e a pasta `dados/` importada) 
 | `web/index.html` (casca) e `web/app.css` (visual completo + bloco "complementos usados pelo app.js" no fim) | ✅ |
 | `web/app.js` novo (módulo ES, ~1.950 linhas): infraestrutura + Painel (etapa 1), Nova O.P. + Ordens + gaveta (etapa 2), Saldos + Modelos + Configuração (etapa 3) | ✅ commits `fa799bb`, `b0de808`, `0331524` |
 | Conferido com capturas (Playwright, 1366px e 390px), console sem erros, fluxo gerar → saldo negativo → REV → cancelar testado | ✅ (dados de demonstração, sem fotos/logos) |
-| **Próximo passo:** copiar a pasta `Modulos/ASCALPI_Producao` (sem `dados/`) para `D:\PROGRAMAS\ASCALPI_Project\Modulos\ASCALPI_Producao` no PC do Carlos e conferir com os 27 livros reais (fotos, logos, 230 O.P.) | ⏳ |
+| **Validação operacional posterior à estabilização:** copiar a pasta `Modulos/ASCALPI_Producao` (sem `dados/`) para `D:\PROGRAMAS\ASCALPI_Project\Modulos\ASCALPI_Producao` no PC do Carlos e conferir com os 27 livros reais (fotos, logos, 230 O.P.) | ⏳ |
 
 Notas da interface:
 - `index.html` carrega `app.js` com `type="module"`; o `servidor.py` força `text/javascript` para `.js` (o registro do Windows às vezes diz `text/plain` e o navegador recusaria o módulo).
@@ -62,7 +71,7 @@ Pedido do Carlos: "tabelas em blocos, mais cores, fluidez, CSS e JS, no padrão 
 
 Situação da O.P. (`estado_op`, pelas colunas do Controle): CANCELADA (situação ou status CANCELADO/DUPLICADO) > INSTALADA (status OK) > NA_OBRA (material obra OK ou entrega OK) > SEM_DATA > ATRASADA (prazo efetivo < hoje; entrega atualizada com data substitui o prazo) > PROXIMA (≤ 3 dias) > NO_PRAZO.
 
-## Desenho do novo `app.js` (o que escrever)
+## Referência do `app.js` implementado (preservar ao corrigir/refatorar)
 
 Base visual (já no CSS): tokens do Painel ASCALPI (`--navy #123252`, `--blue #0f5da8`, `--teal`, `--green`, `--orange`, `--purple`, `--red`, `--slate`), topo em degradê, abas de módulo, `.heroi` com degradê por tela (`.nova .ordens .saldos .modelos .config`), `.kpi` com faixa, `.badge`, `.pilula` + classe `e-<ESTADO>` (define `--estado`/`--estado-soft`). Do UStracker: onda no clique (`.onda`), botão ocupado (`aria-busy`), barra de progresso (`body.carregando`/`carregou`), filtro por coluna (`.tf-*`).
 

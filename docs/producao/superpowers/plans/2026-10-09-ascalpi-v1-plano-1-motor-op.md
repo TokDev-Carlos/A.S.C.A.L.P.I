@@ -1,5 +1,7 @@
 # ASCALPI v1 — Plano 1: Motor de documento e regras da O.P. — Implementation Plan
 
+> **Contexto atualizado em 09/10/2026:** este documento preserva o planejamento histórico de integração/ambiente. O módulo atual é independente e sua interface já está implementada. Para a próxima etapa, leia [a revisão e o plano de estabilização](../../revisao/PLANO_PARA_CLAUDE.md) e as instruções vigentes em `Modulos/ASCALPI_Producao/CLAUDE.md`. Não reaplicar tarefas antigas como se fossem lacunas atuais; bloqueio total do XLSX e edição só no sistema são decisões vigentes. Integração ao núcleo e instalador ficam após estabilização e aceite operacional.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ter, sem interface, tudo o que o módulo Produção precisa para o sistema controlar as O.P.: regras (nome, número, saldo), importação dos `.xlsm` legados (contratos, itens, saldo base, histórico), extração dos modelos e geração sob demanda do `.xlsx`/PDF idênticos ao VBA V2.4.22.
@@ -8,7 +10,7 @@
 
 **Tech Stack:** Python 3.13/3.14 (stdlib + openpyxl 3.1), PowerShell 5.1 + Excel 16 via COM, unittest (padrão do CJL), poppler + Pillow só na ferramenta de aceite.
 
-**Spec:** `docs/superpowers/specs/2026-10-09-ascalpi-v1-producao-design.md` (revisão 2; seção 5 = contrato de fidelidade).
+**Spec:** `docs/producao/superpowers/specs/2026-10-09-ascalpi-v1-producao-design.md` (revisão 2; seção 5 = contrato de fidelidade).
 
 ## Global Constraints
 

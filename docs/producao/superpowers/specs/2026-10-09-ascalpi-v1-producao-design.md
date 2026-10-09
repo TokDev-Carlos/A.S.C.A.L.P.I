@@ -1,5 +1,7 @@
 # ASCALPI v1 — Módulo Produção (Ordens de Produção) — Desenho
 
+> **Contexto atualizado em 09/10/2026:** este documento preserva o planejamento histórico de integração/ambiente. O módulo atual é independente e sua interface já está implementada. Para a próxima etapa, leia [a revisão e o plano de estabilização](../../revisao/PLANO_PARA_CLAUDE.md) e as instruções vigentes em `Modulos/ASCALPI_Producao/CLAUDE.md`. Não reaplicar tarefas antigas como se fossem lacunas atuais; bloqueio total do XLSX e edição só no sistema são decisões vigentes. Integração ao núcleo e instalador ficam após estabilização e aceite operacional.
+
 - **Data:** 09/10/2026 — revisão 2 (direção do Carlos às 12:31)
 - **Status:** para revisão
 - **Decisões do usuário:**
