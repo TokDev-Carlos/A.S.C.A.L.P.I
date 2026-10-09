@@ -90,5 +90,54 @@ class TestImagens(unittest.TestCase):
                 self.assertNotEqual(etag1, etag3)
 
 
+
+def _rels_zip(itens):
+    ns = "http://schemas.openxmlformats.org/package/2006/relationships"
+    conteudo = "".join(f'<Relationship Id="{ident}" Type="{tipo}" Target="{alvo}"/>'
+                       for ident, tipo, alvo in itens)
+    return f'<Relationships xmlns="{ns}">{conteudo}</Relationships>'.encode()
+
+
+def _livro_xml_com_fotos(pasta, prefixo):
+    """ZIP OOXML sintético com workbook, worksheet, drawing e relacionamentos reais."""
+    arq = Path(pasta) / f"modelo_{prefixo}.xlsx"
+    partes = {
+        "xl/workbook.xml": (
+            f'<workbook xmlns:r="{R}"><sheets><sheet name="O.P-TESTE" sheetId="1" r:id="rId1"/>'
+            '</sheets></workbook>').encode(),
+        "xl/_rels/workbook.xml.rels": _rels_zip([
+            ("rId1", R + "/worksheet", "worksheets/sheet1.xml")]),
+        "xl/worksheets/sheet1.xml": (
+            f'<worksheet xmlns:r="{R}"><drawing r:id="rDraw"/></worksheet>').encode(),
+        "xl/worksheets/_rels/sheet1.xml.rels": _rels_zip([
+            ("rDraw", R + "/drawing", "../drawings/drawing1.xml")]),
+        "xl/drawings/drawing1.xml": desenho_xml(prefixo),
+        "xl/drawings/_rels/drawing1.xml.rels": _rels_zip([
+            ("rLogo", R + "/image", "../media/logo.png"),
+            ("rFoto", R + "/image", "../media/foto.png")]),
+        "xl/media/logo.png": PNG,
+        "xl/media/foto.png": PNG + b"DIFERENTE",
+    }
+    with zipfile.ZipFile(arq, "w") as z:
+        for nome, bytes_ in partes.items():
+            z.writestr(nome, bytes_)
+    return arq
+
+
+class TestImagensZip(unittest.TestCase):
+    def test_integracao_zip_com_relacoes_reais(self):
+        cache = imagens.CacheImagens()
+        with tempfile.TemporaryDirectory() as pasta:
+            for prefixo in ("padrao", "alternativo"):
+                arq = _livro_xml_com_fotos(pasta, prefixo)
+                with self.subTest(prefixo=prefixo):
+                    self.assertEqual(cache.chaves(arq), {"logo", 10})
+                    logo = cache.imagem(arq, "logo")
+                    foto = cache.imagem(arq, 10)
+                    self.assertEqual(logo[:2], (PNG, "image/png"))
+                    self.assertEqual(foto[:2], (PNG + b"DIFERENTE", "image/png"))
+                    self.assertNotEqual(logo[2], foto[2])
+                    self.assertIsNone(cache.imagem(arq, 11))
+
 if __name__ == "__main__":
     unittest.main()
