@@ -975,13 +975,22 @@ async function telaNova(tela, editId, q, vivo) {
     if (!itens.length) return marcarErro($('.equip input[data-campo=q]', tela), 'A O.P. PRECISA DE PELO MENOS 1 EQUIPAMENTO COM QUANTIDADE.');
     const corpo = {
       modelo_id: m.id, obra: c.obra, solicitante: c.solicitante, tipo: c.tipo, prazo: c.modoPrazo === 'data' ? c.prazo : 'DEFINIR',
-      itens, motivo: c.motivo, confirmar_negativo: confirmar, ...(editId ? {} : { chave: est.chave }),
+      itens, motivo: c.motivo, confirmar_negativo: confirmar, ...(editId ? { rev_esperada: est.origem.rev } : { chave: est.chave }),
     };
     let r;
     enviando = true;
     try {
       r = await ocupado(botao, () => api(editId ? `/api/ops/${editId}` : '/api/ops', { metodo: editId ? 'PUT' : 'POST', corpo }));
-    } catch (e) { falha(e); return; } finally { enviando = false; }
+    } catch (e) {
+      enviando = false;
+      if (e.status === 409 && editId) {
+        const ok = await dialogo({ titulo: 'A O.P. MUDOU EM OUTRA TELA', sub: e.message, rotulo: 'RECARREGAR A O.P.',
+          corpo: '<p style="margin:0">PARA NÃO SOBRESCREVER A OUTRA ALTERAÇÃO, RECARREGUE E REFAÇA A EDIÇÃO SOBRE A REVISÃO ATUAL.</p>' });
+        if (ok) { baseAtual = null; rotear(); }
+        return;
+      }
+      falha(e); return;
+    } finally { enviando = false; }
     if (r.precisa_confirmacao) {
       if (await dialogoNegativo(r.simulacao)) return gerar(botao, true);
       return;
@@ -1909,7 +1918,14 @@ TELAS.modelos = async (tela, arg, q, vivo) => {
   tela.addEventListener('change', e => {
     const el = e.target;
     if (el.dataset.ativo) salvar(Number(el.dataset.ativo), { ativo: el.checked }, el);
-    else if (el.dataset.contratoDe) salvar(Number(el.dataset.contratoDe), { contrato_id: Number(el.value) }, el);
+    else if (el.dataset.contratoDe) {
+      const m = modelos.find(x => x.id === Number(el.dataset.contratoDe));
+      if (!m.ops) { salvar(m.id, { contrato_id: Number(el.value) }, el); return; }
+      dialogo({
+        titulo: 'TROCAR O CONTRATO DO SALDO?', rotulo: 'TROCAR PARA AS PRÓXIMAS O.P.',
+        sub: `A TROCA VALE SÓ PARA AS PRÓXIMAS O.P. DO MODELO ${m.aba}. AS ${plural(m.ops, 'O.P. JÁ EMITIDA CONTINUA', 'O.P. JÁ EMITIDAS CONTINUAM')} CONSUMINDO O CONTRATO EM QUE FORAM GERADAS.`,
+      }).then(ok => { if (ok) salvar(m.id, { contrato_id: Number(el.value) }, el); else el.value = String(m.contrato_id || 0); });
+    }
   });
   tela.addEventListener('input', e => { if (e.target.id === 'm-busca') { texto = e.target.value; desenhar(); } });
   desenhar();
