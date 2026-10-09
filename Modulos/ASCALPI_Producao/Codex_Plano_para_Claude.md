@@ -26,9 +26,9 @@
 |---|---|---|---|---|
 | R01 | P1 | Falha do PDF pode apagar o PDF anterior | Falha parcial mantém documento anterior e informa revisão/erro | CORRIGIDO (`5802d98`; `test_publicacao` R01 ×4) |
 | R02 | P1 | Falha de XLSX após salvar O.P. incentiva duplicação ao repetir | API informa O.P. persistida, publicação pendente e retry seguro | CORRIGIDO (`5802d98` backend + `45647c5` UI; `test_publicacao` R02 ×5; queda de rede simulada no Playwright) |
-| R03 | P1 | Criações concorrentes validam saldo fora da transação | Revalidação transacional impede consumo negativo sem confirmação | ABERTO |
-| R04 | P1 | Edições simultâneas geram duas REV 1 | Conflito 409 por versão esperada, histórico preservado | ABERTO |
-| R05 | P1 | Alterar contrato do modelo desloca consumo histórico | Contrato da O.P. histórica fica imutável sem operação explícita | ABERTO |
+| R03 | P1 | Criações concorrentes validam saldo fora da transação | Revalidação transacional impede consumo negativo sem confirmação | CORRIGIDO (`3df3b07`; `test_concorrencia.TestR03Saldo`) |
+| R04 | P1 | Edições simultâneas geram duas REV 1 | Conflito 409 por versão esperada, histórico preservado | CORRIGIDO (`3df3b07` + UI `951e57b`; `TestR04Revisao` ×5; duas abas no Playwright) |
+| R05 | P1 | Alterar contrato do modelo desloca consumo histórico | Contrato da O.P. histórica fica imutável sem operação explícita | CORRIGIDO (`3df3b07` + UI `951e57b`; `TestR05Contrato` ×3, inclui migração) |
 | R06 | P1 | Data impossível salva e pode quebrar listagem/painel | API recusa data impossível; leitura tolera legado inválido | ABERTO |
 | R07 | P1 | Reimportar Controle remove acompanhamento/histórico | Importação inválida não altera base; reimportação preserva identidade | ABERTO |
 | R08 | P2 | Ajuste sem motivo é aceito pelo backend | Validação no servidor recusa pedido inválido sem mutar banco | ABERTO |
@@ -95,7 +95,7 @@
 | Revisão do parecer | HEAD de Claude examinado | Entrega do Codex | Resultado |
 |---|---|---|---|
 | 2026-10-09 / v1 | `b691e8e66edc65e515d8596d87288dc06101812c` | Plano e rastreio inicial, sincronizados em `Codex_Rev` e na branch do Claude | Nove achados herdados; nenhum conserto novo afirmado |
-| 2026-10-09 / v2 | `6cc01e7` | Claude registrou a divisão do trabalho (§8) a pedido do Carlos | Nenhum conserto ainda; Lote A em andamento pelo Claude |
+| 2026-10-09 / v2 | `6cc01e7` | Claude registrou a divisão do trabalho (§8) a pedido do Carlos | Lotes A e B entregues pelo Claude (R01–R05 CORRIGIDO, aguardando revisão do Codex) |
 
 **Instrução para o próximo ciclo do Codex:** ler HEAD de `modulo/producao-op`; comparar com o último SHA auditado; verificar testes/commits do Claude; atualizar o quadro e os estados R01–R09 em `Codex_Rev`; devolver somente as orientações aplicáveis ao novo HEAD neste arquivo na branch do Claude. Preservar histórico, não reescrever o diagnóstico anterior.
 
@@ -169,7 +169,9 @@ def itens_op(itens) -> list[dict]                         # lista de objetos; li
 | 09/10/2026 | Claude | `fb3cbb4` | Divisão do trabalho v2; contrato do `validacao.py`; protocolo de integração |
 | 09/10/2026 | Claude | `5802d98` | Lote A backend: `publicar` por formato (PUBLICADA/PARCIAL/PENDENTE, `xlsx_rev`/`pdf_rev`, `*_erro`), temporário exclusivo, trava por O.P.; `salvar_op` nunca falha por publicação; idempotência por `chave` (tabela `op_chaves`, 409 em pedido diferente). Reprodução Codex: R01 `pdf_anterior_preservado` false→true; R02 sem exceção após commit |
 | 09/10/2026 | Claude | `45647c5` | `app.js`: chave do rascunho enviada na criação e mantida entre tentativas; trava de reentrada no "Gerar"; aviso "SALVA, MAS A PUBLICAÇÃO FICOU PENDENTE"; selo de publicação e arquivos com REV na gaveta; erro da API carrega `status` (409) |
-| — | Claude → Codex | — | **Pedido ao Codex para revisar o Lote A:** formato novo de `ops.arquivos` (chaves `estado`, `rev`, `tentativa_em`, `xlsx`, `xlsx_rev`, `xlsx_erro`, `pdf`, `pdf_rev`, `pdf_erro`); `ErroConflito` está em `servico.py` (o `validacao.py` não precisa redefinir) |
+| 09/10/2026 | Claude | `3df3b07`, `951e57b` | Lote B: `salvar_op` inteiro em um `BEGIN IMMEDIATE` (o `RLock` do `Banco` é reentrante, então `op`/`_validar`/`simular` rodam na mesma transação); `rev_esperada` obrigatório na edição → 409; índice único `(op_id, rev)` só sem duplicadas (senão `meta.revisoes_duplicadas`); coluna `ops.contrato_id` + migração (ambíguas em `meta.migracao_contrato_ambiguas` e evento `MIGRACAO_CONTRATO_OP`); `confirmar_negativo` só com `true`. Escolhi a correção estrutural do R05 em vez do bloqueio temporário: trocar o contrato do modelo vale só para as próximas O.P. (a UI avisa). Suíte: 37 OK |
+| — | Claude → Codex | — | **Nota:** o cenário R03 do `reproduzir_achados.py` agora termina em `BrokenBarrierError`, como previsto na revisão (a barreira fica dentro da transação corrigida). Os testes novos coordenam a entrada sem barreira interna |
+| — | Claude → Codex | — | **Pedido ao Codex para revisar os Lotes A e B:** formato novo de `ops.arquivos` (chaves `estado`, `rev`, `tentativa_em`, `xlsx`, `xlsx_rev`, `xlsx_erro`, `pdf`, `pdf_rev`, `pdf_erro`); `ErroConflito` está em `servico.py` (o `validacao.py` não precisa redefinir) |
 
 ---
 

@@ -45,7 +45,8 @@ Pedido do Carlos: "tabelas em blocos, mais cores, fluidez, CSS e JS, no padrão 
 
 Divisão do trabalho na seção 8 daquele arquivo. Verificado nesta sessão:
 - **Lote A (R01, R02) — corrigido.** Publicação por formato sem apagar o anterior; O.P. salva nunca vira erro de criação; criação idempotente por `chave` (retry após queda de rede devolve a mesma O.P.). `tests/test_publicacao.py` (9 testes). Suíte: 27 testes OK.
-- Próximo: Lote B (R03, R04, R05) pelo Claude; `validacao.py` e `imagens.py` (R06/R08/R09) pelo Codex em `codex/apoio-producao`.
+- **Lote B (R03, R04, R05) — corrigido.** Salvar O.P. numa única transação; edição exige `rev_esperada` (conflito 409); cada O.P. guarda o contrato da emissão (`ops.contrato_id`, migração automática ao abrir o banco). `tests/test_concorrencia.py` (10 testes). Suíte: 37 testes OK.
+- Próximo: Lote C — `validacao.py` e `tests/test_importacao.py` pelo Codex em `codex/apoio-producao`; ligação no serviço e R07 no `legado.py` pelo Claude. R09 (`imagens.py`) pelo Codex.
 
 ## API disponível (servidor.py)
 
@@ -63,6 +64,7 @@ Divisão do trabalho na seção 8 daquele arquivo. Verificado nesta sessão:
 | `POST /api/ops/{id}/acompanhamento` | campos `status_instalacao`, `entrega_atualizada`, `material_obra`, `fotografico`, `obs` |
 | `POST /api/ops/{id}/cancelar` `{motivo}` · `/publicar` | |
 | `GET /api/ops/{id}/documento.xlsx` · `.pdf?baixar=1` | arquivo |
+| `PUT /api/ops/{id}` | exige `rev_esperada` (REV que está sendo editada); outra REV → 409 |
 | `POST /api/ops` com `chave` | idempotente: mesma chave e mesmo pedido → `{ok, repetida: true, op_id}`; pedido diferente → 409. `publicacao.estado`: PUBLICADA / PARCIAL / PENDENTE |
 | `GET /api/contratos?prefeitura_id=` · `/api/contratos/{id}/saldo` · `POST .../ajuste {codigo,montante,ajuste,motivo}` | |
 | `PATCH /api/modelos/{id}` `{contrato_id, ativo}` · `GET/PUT /api/config` · `GET /api/eventos` (com `op:{numero,obra}`) · `GET /api/ops/proximo` | |
