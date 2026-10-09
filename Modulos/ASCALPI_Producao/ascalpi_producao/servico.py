@@ -17,7 +17,7 @@ from .imagens import CacheImagens
 from .validacao import (ErroValidacao, data_legada, itens_op, motivo_obrigatorio, numero_finito,
                         valor_acompanhamento)
 from .regras import (SALDO_ENCERRADO, SALDO_NEGATIVO, SALDO_NEGATIVO_CONFIRMADO, SALDO_OK, SEM_CONTRATO,
-                     SaldoItem, agregar_por_base, codigo_base, detectar_material, formatar_numero,
+                     SaldoItem, agregar_por_base, codigo_base, normalizar_codigo, detectar_material, formatar_numero,
                      interpretar_prazo, montar_nome_base, numero_br, proximo_numero, simular_saldo, tipo_arquivo)
 
 CONFIG_PADRAO = {
@@ -82,6 +82,7 @@ class Servico:
         self.arquivo_config = self.dados / "config.json"
         self.fotos = CacheImagens()
         self._travas_publicacao: dict[int, threading.Lock] = {}
+        self._linhas_cache: dict[tuple, list] = {}
         self._trava_mapa = threading.Lock()
         if not self.arquivo_config.exists():
             self.salvar_config({})
@@ -200,7 +201,7 @@ class Servico:
             if not item:
                 raise ErroValidacao(f"ITEM {codigo} NÃO EXISTE NO CONTRATO.")
             if montante is not None:
-                con.execute("UPDATE contrato_itens SET montante = ? WHERE id = ?", (float(montante), item["id"]))
+                con.execute("UPDATE contrato_itens SET montante = ?, editado_sistema = 1 WHERE id = ?", (float(montante), item["id"]))
             if ajuste is not None:
                 con.execute("UPDATE contrato_itens SET ajuste = ? WHERE id = ?", (float(ajuste), item["id"]))
             self.banco.evento(con, "SALDO_AJUSTADO", {"contrato": contrato_id, "codigo": codigo, "montante": montante,
@@ -255,11 +256,30 @@ class Servico:
                 return o["contrato_id"]
         return modelo["contrato_id"]
 
+    def _modelo_da_op(self, modelo: dict, op_id: int | None) -> dict:
+        """Ao editar, a O.P. continua no arquivo de modelo da emissão (R07: reimportar não muda O.P. emitida)."""
+        if op_id:
+            o = self.banco.um("SELECT modelo_arquivo FROM ops WHERE id = ? AND origem = 'SISTEMA'", (op_id,))
+            if o and o["modelo_arquivo"] and o["modelo_arquivo"] != modelo["arquivo"]:
+                return {**modelo, "arquivo": o["modelo_arquivo"], "congelado": True}
+        return modelo
+
+    def _linhas_modelo(self, modelo: dict) -> list[dict]:
+        if modelo.get("congelado"):
+            caminho = self.dados / modelo["arquivo"]
+            chave = (str(caminho), caminho.stat().st_mtime_ns)
+            if chave not in self._linhas_cache:
+                self._linhas_cache[chave] = [{"linha": l["linha"], "codigo": normalizar_codigo(l["codigo"]),
+                                              "equipamento": l["equipamento"]}
+                                             for l in documento.linhas_do_modelo(caminho.read_bytes())]
+            return [dict(l) for l in self._linhas_cache[chave]]
+        return self.banco.todos("SELECT linha, codigo, equipamento FROM modelo_linhas WHERE modelo_id = ? ORDER BY linha",
+                                (modelo["id"],))
+
     def modelo_completo(self, modelo_id: int, excluir_op: int | None = None) -> dict:
-        m = self._modelo(modelo_id)
+        m = self._modelo_da_op(self._modelo(modelo_id), excluir_op)
         m["contrato_id"] = self._contrato_para(m, excluir_op)
-        linhas = self.banco.todos("SELECT linha, codigo, equipamento FROM modelo_linhas WHERE modelo_id = ? ORDER BY linha",
-                                  (modelo_id,))
+        linhas = self._linhas_modelo(m)
         itens = {}
         if m["contrato_id"]:
             itens = {d["codigo"]: d for d in self.saldo_contrato(m["contrato_id"], excluir_op)}
@@ -278,8 +298,8 @@ class Servico:
         return m
 
     def simular(self, modelo_id: int, quantidades: dict, excluir_op: int | None = None) -> dict:
-        m = self._modelo(modelo_id)
-        linhas = {l["linha"]: l for l in self.banco.todos("SELECT * FROM modelo_linhas WHERE modelo_id = ?", (modelo_id,))}
+        m = self._modelo_da_op(self._modelo(modelo_id), excluir_op)
+        linhas = {l["linha"]: l for l in self._linhas_modelo(m)}
         pares = []
         for linha, qtd in quantidades.items():
             l = linhas.get(int(linha))
@@ -360,7 +380,8 @@ class Servico:
         ids = self._pendencia("migracao_contrato_ambiguas")
         ops = self.banco.todos("SELECT id, numero, cliente, obra FROM ops WHERE id IN (%s) ORDER BY ano, seq"
                                % ",".join("?" * len(ids)), tuple(ids)) if ids else []
-        return {"contrato_a_conferir": ops, "revisoes_duplicadas": self._pendencia("revisoes_duplicadas")}
+        return {"contrato_a_conferir": ops, "revisoes_duplicadas": self._pendencia("revisoes_duplicadas"),
+                "saldo_a_conferir": self._pendencia("saldo_a_conferir")}
 
     def _validar(self, dados: dict, modelo: dict) -> tuple[dict, list[dict]]:
         obra = str(dados.get("obra") or "").strip().upper()
@@ -373,8 +394,7 @@ class Servico:
             prazo = interpretar_prazo(dados.get("prazo"))
         except ValueError as e:
             raise ErroValidacao(str(e))
-        linhas_modelo = {l["linha"]: l for l in self.banco.todos("SELECT * FROM modelo_linhas WHERE modelo_id = ?",
-                                                                 (modelo["id"],))}
+        linhas_modelo = {l["linha"]: l for l in self._linhas_modelo(modelo)}
         itens = []
         for it in itens_op(dados.get("itens") if dados.get("itens") is not None else []):
             linha = it["linha"]
@@ -410,6 +430,7 @@ class Servico:
                     raise ErroConflito(f"A O.P. {atual['numero']} JÁ ESTÁ NA REV {atual['rev']} (FOI ALTERADA EM OUTRA TELA). "
                                        "RECARREGUE A O.P. ANTES DE SALVAR.")
             modelo = self._modelo(int(atual["modelo_id"] if atual else dados.get("modelo_id") or 0))
+            modelo = self._modelo_da_op(modelo, op_id)
             if not atual and not modelo["ativo"]:
                 raise ErroValidacao("MODELO DESATIVADO.")
             cab, itens = self._validar(dados, modelo)
@@ -448,11 +469,11 @@ class Servico:
                 seq = proximo_numero(existentes, ano)
                 rev = 0
                 cur = con.execute(
-                    "INSERT INTO ops (numero, ano, seq, origem, prefeitura_id, cliente, modelo_id, contrato_id, solicitado_em, "
-                    "rev, criado_em, " + ", ".join(campos) + ") VALUES (?,?,?,'SISTEMA',?,?,?,?,?,0,?," +
+                    "INSERT INTO ops (numero, ano, seq, origem, prefeitura_id, cliente, modelo_id, modelo_arquivo, contrato_id, "
+                    "solicitado_em, rev, criado_em, " + ", ".join(campos) + ") VALUES (?,?,?,'SISTEMA',?,?,?,?,?,?,0,?," +
                     ",".join("?" * len(campos)) + ")",
                     (formatar_numero(seq, ano), ano, seq, modelo["prefeitura_id"], modelo["prefeitura"], modelo["id"],
-                     contrato_id, momento, momento, *campos.values()))
+                     modelo["arquivo"], contrato_id, momento, momento, *campos.values()))
                 novo_id = cur.lastrowid
                 if chave:
                     con.execute("INSERT INTO op_chaves (chave, op_id, assinatura, criado_em) VALUES (?,?,?,?)",
@@ -550,7 +571,7 @@ class Servico:
         if o["origem"] != "SISTEMA" or not o["modelo_id"]:
             raise ErroValidacao("O.P. DO HISTÓRICO LEGADO: O DOCUMENTO ORIGINAL FICA NA PASTA ANTIGA.")
         modelo = self._modelo(o["modelo_id"])
-        bruto = (self.dados / modelo["arquivo"]).read_bytes()
+        bruto = (self.dados / (o.get("modelo_arquivo") or modelo["arquivo"])).read_bytes()   # modelo da emissão
         xlsx = documento.gerar_xlsx(bruto, self._dados_documento(o), self.config()["senha_arquivos"])
         nome = self.nome_base(o)
         if formato == "xlsx":

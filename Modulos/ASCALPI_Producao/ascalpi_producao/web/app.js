@@ -2001,6 +2001,8 @@ TELAS.config = async (tela, arg, q, vivo) => {
         ${indisponivel ? `<div class="nota-legado" style="background:var(--red-soft);color:var(--red)">${ic('alert')}<span>${esc(resumo.motor_pdf)}</span></div>` : ''}
         ${(resumo.pendencias?.contrato_a_conferir || []).length ? `<div class="nota-legado" style="background:var(--orange-soft);color:#8a4b0f">${ic('alert')}<span>CONTRATO A CONFERIR EM ${plural(resumo.pendencias.contrato_a_conferir.length, 'O.P.', 'O.P.')}: O MODELO MUDOU DE CONTRATO DEPOIS DELAS E A MIGRAÇÃO USOU O CONTRATO ATUAL COMO CANDIDATO.
           ${resumo.pendencias.contrato_a_conferir.map(o => `<a href="#/ordens?op=${o.id}">${esc(o.numero)}</a>`).join(', ')}</span></div>` : ''}
+        ${(resumo.pendencias?.saldo_a_conferir || []).length ? `<div class="nota-legado" style="background:var(--orange-soft);color:#8a4b0f">${ic('scale')}<span>SALDO DA PLANILHA A CONFERIR (${resumo.pendencias.saldo_a_conferir.length}), DA ÚLTIMA IMPORTAÇÃO DOS LIVROS:<br>
+          ${resumo.pendencias.saldo_a_conferir.slice(0, 12).map(p => `${esc(p.prefeitura)} · ${esc(p.aviso)}`).join('<br>')}${resumo.pendencias.saldo_a_conferir.length > 12 ? '<br>…' : ''}</span></div>` : ''}
         ${(resumo.pendencias?.revisoes_duplicadas || []).length ? `<div class="nota-legado" style="background:var(--orange-soft);color:#8a4b0f">${ic('alert')}<span>HÁ REVISÕES DUPLICADAS ANTIGAS NO BANCO (${resumo.pendencias.revisoes_duplicadas.length}). NADA FOI APAGADO; A TRAVA DE REVISÃO ÚNICA SÓ É ATIVADA DEPOIS DA CONFERÊNCIA.</span></div>` : ''}
         <div class="caminho"><b>.XLSX PUBLICADOS EM</b>${esc(resumo.pastas[0])}</div>
         <div class="caminho"><b>.PDF PUBLICADOS EM</b>${esc(resumo.pastas[1])}</div>

@@ -14,7 +14,7 @@ import json
 
 from .banco import Banco, agora
 from .validacao import ErroValidacao
-from .regras import (codigo_valido, normalizar_cabecalho, normalizar_chave, normalizar_codigo, numero_br,
+from .regras import (codigo_valido, formatar_quantidade, normalizar_cabecalho, normalizar_chave, normalizar_codigo, numero_br,
                      sanitizar_nome, tipo_arquivo)
 
 PREFIXO_OP = "OP_"
@@ -108,7 +108,10 @@ def ler_saldo(partes: dict, aba: dict, ss: list[str]) -> dict | None:
         cod = normalizar_codigo(_v(valores, obrig["COD"], r))
         if not codigo_valido(cod):
             continue
+        ausentes = [rot for rot, col in (("MONTANTE", obrig["MONTANTE"]), ("QUANT.", cab.get("QUANT")),
+                                         ("PREVISÃO", col_prev)) if col and _v(valores, col, r) in (None, "")]
         itens.append({
+            "ausentes": ausentes,
             "codigo": cod,
             "equipamento": _texto(_v(valores, obrig["EQUIPAMENTOS"], r)),
             "valor_un": numero_br(_v(valores, cab["VALOR UN"], r)) or 0 if "VALOR UN" in cab else 0,
@@ -157,68 +160,164 @@ def ler_livro(caminho: Path) -> dict:
 
 # ---------------------------------------------------------------- importação para o banco
 
-def importar_livro(banco: Banco, caminho: Path, pasta_modelos: Path, relatorio: list[str]) -> None:
+class _Previa(Exception):
+    """Desfaz a transação da prévia: nada é gravado."""
+
+
+def _q(v) -> str:
+    return formatar_quantidade(v or 0)
+
+
+def _conferir_saldo(ata: str, it: dict) -> list[str]:
+    """Compara o SALDO salvo na planilha com MONTANTE − (QUANT. + PREVISÃO); valor ausente é aviso, não zero."""
+    avisos = [f"  ITEM {it['codigo']} ({ata}): {campo} SEM VALOR NA PLANILHA (FÓRMULA SEM VALOR SALVO?), CONSIDERADO 0"
+              for campo in it.get("ausentes", [])]
+    if it["codigo"].startswith("0.") or not it["montante"] or it["montante"] <= 0:
+        return avisos
+    bruto = it.get("saldo_planilha")
+    planilha = 0.0 if str(bruto or "").strip().upper() == "ACABOU" else numero_br(bruto)
+    calculado = it["montante"] - (it["medido"] + it["previsao"])
+    if planilha is not None and abs(planilha - calculado) > 1e-6:
+        avisos.append(f"  CONFERIR SALDO ITEM {it['codigo']} ({ata}): PLANILHA {_q(planilha)}, CALCULADO {_q(calculado)}")
+    return avisos
+
+
+def importar_livro(banco: Banco, caminho: Path, pasta_modelos: Path, relatorio: list[str], previa: bool = False) -> None:
     info = ler_livro(caminho)
     pasta = pasta_modelos / sanitizar_nome(info["cliente"])
-    pasta.mkdir(parents=True, exist_ok=True)
+    raiz = pasta_modelos.parent
+    escritos: list[Path] = []          # arquivos novos desta importação (apagados se o banco falhar)
     modelos_xlsx = {}
     for m in info["modelos"]:
         conteudo = pacote.extrair_aba(caminho, m["aba"])
-        destino = pasta / f"{sanitizar_nome(m['codename'])}.xlsx"
-        destino.write_bytes(conteudo)
-        modelos_xlsx[m["codename"]] = (destino, documento.linhas_do_modelo(conteudo))
-
-    with banco.transacao() as con:
-        con.execute("INSERT INTO prefeituras (nome, arquivo_origem) VALUES (?, ?) "
-                    "ON CONFLICT(nome) DO UPDATE SET arquivo_origem = excluded.arquivo_origem",
-                    (info["cliente"], info["arquivo"]))
-        pid = con.execute("SELECT id FROM prefeituras WHERE nome = ?", (info["cliente"],)).fetchone()[0]
-        ids_contrato = {}
-        for ata, c in info["contratos"].items():
-            con.execute("INSERT INTO contratos (prefeitura_id, ata, nome, descricao, importado_em) VALUES (?,?,?,?,?) "
-                        "ON CONFLICT(prefeitura_id, ata) DO UPDATE SET nome = excluded.nome, "
-                        "descricao = excluded.descricao, importado_em = excluded.importado_em",
-                        (pid, ata, c["nome"], c["descricao"], agora()))
-            cid = con.execute("SELECT id FROM contratos WHERE prefeitura_id = ? AND ata = ?", (pid, ata)).fetchone()[0]
-            ids_contrato[ata] = cid
-            for it in c["itens"]:
-                con.execute("INSERT INTO contrato_itens (contrato_id, codigo, equipamento, valor_un, montante, "
-                            "medido_inicial, previsao_inicial) VALUES (?,?,?,?,?,?,?) "
-                            "ON CONFLICT(contrato_id, codigo) DO UPDATE SET equipamento = excluded.equipamento, "
-                            "valor_un = excluded.valor_un, montante = excluded.montante, "
-                            "medido_inicial = excluded.medido_inicial, previsao_inicial = excluded.previsao_inicial",
-                            (cid, it["codigo"], it["equipamento"], it["valor_un"], it["montante"],
-                             it["medido"], it["previsao"]))
-            relatorio.append(f"  CONTRATO {ata}: {len(c['itens'])} ITENS")
-        for m in info["modelos"]:
-            destino, linhas = modelos_xlsx[m["codename"]]
-            rel = destino.relative_to(pasta_modelos.parent).as_posix()
-            ata_contrato = m["ata"] if m["ata"] in ids_contrato else re.sub(r"\d+$", "", m["ata"])
-            cid = ids_contrato.get(ata_contrato)
-            con.execute("INSERT INTO modelos (prefeitura_id, contrato_id, codename, aba, titulo, tipo_padrao, arquivo, ativo) "
-                        "VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(prefeitura_id, codename) DO UPDATE SET "
-                        "contrato_id = COALESCE(modelos.contrato_id, excluded.contrato_id), aba = excluded.aba, "
-                        "titulo = excluded.titulo, tipo_padrao = excluded.tipo_padrao, arquivo = excluded.arquivo",
-                        (pid, cid, m["codename"], m["aba"], m["titulo"], m["tipo"], rel, 1))
-            mid = con.execute("SELECT id FROM modelos WHERE prefeitura_id = ? AND codename = ?",
-                              (pid, m["codename"])).fetchone()[0]
-            con.execute("DELETE FROM modelo_linhas WHERE modelo_id = ?", (mid,))
-            con.executemany("INSERT INTO modelo_linhas (modelo_id, linha, codigo, equipamento) VALUES (?,?,?,?)",
-                            [(mid, l["linha"], normalizar_codigo(l["codigo"]), l["equipamento"]) for l in linhas])
-            relatorio.append(f"  MODELO {m['aba']} ({m['codename']}): {len(linhas)} EQUIPAMENTOS, "
-                             f"CONTRATO {'—' if cid is None else ata_contrato}")
-        # abas que deixaram de ser modelo válido: apaga se nunca usada, senão só desativa
-        validos = [m["codename"] for m in info["modelos"]]
-        marcas = ",".join("?" * len(validos)) or "''"
-        for (mid,) in con.execute(f"SELECT id FROM modelos WHERE prefeitura_id = ? AND codename NOT IN ({marcas})",
-                                  (pid, *validos)).fetchall():
-            if con.execute("SELECT 1 FROM ops WHERE modelo_id = ? LIMIT 1", (mid,)).fetchone():
-                con.execute("UPDATE modelos SET ativo = 0 WHERE id = ?", (mid,))
-            else:
-                con.execute("DELETE FROM modelos WHERE id = ?", (mid,))
-        banco.evento(con, "IMPORTAR_LIVRO", {"arquivo": info["arquivo"], "cliente": info["cliente"]})
+        atual = banco.um("SELECT m.arquivo FROM modelos m JOIN prefeituras p ON p.id = m.prefeitura_id "
+                         "WHERE p.nome = ? AND m.codename = ?", (info["cliente"], m["codename"]))
+        base = pasta / f"{sanitizar_nome(m['codename'])}.xlsx"
+        destino, mudou = base, True
+        if atual and (raiz / atual["arquivo"]).exists():
+            destino = raiz / atual["arquivo"]
+            mudou = destino.read_bytes() != conteudo
+            if mudou:   # nunca sobrescreve: O.P. já emitidas continuam apontando para o arquivo anterior
+                destino = pasta / f"{sanitizar_nome(m['codename'])}.{datetime.now():%Y%m%d-%H%M%S-%f}.xlsx"
+        elif base.exists() and base.read_bytes() != conteudo:
+            destino = pasta / f"{sanitizar_nome(m['codename'])}.{datetime.now():%Y%m%d-%H%M%S-%f}.xlsx"
+        modelos_xlsx[m["codename"]] = (destino, documento.linhas_do_modelo(conteudo), mudou and atual is not None)
+        if not previa and (mudou or not destino.exists()):
+            destino.parent.mkdir(parents=True, exist_ok=True)
+            destino.write_bytes(conteudo)
+            escritos.append(destino)
+    avisos: list[str] = []
+    try:
+        with banco.transacao() as con:
+            con.execute("INSERT INTO prefeituras (nome, arquivo_origem) VALUES (?, ?) "
+                        "ON CONFLICT(nome) DO UPDATE SET arquivo_origem = excluded.arquivo_origem",
+                        (info["cliente"], info["arquivo"]))
+            pid = con.execute("SELECT id FROM prefeituras WHERE nome = ?", (info["cliente"],)).fetchone()[0]
+            ids_contrato = {}
+            pendentes = []
+            for ata, c in info["contratos"].items():
+                cid_antigo = con.execute("SELECT id FROM contratos WHERE prefeitura_id = ? AND ata = ?", (pid, ata)).fetchone()
+                antigos = {r["codigo"]: dict(r) for r in con.execute(
+                    "SELECT codigo, montante, medido_inicial, previsao_inicial, editado_sistema FROM contrato_itens "
+                    "WHERE contrato_id = ?",
+                    (cid_antigo[0],)).fetchall()} if cid_antigo else {}
+                con.execute("INSERT INTO contratos (prefeitura_id, ata, nome, descricao, importado_em) VALUES (?,?,?,?,?) "
+                            "ON CONFLICT(prefeitura_id, ata) DO UPDATE SET nome = excluded.nome, "
+                            "descricao = excluded.descricao, importado_em = excluded.importado_em",
+                            (pid, ata, c["nome"], c["descricao"], agora()))
+                cid = con.execute("SELECT id FROM contratos WHERE prefeitura_id = ? AND ata = ?", (pid, ata)).fetchone()[0]
+                ids_contrato[ata] = cid
+                for it in c["itens"]:
+                    velho = antigos.get(it["codigo"])
+                    if cid_antigo and velho is None:
+                        avisos.append(f"  NOVO ITEM {it['codigo']} ({ata}): {it['equipamento']}")
+                    elif velho:
+                        if velho["editado_sistema"] and abs((velho["montante"] or 0) - (it["montante"] or 0)) > 1e-9:
+                            avisos.append(f"  ITEM {it['codigo']} ({ata}): MONTANTE EDITADO NO SISTEMA ({_q(velho['montante'])}) "
+                                          f"MANTIDO; PLANILHA {_q(it['montante'])}")
+                        for campo, chave in (("MONTANTE", "montante"), ("QUANT.", "medido_inicial"), ("PREVISÃO", "previsao_inicial")):
+                            novo = it["montante" if chave == "montante" else "medido" if chave == "medido_inicial" else "previsao"]
+                            if chave == "montante" and velho["editado_sistema"]:
+                                continue
+                            if abs((velho[chave] or 0) - (novo or 0)) > 1e-9:
+                                avisos.append(f"  ITEM {it['codigo']} ({ata}): {campo} {_q(velho[chave])} → {_q(novo)}")
+                    conferencia = _conferir_saldo(ata, it)
+                    avisos.extend(conferencia)
+                    pendentes += [{"prefeitura": info["cliente"], "ata": ata, "codigo": it["codigo"], "aviso": a.strip()}
+                                  for a in conferencia]
+                    con.execute("INSERT INTO contrato_itens (contrato_id, codigo, equipamento, valor_un, montante, "
+                                "medido_inicial, previsao_inicial) VALUES (?,?,?,?,?,?,?) "
+                                "ON CONFLICT(contrato_id, codigo) DO UPDATE SET equipamento = excluded.equipamento, "
+                                "valor_un = excluded.valor_un, montante = CASE WHEN contrato_itens.editado_sistema "
+                                "THEN contrato_itens.montante ELSE excluded.montante END, "
+                                "medido_inicial = excluded.medido_inicial, previsao_inicial = excluded.previsao_inicial",
+                                (cid, it["codigo"], it["equipamento"], it["valor_un"], it["montante"],
+                                 it["medido"], it["previsao"]))
+                relatorio.append(f"  CONTRATO {ata}: {len(c['itens'])} ITENS")
+            # pendências de conferência do saldo: substitui só as desta prefeitura
+            r = con.execute("SELECT valor FROM meta WHERE chave = 'saldo_a_conferir'").fetchone()
+            try:
+                todas = [x for x in json.loads(r[0]) if x.get("prefeitura") != info["cliente"]] if r else []
+            except ValueError:
+                todas = []
+            con.execute("INSERT OR REPLACE INTO meta VALUES ('saldo_a_conferir', ?)",
+                        (json.dumps(todas + pendentes, ensure_ascii=False),))
+            for m in info["modelos"]:
+                destino, linhas, trocou = modelos_xlsx[m["codename"]]
+                rel = destino.relative_to(raiz).as_posix()
+                ata_contrato = m["ata"] if m["ata"] in ids_contrato else re.sub(r"\d+$", "", m["ata"])
+                cid = ids_contrato.get(ata_contrato)
+                con.execute("INSERT INTO modelos (prefeitura_id, contrato_id, codename, aba, titulo, tipo_padrao, arquivo, ativo) "
+                            "VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(prefeitura_id, codename) DO UPDATE SET "
+                            "contrato_id = COALESCE(modelos.contrato_id, excluded.contrato_id), aba = excluded.aba, "
+                            "titulo = excluded.titulo, tipo_padrao = excluded.tipo_padrao, arquivo = excluded.arquivo",
+                            (pid, cid, m["codename"], m["aba"], m["titulo"], m["tipo"], rel, 1))
+                mid = con.execute("SELECT id FROM modelos WHERE prefeitura_id = ? AND codename = ?",
+                                  (pid, m["codename"])).fetchone()[0]
+                con.execute("DELETE FROM modelo_linhas WHERE modelo_id = ?", (mid,))
+                con.executemany("INSERT INTO modelo_linhas (modelo_id, linha, codigo, equipamento) VALUES (?,?,?,?)",
+                                [(mid, l["linha"], normalizar_codigo(l["codigo"]), l["equipamento"]) for l in linhas])
+                if trocou:
+                    usadas = con.execute("SELECT COUNT(*) FROM ops WHERE modelo_id = ?", (mid,)).fetchone()[0]
+                    avisos.append(f"  MODELO {m['aba']}: ARQUIVO ATUALIZADO" +
+                                  (f" ({usadas} O.P. JÁ EMITIDAS CONTINUAM NO MODELO ANTERIOR)" if usadas else ""))
+                relatorio.append(f"  MODELO {m['aba']} ({m['codename']}): {len(linhas)} EQUIPAMENTOS, "
+                                 f"CONTRATO {'—' if cid is None else ata_contrato}")
+            # abas que deixaram de ser modelo válido: apaga se nunca usada, senão só desativa
+            validos = [m["codename"] for m in info["modelos"]]
+            marcas = ",".join("?" * len(validos)) or "''"
+            for (mid,) in con.execute(f"SELECT id FROM modelos WHERE prefeitura_id = ? AND codename NOT IN ({marcas})",
+                                      (pid, *validos)).fetchall():
+                if con.execute("SELECT 1 FROM ops WHERE modelo_id = ? LIMIT 1", (mid,)).fetchone():
+                    con.execute("UPDATE modelos SET ativo = 0 WHERE id = ?", (mid,))
+                else:
+                    con.execute("DELETE FROM modelos WHERE id = ?", (mid,))
+            banco.evento(con, "IMPORTAR_LIVRO", {"arquivo": info["arquivo"], "cliente": info["cliente"], "avisos": len(avisos)})
+            if previa:
+                raise _Previa()
+    except _Previa:
+        pass
+    except BaseException:
+        for arq in escritos:              # banco não gravou: os arquivos novos não podem ficar órfãos
+            arq.unlink(missing_ok=True)
+        raise
+    if not previa:
+        _limpar_modelos_sem_uso(banco, raiz, pasta)
     relatorio.insert(len(relatorio) - len(info["contratos"]) - len(info["modelos"]),
                      f"{info['arquivo']} → {info['cliente']}")
+    relatorio.extend(avisos)
+
+
+def _limpar_modelos_sem_uso(banco: Banco, raiz: Path, pasta: Path) -> None:
+    """Remove versões antigas de modelo que nenhum modelo nem O.P. referencia mais."""
+    usados = {r["a"] for r in banco.todos("SELECT arquivo a FROM modelos UNION SELECT modelo_arquivo FROM ops "
+                                          "WHERE modelo_arquivo IS NOT NULL")}
+    for arq in pasta.glob("*.xlsx"):
+        if arq.relative_to(raiz).as_posix() not in usados:
+            try:
+                arq.unlink()
+            except OSError:
+                pass
 
 
 COLUNAS_CONTROLE = {
@@ -241,7 +340,7 @@ def _achar_prefeitura(prefeituras: list[dict], cliente: str) -> int | None:
     return candidatos[0]["id"] if len(candidatos) == 1 else None
 
 
-def importar_controle(banco: Banco, caminho: Path, relatorio: list[str]) -> None:
+def importar_controle(banco: Banco, caminho: Path, relatorio: list[str], previa: bool = False) -> None:
     partes = pacote.carregar(caminho)
     ss = pacote.strings_compartilhadas(partes)
     linhas_op, cores = [], []
@@ -285,6 +384,18 @@ def importar_controle(banco: Banco, caminho: Path, relatorio: list[str]) -> None
     if not linhas_op and ja_tem:
         raise ErroValidacao(f"{caminho.name}: TABELA Controle_OP SEM NENHUMA O.P. E O SISTEMA JÁ TEM {ja_tem} "
                             "NO HISTÓRICO. NADA FOI ALTERADO.")
+    novas = atualizadas = preservados = 0
+    try:
+        _gravar_controle(banco, caminho, linhas_op, cores, previa, contagem := {})
+    except _Previa:
+        pass
+    novas, atualizadas, fora, preservados = (contagem.get(k, 0) for k in ("novas", "atualizadas", "fora", "preservados"))
+    relatorio.append(f"{caminho.name} → {len(linhas_op)} O.P. NO HISTÓRICO, {len(cores)} PREFEITURAS COM CORES "
+                     f"({novas} NOVAS, {atualizadas} ATUALIZADAS, {fora} MANTIDAS FORA DO ARQUIVO, "
+                     f"{preservados} CAMPOS EDITADOS NO SISTEMA PRESERVADOS)")
+
+
+def _gravar_controle(banco: Banco, caminho: Path, linhas_op: list, cores: list, previa: bool, contagem: dict) -> None:
     novas = atualizadas = preservados = 0
     with banco.transacao() as con:
         prefeituras = [dict(r) for r in con.execute("SELECT id, nome FROM prefeituras").fetchall()]
@@ -344,26 +455,27 @@ def importar_controle(banco: Banco, caminho: Path, relatorio: list[str]) -> None
         banco.evento(con, "IMPORTAR_CONTROLE", {"arquivo": caminho.name, "ops": len(linhas_op), "novas": novas,
                                                 "atualizadas": atualizadas, "fora_do_arquivo": fora,
                                                 "campos_preservados": preservados})
-    relatorio.append(f"{caminho.name} → {len(linhas_op)} O.P. NO HISTÓRICO, {len(cores)} PREFEITURAS COM CORES "
-                     f"({novas} NOVAS, {atualizadas} ATUALIZADAS, {fora} MANTIDAS FORA DO ARQUIVO, "
-                     f"{preservados} CAMPOS EDITADOS NO SISTEMA PRESERVADOS)")
+        contagem.update(novas=novas, atualizadas=atualizadas, fora=fora, preservados=preservados)
+        if previa:
+            raise _Previa()
 
 
-def importar_pasta(banco: Banco, origem: Path, pasta_dados: Path) -> list[str]:
+def importar_pasta(banco: Banco, origem: Path, pasta_dados: Path, previa: bool = False) -> list[str]:
+    """Importa livros e Controle. Com `previa=True` mostra o que mudaria e não grava nada (banco e arquivos)."""
     origem = Path(origem)
-    relatorio: list[str] = []
+    relatorio: list[str] = ["PRÉVIA DA IMPORTAÇÃO: NADA FOI GRAVADO. CONFIRA AS DIFERENÇAS ABAIXO."] if previa else []
     livros = sorted(p for p in origem.glob("*.xls[mx]") if not p.name.startswith("~$"))
     controle = [p for p in livros if "CONTROLE" in p.name.upper()]
     for p in livros:
         if p in controle:
             continue
         try:
-            importar_livro(banco, p, pasta_dados / "Modelos", relatorio)
+            importar_livro(banco, p, pasta_dados / "Modelos", relatorio, previa)
         except Exception as e:  # um livro com problema não impede os demais
             relatorio.append(f"ERRO EM {p.name}: {e}")
     for p in controle:
         try:
-            importar_controle(banco, p, relatorio)
+            importar_controle(banco, p, relatorio, previa)
         except ErroValidacao as e:   # arquivo inválido: avisa e não mexe no histórico
             relatorio.append(f"ERRO EM {p.name}: {e}")
     return relatorio

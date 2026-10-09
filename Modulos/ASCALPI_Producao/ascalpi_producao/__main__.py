@@ -1,7 +1,7 @@
 """ASCALPI Produção — módulo independente de Ordens de Produção.
 
 Uso:
-  python -m ascalpi_producao importar --origem <pasta com OK-*.xlsm e Controle> [--dados <pasta>]
+  python -m ascalpi_producao importar --origem <pasta com OK-*.xlsm e Controle> [--previa] [--dados <pasta>]
   python -m ascalpi_producao servir [--dados <pasta>] [--porta 8765] [--abrir]
   python -m ascalpi_producao documento --op 258-26 --formato pdf --saida <arquivo> [--dados <pasta>]
 """
@@ -28,6 +28,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     imp = sub.add_parser("importar", help="importa modelos, contratos/saldos e histórico dos arquivos legados")
     imp.add_argument("--origem", type=Path, required=True)
+    imp.add_argument("--previa", action="store_true", help="mostra o que mudaria, sem gravar nada")
     sv = sub.add_parser("servir", help="abre o sistema no navegador")
     sv.add_argument("--porta", type=int, default=8765)
     sv.add_argument("--host", default="127.0.0.1")
@@ -47,9 +48,10 @@ def main(argv: list[str] | None = None) -> int:
         if not args.origem.is_dir():
             print(f"PASTA DE ORIGEM NÃO ENCONTRADA: {args.origem}", file=sys.stderr)
             return 2
-        for linha in importar_pasta(servico.banco, args.origem, dados):
+        for linha in importar_pasta(servico.banco, args.origem, dados, previa=args.previa):
             print(linha)
-        print(f"PRÓXIMA O.P.: {servico.proximo_numero()}")
+        if not args.previa:
+            print(f"PRÓXIMA O.P.: {servico.proximo_numero()}")
         return 0
 
     if args.cmd == "documento":

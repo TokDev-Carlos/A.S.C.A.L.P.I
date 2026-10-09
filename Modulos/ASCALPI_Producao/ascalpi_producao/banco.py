@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
-VERSAO_ESQUEMA = 4
+VERSAO_ESQUEMA = 6
 
 ESQUEMA = """
 CREATE TABLE IF NOT EXISTS meta (chave TEXT PRIMARY KEY, valor TEXT);
@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS contrato_itens (
     medido_inicial REAL NOT NULL DEFAULT 0,     -- QUANT. da planilha na importação (medições + instalados)
     previsao_inicial REAL NOT NULL DEFAULT 0,   -- PREVISÃO da planilha na importação
     ajuste REAL NOT NULL DEFAULT 0,             -- correção manual feita no sistema (+ consome / - devolve)
+    editado_sistema INTEGER NOT NULL DEFAULT 0, -- montante definido no ASCALPI: prevalece ao reimportar o livro
     UNIQUE (contrato_id, codigo)
 );
 
@@ -75,6 +76,7 @@ CREATE TABLE IF NOT EXISTS ops (
     prefeitura_id INTEGER REFERENCES prefeituras(id),
     cliente TEXT DEFAULT '',
     modelo_id INTEGER REFERENCES modelos(id),
+    modelo_arquivo TEXT,                  -- modelo .xlsx da emissão (reimportar o livro não muda O.P. já emitida)
     contrato_id INTEGER REFERENCES contratos(id),   -- contrato do saldo no momento da emissão (R05)
     obra TEXT DEFAULT '',
     solicitante TEXT DEFAULT '',
@@ -191,6 +193,18 @@ class Banco:
                 con.execute("ALTER TABLE ops ADD COLUMN revisado_em TEXT")
                 con.execute("UPDATE ops SET revisado_em = COALESCE((SELECT MAX(r.momento) FROM op_revisoes r "
                             "WHERE r.op_id = ops.id AND r.rev = ops.rev), criado_em) WHERE origem = 'SISTEMA'")
+        if "modelo_arquivo" not in {r[1] for r in self._con.execute("PRAGMA table_info(ops)")}:
+            with self.transacao() as con:
+                con.execute("ALTER TABLE ops ADD COLUMN modelo_arquivo TEXT")
+                con.execute("UPDATE ops SET modelo_arquivo = (SELECT m.arquivo FROM modelos m WHERE m.id = ops.modelo_id) "
+                            "WHERE origem = 'SISTEMA'")
+        if "editado_sistema" not in {r[1] for r in self._con.execute("PRAGMA table_info(contrato_itens)")}:
+            with self.transacao() as con:
+                con.execute("ALTER TABLE contrato_itens ADD COLUMN editado_sistema INTEGER NOT NULL DEFAULT 0")
+                con.execute("UPDATE contrato_itens SET editado_sistema = 1 WHERE EXISTS (SELECT 1 FROM eventos e "
+                            "WHERE e.acao = 'SALDO_AJUSTADO' AND json_extract(e.detalhe, '$.contrato') = contrato_itens.contrato_id "
+                            "AND json_extract(e.detalhe, '$.codigo') = contrato_itens.codigo "
+                            "AND json_extract(e.detalhe, '$.montante') IS NOT NULL)")
         self._con.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_ops_legado_chave ON ops(chave_origem) WHERE origem = 'LEGADO'")
         if not self._con.execute("SELECT 1 FROM sqlite_master WHERE name = 'ix_revisoes_op_rev'").fetchone():
             duplicadas = [list(r) for r in self._con.execute(
