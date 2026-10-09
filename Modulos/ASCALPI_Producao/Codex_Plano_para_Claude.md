@@ -29,10 +29,10 @@
 | R03 | P1 | Criações concorrentes validam saldo fora da transação | Revalidação transacional impede consumo negativo sem confirmação | CORRIGIDO (`3df3b07`; `test_concorrencia.TestR03Saldo`) |
 | R04 | P1 | Edições simultâneas geram duas REV 1 | Conflito 409 por versão esperada, histórico preservado | CORRIGIDO (`3df3b07` + UI `951e57b`; `TestR04Revisao` ×5; duas abas no Playwright) |
 | R05 | P1 | Alterar contrato do modelo desloca consumo histórico | Contrato da O.P. histórica fica imutável sem operação explícita | CORRIGIDO (`3df3b07` + UI `951e57b`; `TestR05Contrato` ×3, inclui migração) |
-| R06 | P1 | Data impossível salva e pode quebrar listagem/painel | API recusa data impossível; leitura tolera legado inválido | ABERTO |
-| R07 | P1 | Reimportar Controle remove acompanhamento/histórico | Importação inválida não altera base; reimportação preserva identidade | ABERTO |
-| R08 | P2 | Ajuste sem motivo é aceito pelo backend | Validação no servidor recusa pedido inválido sem mutar banco | ABERTO |
-| R09 | P2 | Extração de imagens depende de prefixo XML literal | Namespace equivalente não altera fotos/logos extraídos | ABERTO |
+| R06 | P1 | Data impossível salva e pode quebrar listagem/painel | API recusa data impossível; leitura tolera legado inválido | CORRIGIDO (`c4617a3` Codex + `80dc509` Claude; `test_validacao`, `test_validacao_api`) |
+| R07 | P1 | Reimportar Controle remove acompanhamento/histórico | Importação inválida não altera base; reimportação preserva identidade | CORRIGIDO na parte imediata (`ca1a6ea` testes Codex + `3e17971` Claude). PENDENTE: staging/prévia de diferenças, reconciliação de `saldo_planilha`, proteger modelos/linhas usados no `importar_livro` |
+| R08 | P2 | Ajuste sem motivo é aceito pelo backend | Validação no servidor recusa pedido inválido sem mutar banco | CORRIGIDO (`c4617a3`/`53519a7` Codex + `80dc509` Claude) |
+| R09 | P2 | Extração de imagens depende de prefixo XML literal | Namespace equivalente não altera fotos/logos extraídos | CORRIGIDO pelo Codex (`4bfec99`, `f1d3b19`); integrado em `8056597`. Conferir com fotos reais no PC do Carlos |
 
 **Nota:** `ABERTO` quer dizer não corrigido na base revisada. Não é prova de que uma nova versão ainda contém a falha.
 
@@ -95,7 +95,7 @@
 | Revisão do parecer | HEAD de Claude examinado | Entrega do Codex | Resultado |
 |---|---|---|---|
 | 2026-10-09 / v1 | `b691e8e66edc65e515d8596d87288dc06101812c` | Plano e rastreio inicial, sincronizados em `Codex_Rev` e na branch do Claude | Nove achados herdados; nenhum conserto novo afirmado |
-| 2026-10-09 / v2 | `6cc01e7` | Claude registrou a divisão do trabalho (§8) a pedido do Carlos | Lotes A e B entregues pelo Claude (R01–R05 CORRIGIDO, aguardando revisão do Codex) |
+| 2026-10-09 / v2 | `6cc01e7` | Claude registrou a divisão do trabalho (§8) a pedido do Carlos | Lotes A, B e C entregues em conjunto (R01–R06, R08, R09 CORRIGIDO; R07 parte imediata), aguardando revisão do Codex |
 
 **Instrução para o próximo ciclo do Codex:** ler HEAD de `modulo/producao-op`; comparar com o último SHA auditado; verificar testes/commits do Claude; atualizar o quadro e os estados R01–R09 em `Codex_Rev`; devolver somente as orientações aplicáveis ao novo HEAD neste arquivo na branch do Claude. Preservar histórico, não reescrever o diagnóstico anterior.
 
@@ -171,6 +171,10 @@ def itens_op(itens) -> list[dict]                         # lista de objetos; li
 | 09/10/2026 | Claude | `45647c5` | `app.js`: chave do rascunho enviada na criação e mantida entre tentativas; trava de reentrada no "Gerar"; aviso "SALVA, MAS A PUBLICAÇÃO FICOU PENDENTE"; selo de publicação e arquivos com REV na gaveta; erro da API carrega `status` (409) |
 | 09/10/2026 | Claude | `3df3b07`, `951e57b` | Lote B: `salvar_op` inteiro em um `BEGIN IMMEDIATE` (o `RLock` do `Banco` é reentrante, então `op`/`_validar`/`simular` rodam na mesma transação); `rev_esperada` obrigatório na edição → 409; índice único `(op_id, rev)` só sem duplicadas (senão `meta.revisoes_duplicadas`); coluna `ops.contrato_id` + migração (ambíguas em `meta.migracao_contrato_ambiguas` e evento `MIGRACAO_CONTRATO_OP`); `confirmar_negativo` só com `true`. Escolhi a correção estrutural do R05 em vez do bloqueio temporário: trocar o contrato do modelo vale só para as próximas O.P. (a UI avisa). Suíte: 37 OK |
 | — | Claude → Codex | — | **Nota:** o cenário R03 do `reproduzir_achados.py` agora termina em `BrokenBarrierError`, como previsto na revisão (a barreira fica dentro da transação corrigida). Os testes novos coordenam a entrada sem barreira interna |
+| 09/10/2026 | Claude | `8056597` | Integrei `codex/apoio-producao` (5 commits) com merge commit. Revisão: só arquivos do Codex, contrato do §8.2 respeitado. 51 testes OK, 3 `expectedFailure` (R07) |
+| 09/10/2026 | Claude | `80dc509` | Lote C (minha parte): `servico.py` usa a `ErroValidacao` do `validacao.py` (mesma classe); acompanhamento/ajuste/cancelamento/itens validados antes de gravar; `estado_op` com `data_legada` (devolve `data_invalida`); servidor com `corpo_objeto`, `booleano`, `inteiro_positivo`. Novo `tests/test_validacao_api.py` (15) |
+| 09/10/2026 | Claude | `3e17971` | R07: guardas antes de gravar (tabela, coluna Nº, tabela vazia); merge por `chave_origem` (`numero#ocorrência`); `editado_sistema` dá precedência ao que foi alterado no ASCALPI; nada é apagado. Os 3 testes do Codex passam sem `expectedFailure`. Suíte: 66 OK. Script `reproduzir_achados.py`: todos os cenários (exceto R03, que agora trava a barreira por desenho) mostram o comportamento corrigido |
+| — | Claude → Codex | — | **Próximo para o Codex (§8.1):** revisar Lotes A–C; §4 pontos 5–7 (Excel/timeout no Windows, carimbo "Hoje", bônus fora da tabela) com o Carlos; se quiser adiantar R07-evolução, escrever testes-especificação de staging/prévia em `tests/test_importacao.py` (o `legado.py` continua comigo). Eu sigo no Lote D (prazo textual, respostas fora de ordem, reentrada) |
 | — | Claude → Codex | — | **Pedido ao Codex para revisar os Lotes A e B:** formato novo de `ops.arquivos` (chaves `estado`, `rev`, `tentativa_em`, `xlsx`, `xlsx_rev`, `xlsx_erro`, `pdf`, `pdf_rev`, `pdf_erro`); `ErroConflito` está em `servico.py` (o `validacao.py` não precisa redefinir) |
 
 ---
