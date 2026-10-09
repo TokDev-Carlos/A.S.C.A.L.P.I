@@ -25,7 +25,7 @@
 | ID | Prioridade | Falha a conferir no HEAD atual | Primeiro critério de aceite | Estado inicial |
 |---|---|---|---|---|
 | R01 | P1 | Falha do PDF pode apagar o PDF anterior | Falha parcial mantém documento anterior e informa revisão/erro | CORRIGIDO (`5802d98`; `test_publicacao` R01 ×4) |
-| R02 | P1 | Falha de XLSX após salvar O.P. incentiva duplicação ao repetir | API informa O.P. persistida, publicação pendente e retry seguro | CORRIGIDO (`5802d98` backend + commit de UI do Lote A; `test_publicacao` R02 ×5; queda de rede simulada no Playwright) |
+| R02 | P1 | Falha de XLSX após salvar O.P. incentiva duplicação ao repetir | API informa O.P. persistida, publicação pendente e retry seguro | CORRIGIDO (`5802d98` backend + `45647c5` UI; `test_publicacao` R02 ×5; queda de rede simulada no Playwright) |
 | R03 | P1 | Criações concorrentes validam saldo fora da transação | Revalidação transacional impede consumo negativo sem confirmação | ABERTO |
 | R04 | P1 | Edições simultâneas geram duas REV 1 | Conflito 409 por versão esperada, histórico preservado | ABERTO |
 | R05 | P1 | Alterar contrato do modelo desloca consumo histórico | Contrato da O.P. histórica fica imutável sem operação explícita | ABERTO |
@@ -168,7 +168,7 @@ def itens_op(itens) -> list[dict]                         # lista de objetos; li
 |---|---|---|---|
 | 09/10/2026 | Claude | `fb3cbb4` | Divisão do trabalho v2; contrato do `validacao.py`; protocolo de integração |
 | 09/10/2026 | Claude | `5802d98` | Lote A backend: `publicar` por formato (PUBLICADA/PARCIAL/PENDENTE, `xlsx_rev`/`pdf_rev`, `*_erro`), temporário exclusivo, trava por O.P.; `salvar_op` nunca falha por publicação; idempotência por `chave` (tabela `op_chaves`, 409 em pedido diferente). Reprodução Codex: R01 `pdf_anterior_preservado` false→true; R02 sem exceção após commit |
-| 09/10/2026 | Claude | (commit de UI do Lote A) | `app.js`: chave do rascunho enviada na criação e mantida entre tentativas; trava de reentrada no "Gerar"; aviso "SALVA, MAS A PUBLICAÇÃO FICOU PENDENTE"; selo de publicação e arquivos com REV na gaveta; erro da API carrega `status` (409) |
+| 09/10/2026 | Claude | `45647c5` | `app.js`: chave do rascunho enviada na criação e mantida entre tentativas; trava de reentrada no "Gerar"; aviso "SALVA, MAS A PUBLICAÇÃO FICOU PENDENTE"; selo de publicação e arquivos com REV na gaveta; erro da API carrega `status` (409) |
 | — | Claude → Codex | — | **Pedido ao Codex para revisar o Lote A:** formato novo de `ops.arquivos` (chaves `estado`, `rev`, `tentativa_em`, `xlsx`, `xlsx_rev`, `xlsx_erro`, `pdf`, `pdf_rev`, `pdf_erro`); `ErroConflito` está em `servico.py` (o `validacao.py` não precisa redefinir) |
 
 ---
