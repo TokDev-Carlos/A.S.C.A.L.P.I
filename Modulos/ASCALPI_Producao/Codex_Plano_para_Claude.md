@@ -95,6 +95,7 @@
 | Revisão do parecer | HEAD de Claude examinado | Entrega do Codex | Resultado |
 |---|---|---|---|
 | 2026-10-09 / v1 | `b691e8e66edc65e515d8596d87288dc06101812c` | Plano e rastreio inicial, sincronizados em `Codex_Rev` e na branch do Claude | Nove achados herdados; nenhum conserto novo afirmado |
+| 2026-10-09 / v2 | `6cc01e7` | Claude registrou a divisão do trabalho (§8) a pedido do Carlos | Nenhum conserto ainda; Lote A em andamento pelo Claude |
 
 **Instrução para o próximo ciclo do Codex:** ler HEAD de `modulo/producao-op`; comparar com o último SHA auditado; verificar testes/commits do Claude; atualizar o quadro e os estados R01–R09 em `Codex_Rev`; devolver somente as orientações aplicáveis ao novo HEAD neste arquivo na branch do Claude. Preservar histórico, não reescrever o diagnóstico anterior.
 
@@ -104,6 +105,68 @@
 2. Implementar primeiro R01/R02 com testes; não repetir geração de O.P. como resposta a falha de publicação.
 3. Prosseguir R03/R04/R05 e depois validação/importação. Reportar a cada lote: **SHA, testes executados, comportamento reproduzido/corrigido e pendências**.
 4. Consultar o diagnóstico completo em `Codex_Rev` caso precise da reprodução técnica e do raciocínio de migração, sem fazer merge indiscriminado da branch de auditoria.
+
+
+## 8. Divisão do trabalho Claude ⇄ Codex (v2 — pedido do Carlos, 09/10/2026)
+
+Carlos pediu trabalho em conjunto: **Claude executa a parte mais complexa** (transações, migrações, contrato da API e estado da interface) e **Codex executa o restante**, auxiliando com módulos isolados, testes-especificação, validação no Windows e revisão. Para não haver conflito, cada arquivo tem **um único dono** por vez.
+
+### 8.1 Quem faz o quê
+
+| Achado / tarefa | Dono | Arquivos do dono | Entrega |
+|---|---|---|---|
+| R01 + R02 — publicação segura, idempotência da criação, "PUBLICAÇÃO PENDENTE" na UI | **Claude** | `servico.py`, `banco.py`, `servidor.py`, `web/app.js`, `tests/test_publicacao.py` | Lote A |
+| R03 + R04 — `BEGIN IMMEDIATE`, revalidação, `rev_esperada` → 409 | **Claude** | idem + `tests/test_concorrencia.py` | Lote B |
+| R05 — contrato imutável por O.P. (migração auditável + bloqueio na troca) | **Claude** | `servico.py`, `banco.py`, `web/app.js` | Lote B |
+| R07 — reimportação não destrutiva (guarda + merge por identidade estável) | **Claude** implementa | `legado.py` | Lote C |
+| R07 — testes-especificação da reimportação (tabela ausente, reimportar preserva acompanhamento e identidade) | **Codex** escreve | `tests/test_importacao.py` | Lote C (antes do Claude) |
+| R06 + R08 — camada de validação pura | **Codex** | `ascalpi_producao/validacao.py` (novo), `tests/test_validacao.py` | Lote C |
+| R06 + R08 — ligar a validação no serviço/API e leitura tolerante de data legada | **Claude** | `servico.py`, `servidor.py` | Lote C |
+| R09 — imagens por namespace (`ElementTree`) + ETag por conteúdo | **Codex** | `imagens.py`, `tests/test_imagens.py` (fixture PNG sintética: logo C3/C4, foto C10, prefixo padrão e alternativo) | Lote D |
+| §4 pontos 1–3 — prazo textual na edição, respostas fora de ordem, reentrada por Enter | **Claude** | `web/app.js` | Lote D |
+| §4 ponto 5 — Excel em timeout/instância isolada; PDF via Excel; 3–5 amostras reais | **Codex** (no PC do Carlos, com autorização dele) | relatório em `Codex_Rev` | após Lote D |
+| §4 pontos 6–7 — carimbo "Hoje" e bônus fora da tabela | **Codex** levanta a regra no legado (somente leitura) e propõe; **Carlos** decide | relatório | qualquer momento |
+| Revisão de cada lote do Claude, estados R01–R09 e quadro §6 | **Codex** | `Codex_Rev` + este arquivo (§6 e changelog) | contínuo |
+| `CLAUDE.md`, `CONTINUAR.md` (estado verificado, sem percentuais inventados) | **Claude** | — | ao fim de cada lote |
+| Lote E — extrações (`configuracao.py`, `consultas.py`, `publicacao.py`; `web/core`, `web/telas`) | decidir depois do Lote D | — | — |
+
+### 8.2 Contrato do `validacao.py` (para trabalharmos em paralelo)
+
+Biblioteca padrão apenas; funções puras; mensagens em MAIÚSCULAS. O Claude passa a importar `ErroValidacao` daqui (o `servico.py` vai reexportar o nome, para não quebrar quem já usa `servico.ErroValidacao`).
+
+```python
+class ErroValidacao(ValueError): ...                     # HTTP 400
+
+def corpo_objeto(corpo) -> dict                           # recusa lista/str/None
+def booleano(valor, campo, padrao=False) -> bool          # só True/False reais (None → padrao); "false"/"1" → erro
+def inteiro_positivo(valor, campo) -> int                 # id/linha; recusa bool, 0, negativo, float não inteiro
+def numero_finito(valor, campo, negativo=False) -> float  # aceita "2,5"; recusa NaN/inf/vazio
+def motivo_obrigatorio(valor, campo="MOTIVO") -> str      # strip; vazio → erro; máx. 200
+def data_iso(valor, campo) -> str | None                  # "" → None; "AAAA-MM-DD" ou "DD/MM/AAAA" válidos → "AAAA-MM-DD"; 2026-02-31 → erro
+def data_legada(valor) -> date | None                     # leitura tolerante: inválida → None, nunca lança
+def valor_acompanhamento(campo, valor) -> str             # status_instalacao: "", OK, CANCELADO, CANCELADA, DUPLICADO
+                                                          # material_obra: "", OK, CANCELADO, DUPLICADO
+                                                          # entrega_atualizada: "", OK, FALTA ou data_iso válida
+                                                          # fotografico: "", OK ; obs: texto livre até 2000
+                                                          # campo desconhecido → erro
+def itens_op(itens) -> list[dict]                         # lista de objetos; linha inteira positiva e única;
+                                                          # quantidade numero_finito ≥ 0 (vazio/0 descartados);
+                                                          # inauguracao/observacao texto (máx. 40/200)
+```
+
+### 8.3 Como entregar e integrar
+
+1. **Codex** trabalha na branch `codex/apoio-producao`, criada a partir do HEAD atual de `modulo/producao-op`, e altera **somente os arquivos que são dele** na tabela 8.1.
+2. Cada entrega do Codex: commit pequeno, testes passando (`python -m unittest discover -s tests -t .`), nota no changelog abaixo com SHA. Testes de algo que o Claude ainda vai implementar entram com `@unittest.expectedFailure` e o ID do achado no nome do teste, para a suíte continuar verde.
+3. **Claude** integra em `modulo/producao-op` com *merge commit* (sem rebase nem force-push), roda a suíte e remove os `expectedFailure` quando corrigir o achado.
+4. Arquivo de outro dono: não editar; anotar o pedido no changelog.
+5. Ordem: Claude começa o **Lote A** já; Codex começa `validacao.py` + `test_validacao.py` e `imagens.py` + `test_imagens.py` em paralelo; depois `test_importacao.py`.
+
+### 8.4 Changelog da colaboração
+
+| Data | Quem | Commit | O quê |
+|---|---|---|---|
+| 09/10/2026 | Claude | (este commit) | Divisão do trabalho v2; contrato do `validacao.py`; protocolo de integração |
 
 ---
 
