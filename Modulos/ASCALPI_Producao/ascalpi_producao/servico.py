@@ -497,11 +497,18 @@ class Servico:
         # tudo validado antes de gravar: data impossível ou valor fora da lista não entra no banco (R06)
         novos = {k: valor_acompanhamento(k, v) for k, v in campos.items()}
         with self.banco.transacao() as con:
-            self.op(op_id)
+            o = self.op(op_id)
             if not novos:
-                return self.op(op_id)
-            con.execute("UPDATE ops SET " + ", ".join(f"{k} = ?" for k in novos) + ", atualizado_em = ? WHERE id = ?",
-                        (*novos.values(), agora(), op_id))
+                return o
+            sets = dict(novos)
+            if o["origem"] == "LEGADO":   # o que foi editado aqui vence numa reimportação do Controle (R07)
+                try:
+                    antes = set(json.loads(o.get("editado_sistema") or "[]"))
+                except ValueError:
+                    antes = set()
+                sets["editado_sistema"] = json.dumps(sorted(antes | set(novos)))
+            con.execute("UPDATE ops SET " + ", ".join(f"{k} = ?" for k in sets) + ", atualizado_em = ? WHERE id = ?",
+                        (*sets.values(), agora(), op_id))
             self.banco.evento(con, "OP_ACOMPANHAMENTO", {"op": op_id, **novos})
         return self.op(op_id)
 

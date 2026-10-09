@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
-VERSAO_ESQUEMA = 2
+VERSAO_ESQUEMA = 3
 
 ESQUEMA = """
 CREATE TABLE IF NOT EXISTS meta (chave TEXT PRIMARY KEY, valor TEXT);
@@ -94,6 +94,8 @@ CREATE TABLE IF NOT EXISTS ops (
     saldo_status TEXT DEFAULT '',
     saldo_confirmado INTEGER NOT NULL DEFAULT 0,
     arquivos TEXT DEFAULT '{}',           -- json com caminhos publicados
+    chave_origem TEXT,                    -- O.P. do legado: 'NNN-AA#n' (n-ésima ocorrência do número no Controle)
+    editado_sistema TEXT DEFAULT '',      -- json: campos do acompanhamento alterados no ASCALPI (têm precedência)
     criado_em TEXT NOT NULL,
     atualizado_em TEXT NOT NULL
 );
@@ -172,6 +174,18 @@ class Banco:
                 if ambiguas:
                     con.execute("INSERT OR REPLACE INTO meta VALUES ('migracao_contrato_ambiguas', ?)", (json.dumps(ambiguas),))
                 self.evento(con, "MIGRACAO_CONTRATO_OP", {"preenchidas": n, "ambiguas": ambiguas})
+        if "chave_origem" not in colunas or "editado_sistema" not in colunas:
+            with self.transacao() as con:
+                atuais = {r[1] for r in con.execute("PRAGMA table_info(ops)")}
+                if "chave_origem" not in atuais:
+                    con.execute("ALTER TABLE ops ADD COLUMN chave_origem TEXT")
+                if "editado_sistema" not in atuais:
+                    con.execute("ALTER TABLE ops ADD COLUMN editado_sistema TEXT DEFAULT ''")
+                vistos: dict[str, int] = {}
+                for oid, numero in con.execute("SELECT id, numero FROM ops WHERE origem = 'LEGADO' ORDER BY id").fetchall():
+                    vistos[numero] = vistos.get(numero, 0) + 1
+                    con.execute("UPDATE ops SET chave_origem = ? WHERE id = ?", (f"{numero}#{vistos[numero]}", oid))
+        self._con.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_ops_legado_chave ON ops(chave_origem) WHERE origem = 'LEGADO'")
         if not self._con.execute("SELECT 1 FROM sqlite_master WHERE name = 'ix_revisoes_op_rev'").fetchone():
             duplicadas = [list(r) for r in self._con.execute(
                 "SELECT op_id, rev FROM op_revisoes GROUP BY op_id, rev HAVING COUNT(*) > 1")]

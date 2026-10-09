@@ -36,7 +36,6 @@ class TestReimportacaoSegura(unittest.TestCase):
     def _legado(self):
         return self.servico.banco.todos("SELECT id, numero, origem, status_instalacao, obs FROM ops WHERE origem = 'LEGADO' ORDER BY id")
 
-    @unittest.expectedFailure
     def test_r07_reimportacao_idempotente_preserva_identidade_e_anotacoes(self):
         """Uma nova importação do mesmo arquivo não deve apagar edição do acompanhamento."""
         antes = self._legado()
@@ -50,7 +49,6 @@ class TestReimportacaoSegura(unittest.TestCase):
         self.assertEqual(registro["obs"], "OBSERVAÇÃO REGISTRADA NO SISTEMA")
         self.assertEqual(registro["status_instalacao"], "OK")
 
-    @unittest.expectedFailure
     def test_r07_tabela_ausente_nao_remove_registros(self):
         """Arquivo sem Controle_OP: rejeição explícita, sem mutação."""
         antes = self._legado()
@@ -65,7 +63,6 @@ class TestReimportacaoSegura(unittest.TestCase):
             legado.importar_controle(self.servico.banco, invalido, [])
         self.assertEqual(self._legado(), antes)
 
-    @unittest.expectedFailure
     def test_r07_tabela_sem_coluna_numero_nao_remove_registros(self):
         """Tabela chamada Controle_OP, mas sem coluna obrigatória: bloquear."""
         antes = self._legado()

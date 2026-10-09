@@ -10,7 +10,10 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from . import documento, pacote
+import json
+
 from .banco import Banco, agora
+from .validacao import ErroValidacao
 from .regras import (codigo_valido, normalizar_cabecalho, normalizar_chave, normalizar_codigo, numero_br,
                      sanitizar_nome, tipo_arquivo)
 
@@ -242,10 +245,12 @@ def importar_controle(banco: Banco, caminho: Path, relatorio: list[str]) -> None
     partes = pacote.carregar(caminho)
     ss = pacote.strings_compartilhadas(partes)
     linhas_op, cores = [], []
+    achou_tabela = achou_numero = False
     for a in pacote.abas(partes):
         for t in pacote.tabelas(partes, a["parte"]):
             vals = None
             if t["nome"] == "Controle_OP":
+                achou_tabela = True
                 vals = pacote.ler_valores(partes, a["parte"], ss)
                 c1, r1, c2, r2 = _faixa(t["ref"])
                 mapa = {}
@@ -254,6 +259,7 @@ def importar_controle(banco: Banco, caminho: Path, relatorio: list[str]) -> None
                     campo = COLUNAS_CONTROLE.get(h) or ("numero" if h.startswith("N") and h.endswith(" OP") else None)
                     if campo and campo not in mapa.values():
                         mapa[c] = campo
+                achou_numero = achou_numero or "numero" in mapa.values()
                 for r in range(r1 + 1, r2 + 1):
                     d = {campo: _v(vals, c, r) for c, campo in mapa.items()}
                     if _texto(d.get("numero")):
@@ -270,15 +276,32 @@ def importar_controle(banco: Banco, caminho: Path, relatorio: list[str]) -> None
                     if nome:
                         cores.append((nome, re.sub(r"\s{2,}", "\n", _texto(_v(vals, ca, r))) if ca else "",
                                       re.sub(r"\s{2,}", "\n", _texto(_v(vals, cc, r))) if cc else ""))
+    # conferir ANTES de mexer no banco: arquivo errado nunca apaga o histórico (R07)
+    if not achou_tabela:
+        raise ErroValidacao(f"{caminho.name}: TABELA Controle_OP NÃO ENCONTRADA. NADA FOI ALTERADO.")
+    if not achou_numero:
+        raise ErroValidacao(f"{caminho.name}: A TABELA Controle_OP NÃO TEM A COLUNA Nº O.P. NADA FOI ALTERADO.")
+    ja_tem = banco.um("SELECT COUNT(*) n FROM ops WHERE origem = 'LEGADO'")["n"]
+    if not linhas_op and ja_tem:
+        raise ErroValidacao(f"{caminho.name}: TABELA Controle_OP SEM NENHUMA O.P. E O SISTEMA JÁ TEM {ja_tem} "
+                            "NO HISTÓRICO. NADA FOI ALTERADO.")
+    novas = atualizadas = preservados = 0
     with banco.transacao() as con:
         prefeituras = [dict(r) for r in con.execute("SELECT id, nome FROM prefeituras").fetchall()]
         for nome, ap, cn in cores:
             pid = _achar_prefeitura(prefeituras, nome)
             if pid:
                 con.execute("UPDATE prefeituras SET cores_aparelhos = ?, cores_canoplas = ? WHERE id = ?", (ap.strip(), cn.strip(), pid))
-        con.execute("DELETE FROM ops WHERE origem = 'LEGADO'")
+        # identidade estável: número + ocorrência no arquivo (o Controle admite números repetidos)
+        existentes = {r["chave_origem"]: dict(r) for r in con.execute(
+            "SELECT id, chave_origem, editado_sistema FROM ops WHERE origem = 'LEGADO'").fetchall()}
+        vistos: dict[str, int] = {}
+        chaves_arquivo = set()
         for d in linhas_op:
             numero = _texto(d.get("numero"))
+            vistos[numero] = vistos.get(numero, 0) + 1
+            chave = f"{numero}#{vistos[numero]}"
+            chaves_arquivo.add(chave)
             solicitado = momento_excel(d.get("solicitado_em"))
             m = re.fullmatch(r"(\d+)\s*-\s*(\d{2})", numero)
             if m:
@@ -291,19 +314,39 @@ def importar_controle(banco: Banco, caminho: Path, relatorio: list[str]) -> None
             prazo_data = data_excel(prazo)
             cliente = _texto(d.get("cliente"))
             tipo = _texto(d.get("tipo"))
-            con.execute(
-                "INSERT INTO ops (numero, ano, seq, origem, prefeitura_id, cliente, obra, solicitante, tipo, tipo_arquivo, "
-                "material, prazo_data, prazo_texto, entrega_atualizada, solicitado_em, status_instalacao, material_obra, "
-                "fotografico, obs, criado_em, atualizado_em) VALUES (?,?,?,'LEGADO',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (numero, ano, seq, _achar_prefeitura(prefeituras, cliente), cliente, _texto(d.get("obra")),
-                 _texto(d.get("solicitante")), tipo, tipo_arquivo(tipo), _texto(d.get("material")),
-                 prazo_data.isoformat() if prazo_data else None,
-                 None if prazo_data else (_texto(prazo).upper() or None),
-                 _data_ou_texto(d.get("entrega_atualizada")),
-                 solicitado, _texto(d.get("status_instalacao")), _texto(d.get("material_obra")),
-                 _texto(d.get("fotografico")), _texto(d.get("obs")), agora(), agora()))
-        banco.evento(con, "IMPORTAR_CONTROLE", {"arquivo": caminho.name, "ops": len(linhas_op)})
-    relatorio.append(f"{caminho.name} → {len(linhas_op)} O.P. NO HISTÓRICO, {len(cores)} PREFEITURAS COM CORES")
+            campos = {
+                "numero": numero, "ano": ano, "seq": seq, "prefeitura_id": _achar_prefeitura(prefeituras, cliente),
+                "cliente": cliente, "obra": _texto(d.get("obra")), "solicitante": _texto(d.get("solicitante")),
+                "tipo": tipo, "tipo_arquivo": tipo_arquivo(tipo), "material": _texto(d.get("material")),
+                "prazo_data": prazo_data.isoformat() if prazo_data else None,
+                "prazo_texto": None if prazo_data else (_texto(prazo).upper() or None),
+                "entrega_atualizada": _data_ou_texto(d.get("entrega_atualizada")), "solicitado_em": solicitado,
+                "status_instalacao": _texto(d.get("status_instalacao")), "material_obra": _texto(d.get("material_obra")),
+                "fotografico": _texto(d.get("fotografico")), "obs": _texto(d.get("obs")),
+            }
+            atual = existentes.get(chave)
+            if atual:
+                try:
+                    protegidos = set(json.loads(atual["editado_sistema"] or "[]"))
+                except ValueError:
+                    protegidos = set()
+                preservados += len(protegidos & set(campos))
+                sets = {k: v for k, v in campos.items() if k not in protegidos}
+                con.execute("UPDATE ops SET " + ", ".join(f"{k} = ?" for k in sets) + ", atualizado_em = ? WHERE id = ?",
+                            (*sets.values(), agora(), atual["id"]))
+                atualizadas += 1
+            else:
+                con.execute("INSERT INTO ops (origem, chave_origem, criado_em, atualizado_em, " + ", ".join(campos) +
+                            ") VALUES ('LEGADO', ?, ?, ?, " + ",".join("?" * len(campos)) + ")",
+                            (chave, agora(), agora(), *campos.values()))
+                novas += 1
+        fora = len(set(existentes) - chaves_arquivo)   # não estão mais no arquivo: ficam (nada é apagado)
+        banco.evento(con, "IMPORTAR_CONTROLE", {"arquivo": caminho.name, "ops": len(linhas_op), "novas": novas,
+                                                "atualizadas": atualizadas, "fora_do_arquivo": fora,
+                                                "campos_preservados": preservados})
+    relatorio.append(f"{caminho.name} → {len(linhas_op)} O.P. NO HISTÓRICO, {len(cores)} PREFEITURAS COM CORES "
+                     f"({novas} NOVAS, {atualizadas} ATUALIZADAS, {fora} MANTIDAS FORA DO ARQUIVO, "
+                     f"{preservados} CAMPOS EDITADOS NO SISTEMA PRESERVADOS)")
 
 
 def importar_pasta(banco: Banco, origem: Path, pasta_dados: Path) -> list[str]:
@@ -319,5 +362,8 @@ def importar_pasta(banco: Banco, origem: Path, pasta_dados: Path) -> list[str]:
         except Exception as e:  # um livro com problema não impede os demais
             relatorio.append(f"ERRO EM {p.name}: {e}")
     for p in controle:
-        importar_controle(banco, p, relatorio)
+        try:
+            importar_controle(banco, p, relatorio)
+        except ErroValidacao as e:   # arquivo inválido: avisa e não mexe no histórico
+            relatorio.append(f"ERRO EM {p.name}: {e}")
     return relatorio
