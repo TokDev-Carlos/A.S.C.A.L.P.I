@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASCALPI · Produção</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<svg class="icon-sprite" aria-hidden="true">
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24"><path d="M3 5h11v11H3zM14 9h4l3 4v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M4 21V5l8-3 8 3v16M8 8h2M14 8h2M8 12h2M14 12h2M8 16h2M14 16h2"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="m4 7 8-4 8 4-8 4zM4 7v10l8 4 8-4V7M12 11v10"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 13.5v-3l2-1.5-2-3.5-2.5 1A8 8 0 0 0 14 5l-.4-3h-4L9 5a8 8 0 0 0-2.5 1.5L4 5.5 2 9l2 1.5v3L2 15l2 3.5 2.5-1A8 8 0 0 0 9 19l.6 3h4l.4-3a8 8 0 0 0 2.5-1.5l2.5 1 2-3.5z"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4L3 10M3 5v5h5M4 13a8 8 0 0 0 14.5 4L21 14M21 19v-5h-5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="m4 20 4-1 11-11-3-3L5 16zM14 7l3 3"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M4 3h13l3 3v15H4zM8 3v6h8V3M8 17h8"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7h7l2-2h9v14H3z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m5 5 14 14M19 5 5 19"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-factory" viewBox="0 0 24 24"><path d="M3 21V10l6 3V9l6 4V5h6v16zM7 17h2M13 17h2M18 9h3"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="2"/><path d="m4 17 5-5 4 4 2-2 5 5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 20c0-4 2-6 6-6s6 2 6 6M15 15c4 0 6 2 6 5"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-calendar-q" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M10.2 14a1.9 1.9 0 1 1 2.6 1.8c-.5.2-.8.6-.8 1.1M12 19.2h.01"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20zM12 10v4M12 17h.01"/></symbol>
+  <symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6zM15 2v5h5M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></symbol>
+  <symbol id="i-rows" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13.5" r="3.5"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><path d="M9 4h6v3H9zM9 5H5v16h14V5h-4M9 12h6M9 16h4"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5zM3 13l9 5 9-5M3 17.5l9 5 9-5"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z"/></symbol>
+  <symbol id="i-hammer" viewBox="0 0 24 24"><path d="m14 7 3-3 3 3-3 3M15.5 8.5 5 19a1.4 1.4 0 0 1-2-2L13.5 6.5M11 4l5 5"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 4h18l-7 9v6l-4 2v-8z"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-9 20-2-9-9-2z"/></symbol>
+</svg>
+
+<a class="pular" href="#app">Ir para o conteúdo</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#/painel" aria-label="ASCALPI Produção — painel">
+      <span class="brand-mark"><svg><use href="#i-factory"/></svg></span>
+      <span class="brand-text"><b>ASCALPI</b><small>PRODUÇÃO · ORDENS DE PRODUÇÃO</small></span>
+    </a>
+    <div class="busca-global" role="search">
+      <svg><use href="#i-search"/></svg>
+      <input id="busca-global" type="search" autocomplete="off" placeholder="Buscar O.P., obra ou cliente" aria-label="Buscar O.P., obra ou cliente" aria-controls="busca-resultados">
+      <kbd>/</kbd>
+      <div id="busca-resultados" class="busca-resultados" role="listbox" hidden></div>
+    </div>
+    <div class="top-actions">
+      <span id="status-sistema" class="system-status"><i></i><b>SISTEMA PRONTO</b></span>
+      <span class="proxima-chip" title="Número da próxima O.P."><small>PRÓXIMA O.P.</small><b id="proxima-num">—</b></span>
+      <button class="btn ghost small" id="b-atualizar" type="button" title="Atualizar dados (R)"><svg><use href="#i-refresh"/></svg><span>ATUALIZAR</span></button>
+    </div>
+  </div>
+  <div class="progresso" aria-hidden="true"><i></i></div>
+</header>
+
+<nav class="module-nav" aria-label="Telas do módulo">
+  <a class="module-tab" href="#/painel" data-tela="painel"><svg><use href="#i-chart"/></svg><span>PAINEL</span><small>VISÃO DA PRODUÇÃO</small></a>
+  <a class="module-tab" href="#/nova" data-tela="nova"><svg><use href="#i-plus"/></svg><span>NOVA O.P.</span><small>GERAR ORDEM</small></a>
+  <a class="module-tab" href="#/ordens" data-tela="ordens"><svg><use href="#i-clipboard"/></svg><span>ORDENS</span><small>CONTROLE E ACOMPANHAMENTO</small></a>
+  <a class="module-tab" href="#/saldos" data-tela="saldos"><svg><use href="#i-scale"/></svg><span>SALDOS</span><small>CONTRATOS E ATAS</small></a>
+  <a class="module-tab" href="#/modelos" data-tela="modelos"><svg><use href="#i-layers"/></svg><span>MODELOS</span><small>PREFEITURAS E FOTOS</small></a>
+  <a class="module-tab" href="#/config" data-tela="config"><svg><use href="#i-gear"/></svg><span>CONFIGURAÇÃO</span><small>PASTAS E PDF</small></a>
+</nav>
+
+<main id="app" class="page-shell" tabindex="-1"></main>
+
+<div id="gaveta-fundo" class="gaveta-fundo" hidden></div>
+<aside id="gaveta" class="gaveta" role="dialog" aria-modal="true" aria-labelledby="g-titulo" aria-hidden="true">
+  <div class="gaveta-conteudo" id="gaveta-conteudo"></div>
+</aside>
+
+<dialog id="dlg" class="dialog">
+  <form method="dialog" class="dialog-shell">
+    <header><div><h3 id="dlg-titulo"></h3><p id="dlg-sub"></p></div><button class="icon-button" value="nao" type="submit" aria-label="Fechar"><svg><use href="#i-close"/></svg></button></header>
+    <div class="dialog-body" id="dlg-corpo"></div>
+    <footer><button class="btn ghost" value="nao" type="submit" id="dlg-nao">VOLTAR</button><button class="btn primary" value="sim" type="submit" id="dlg-sim">CONFIRMAR</button></footer>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="tip" class="tip" role="tooltip" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>

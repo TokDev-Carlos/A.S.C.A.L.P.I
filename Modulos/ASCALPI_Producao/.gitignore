@@ -1,0 +1,8 @@
+# dados reais (banco, modelos das prefeituras, documentos) nunca vão para o git
+dados/
+*.db
+*.db-wal
+*.db-shm
+__pycache__/
+*.pyc
+~*.tmp
