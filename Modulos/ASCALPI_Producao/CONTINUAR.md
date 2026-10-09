@@ -1,6 +1,6 @@
 # Continuar o módulo ASCALPI Produção na nuvem
 
-Estado em 09/10/2026, 17h30. Branch: `modulo/producao-op`.
+Estado em 09/10/2026, 21h30. Branch: `modulo/producao-op`.
 
 ## O que é
 
@@ -22,15 +22,22 @@ python -m ascalpi_producao --dados /tmp/demo servir --porta 8765
 
 Os dados reais (27 livros `OK-*.xlsm`, o Controle e a pasta `dados/` importada) **não vão para o GitHub**: o repositório é público e contém dados de clientes. Na máquina do Carlos eles estão em `D:\PROGRAMAS\ASCALPI_Project\Modulos\ASCALPI_Producao\dados` (importados: 27 prefeituras, 45 modelos com o padrão "OP-" no nome da aba, 1.033 itens de contrato, 230 O.P. do histórico; próxima O.P. 258-26). Para testar com eles numa sessão em nuvem, anexe os arquivos na conversa.
 
-## Progresso da tarefa atual: "interface em blocos" (~35%)
+## Progresso da tarefa atual: "interface em blocos" (~90%)
 
 | Etapa | Situação |
 |---|---|
 | Backend: fotos dos equipamentos e logo (`imagens.py`), situação da O.P. (`servico.estado_op`), `/api/painel`, rotas de imagem | ✅ pronto e testado |
-| `web/index.html` (casca: topo, abas de módulo, gaveta, diálogo, ícones) e `web/app.css` (visual completo) | ✅ escritos |
-| **`web/app.js` novo** | ⏳ **falta escrever**: o `app.js` atual é o da versão anterior e não combina com o novo `index.html` |
-| Conferir com capturas (Playwright, desktop 1366px e celular 390px) | ⏳ |
-| Copiar para o PC do Carlos e commit | ⏳ |
+| `web/index.html` (casca) e `web/app.css` (visual completo + bloco "complementos usados pelo app.js" no fim) | ✅ |
+| `web/app.js` novo (módulo ES, ~1.950 linhas): infraestrutura + Painel (etapa 1), Nova O.P. + Ordens + gaveta (etapa 2), Saldos + Modelos + Configuração (etapa 3) | ✅ commits `fa799bb`, `b0de808`, `0331524` |
+| Conferido com capturas (Playwright, 1366px e 390px), console sem erros, fluxo gerar → saldo negativo → REV → cancelar testado | ✅ (dados de demonstração, sem fotos/logos) |
+| **Próximo passo:** copiar a pasta `Modulos/ASCALPI_Producao` (sem `dados/`) para `D:\PROGRAMAS\ASCALPI_Project\Modulos\ASCALPI_Producao` no PC do Carlos e conferir com os 27 livros reais (fotos, logos, 230 O.P.) | ⏳ |
+
+Notas da interface:
+- `index.html` carrega `app.js` com `type="module"`; o `servidor.py` força `text/javascript` para `.js` (o registro do Windows às vezes diz `text/plain` e o navegador recusaria o módulo).
+- A busca (global e da tela Ordens) é feita no navegador, sem acento e sem diferenciar maiúsculas (o `LIKE` do SQLite diferencia "ç/Ç"); a lista de O.P. fica em cache por 20 s e é esquecida ao salvar.
+- Preferências locais (try/catch): `ascalpi.op.rascunho`, `ascalpi.ordens.vista`, `ascalpi.painel.entregas`, `ascalpi.saldos.filtro`.
+- Imagens só são pedidas quando a API diz que existem (`logo`, `fotos`, `foto`), para não gerar 404 no console; se falharem viram ícone.
+- Pendências conhecidas: conferir com fotos/logos reais; o seletor de data mostra o formato do Windows (pt-BR no PC do Carlos).
 
 Pedido do Carlos: "tabelas em blocos, mais cores, fluidez, CSS e JS, no padrão do ASCALPI, misturando ideias do UStracker; sem testes pesados".
 
