@@ -48,7 +48,8 @@ Divisão do trabalho na seção 8 daquele arquivo. Verificado nesta sessão:
 - **Lote B (R03, R04, R05) — corrigido.** Salvar O.P. numa única transação; edição exige `rev_esperada` (conflito 409); cada O.P. guarda o contrato da emissão (`ops.contrato_id`, migração automática ao abrir o banco). `tests/test_concorrencia.py` (10 testes). Suíte: 37 testes OK.
 - **Lote C (R06, R07, R08) e R09 — corrigidos em conjunto.** Codex: `validacao.py`, `imagens.py` por namespace, testes de importação. Claude: validação ligada no serviço/API antes de gravar; data legada inválida não derruba a lista (`data_invalida`); reimportação do Controle sem apagar (identidade `chave_origem`, campos editados no sistema preservados). Suíte: 66 testes OK.
 - Pendente do R07: prévia de diferenças antes de reimportar, reconciliação do saldo da planilha, proteger modelos já usados ao reimportar livros.
-- Próximo: Lote D pelo Claude (prazo textual na edição, respostas fora de ordem na tela, Enter repetido); Codex revisa e valida no Windows.
+- **Lote D (interface) — corrigido.** Prazo em texto (ex.: A COMBINAR) preservado ao editar; respostas antigas não substituem a tela; Enter/clique repetido ignorado. Parecer do Codex sobre A/B atendido (documento e REV do mesmo retrato; O.P. com contrato ambíguo marcadas "CONTRATO A CONFERIR"). Suíte: **69 testes OK**.
+- Pendente (com o Carlos/Codex): validação com dados reais no PC do Carlos, PDF pelo Excel no Windows, 3–5 amostras para comparação; decisões do carimbo "Hoje" e do bônus fora da tabela; evolução do R07 (prévia antes de reimportar); Lote E (fatoração) só depois disso.
 
 ## API disponível (servidor.py)
 
