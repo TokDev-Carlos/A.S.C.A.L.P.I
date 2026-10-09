@@ -75,7 +75,7 @@ class TestPublicacao(unittest.TestCase):
         with pdf_ok():
             rev0 = self.s.publicar(oid)
         with pdf_falha():
-            r = self.s.salvar_op(self._dados(obra="outra obra"), op_id=oid, publicar=True)
+            r = self.s.salvar_op(self._dados(obra="outra obra", rev_esperada=0), op_id=oid, publicar=True)
         pub = r["publicacao"]
         self.assertTrue(r["ok"])
         self.assertEqual(pub["estado"], "PARCIAL")

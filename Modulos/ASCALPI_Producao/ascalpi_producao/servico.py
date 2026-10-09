@@ -171,8 +171,9 @@ class Servico:
             "ORDER BY p.nome, c.ata", (prefeitura_id, prefeitura_id))
 
     def atualizar_modelo(self, modelo_id: int, contrato_id: int | None = None, ativo: bool | None = None) -> dict:
-        m = self._modelo(modelo_id)
+        """Trocar o contrato do modelo vale só para as próximas O.P.: cada O.P. guarda o contrato da emissão (R05)."""
         with self.banco.transacao() as con:
+            m = self._modelo(modelo_id)
             if contrato_id is not None:
                 cid = int(contrato_id) or None
                 if cid:
@@ -210,8 +211,8 @@ class Servico:
     def _consumo_sistema(self, contrato_id: int, excluir_op: int | None = None) -> dict[str, dict[str, float]]:
         linhas = self.banco.todos(
             "SELECT i.codigo, i.quantidade, o.status_instalacao FROM op_itens i JOIN ops o ON o.id = i.op_id "
-            "JOIN modelos m ON m.id = o.modelo_id WHERE o.origem = 'SISTEMA' AND o.situacao = 'ATIVA' "
-            "AND m.contrato_id = ? AND (? IS NULL OR o.id <> ?)", (contrato_id, excluir_op, excluir_op))
+            "WHERE o.origem = 'SISTEMA' AND o.situacao = 'ATIVA' "
+            "AND o.contrato_id = ? AND (? IS NULL OR o.id <> ?)", (contrato_id, excluir_op, excluir_op))
         total: dict[str, dict[str, float]] = {}
         for l in linhas:
             if not l["codigo"]:
@@ -239,8 +240,16 @@ class Servico:
         return {d["codigo"]: SaldoItem(d["codigo"], d["equipamento"], d["montante"], d["quant"] + d["previsao"])
                 for d in self.saldo_contrato(contrato_id, excluir_op)}
 
+    def _contrato_para(self, modelo: dict, op_id: int | None) -> int | None:
+        if op_id:
+            o = self.banco.um("SELECT contrato_id FROM ops WHERE id = ? AND origem = 'SISTEMA'", (op_id,))
+            if o:
+                return o["contrato_id"]
+        return modelo["contrato_id"]
+
     def modelo_completo(self, modelo_id: int, excluir_op: int | None = None) -> dict:
         m = self._modelo(modelo_id)
+        m["contrato_id"] = self._contrato_para(m, excluir_op)
         linhas = self.banco.todos("SELECT linha, codigo, equipamento FROM modelo_linhas WHERE modelo_id = ? ORDER BY linha",
                                   (modelo_id,))
         itens = {}
@@ -268,10 +277,11 @@ class Servico:
             l = linhas.get(int(linha))
             if l is not None:
                 pares.append((l["codigo"], qtd))
-        if not m["contrato_id"]:
+        cid = self._contrato_para(m, excluir_op)
+        if not cid:
             return {"status": SEM_CONTRATO, "negativos": [], "encerrados": [], "erros": [], "exige_confirmacao": False}
         por_base, problemas = agregar_por_base(pares)
-        sim = simular_saldo(self._itens_saldo(m["contrato_id"], excluir_op), por_base)
+        sim = simular_saldo(self._itens_saldo(cid, excluir_op), por_base)
         sim.erros[:0] = problemas
         if problemas and sim.status != "ESTRUTURA_INVALIDA":
             sim.status = "ESTRUTURA_INVALIDA"
@@ -318,7 +328,7 @@ class Servico:
         return lista
 
     def op(self, op_id: int) -> dict:
-        o = self.banco.um("SELECT o.*, m.aba AS modelo, m.contrato_id FROM ops o LEFT JOIN modelos m ON m.id = o.modelo_id "
+        o = self.banco.um("SELECT o.*, m.aba AS modelo FROM ops o LEFT JOIN modelos m ON m.id = o.modelo_id "
                           "WHERE o.id = ?", (op_id,))
         if not o:
             raise ErroValidacao("O.P. NÃO ENCONTRADA.")
@@ -368,33 +378,43 @@ class Servico:
 
     def salvar_op(self, dados: dict, op_id: int | None = None, confirmar_negativo: bool = False,
                   usuario: str = "", publicar: bool | None = None) -> dict:
-        atual = self.op(op_id) if op_id else None
-        if atual and atual["origem"] != "SISTEMA":
-            raise ErroValidacao("O.P. DO HISTÓRICO LEGADO: SÓ O ACOMPANHAMENTO PODE SER ALTERADO.")
-        if atual and atual["situacao"] != "ATIVA":
-            raise ErroValidacao("O.P. CANCELADA NÃO PODE SER ALTERADA.")
-        modelo = self._modelo(int(atual["modelo_id"] if atual else dados.get("modelo_id") or 0))
-        if not atual and not modelo["ativo"]:
-            raise ErroValidacao("MODELO DESATIVADO.")
-        cab, itens = self._validar(dados, modelo)
-        chave = None if atual else self._chave(dados)
-        assinatura = _assinatura(modelo["id"], cab, itens) if chave else None
-        if chave:
-            repetida = self._op_da_chave(self.banco.um("SELECT op_id, assinatura FROM op_chaves WHERE chave = ?", (chave,)), assinatura)
-            if repetida:
-                return repetida
-        sim = self.simular(modelo["id"], {i["linha"]: i["quantidade"] for i in itens}, excluir_op=op_id)
-        if sim["status"] == "ESTRUTURA_INVALIDA":
-            raise ErroValidacao("CONTRATO: " + " ".join(sim["erros"]))
-        if sim["exige_confirmacao"] and not confirmar_negativo:
-            return {"ok": False, "precisa_confirmacao": True, "simulacao": sim}
-        saldo_status = sim["status"]
-        if saldo_status == SALDO_NEGATIVO:
-            saldo_status = SALDO_NEGATIVO_CONFIRMADO
-
-        prazo = cab["prazo"]
+        chave = None if op_id else self._chave(dados)
         momento = agora()
+        # leitura, validação, conferência definitiva do saldo, número e gravação na MESMA transação (R03/R04);
+        # a simulação da tela é só informativa. Publicação (Excel/LibreOffice) fica fora da trava.
         with self.banco.transacao() as con:
+            atual = self.op(op_id) if op_id else None
+            if atual:
+                if atual["origem"] != "SISTEMA":
+                    raise ErroValidacao("O.P. DO HISTÓRICO LEGADO: SÓ O ACOMPANHAMENTO PODE SER ALTERADO.")
+                if atual["situacao"] != "ATIVA":
+                    raise ErroValidacao("O.P. CANCELADA NÃO PODE SER ALTERADA.")
+                esperada = dados.get("rev_esperada")
+                if isinstance(esperada, bool) or not isinstance(esperada, int):
+                    raise ErroValidacao("INFORME A REVISÃO QUE ESTÁ SENDO EDITADA (rev_esperada).")
+                if esperada != atual["rev"]:
+                    raise ErroConflito(f"A O.P. {atual['numero']} JÁ ESTÁ NA REV {atual['rev']} (FOI ALTERADA EM OUTRA TELA). "
+                                       "RECARREGUE A O.P. ANTES DE SALVAR.")
+            modelo = self._modelo(int(atual["modelo_id"] if atual else dados.get("modelo_id") or 0))
+            if not atual and not modelo["ativo"]:
+                raise ErroValidacao("MODELO DESATIVADO.")
+            cab, itens = self._validar(dados, modelo)
+            assinatura = _assinatura(modelo["id"], cab, itens) if chave else None
+            if chave:
+                repetida = self._op_da_chave(con.execute("SELECT op_id, assinatura FROM op_chaves WHERE chave = ?",
+                                                         (chave,)).fetchone(), assinatura)
+                if repetida:
+                    return repetida
+            contrato_id = atual["contrato_id"] if atual else modelo["contrato_id"]
+            sim = self.simular(modelo["id"], {i["linha"]: i["quantidade"] for i in itens}, excluir_op=op_id)
+            if sim["status"] == "ESTRUTURA_INVALIDA":
+                raise ErroValidacao("CONTRATO: " + " ".join(sim["erros"]))
+            if sim["exige_confirmacao"] and not confirmar_negativo:
+                return {"ok": False, "precisa_confirmacao": True, "simulacao": sim}
+            saldo_status = sim["status"]
+            if saldo_status == SALDO_NEGATIVO:
+                saldo_status = SALDO_NEGATIVO_CONFIRMADO
+            prazo = cab["prazo"]
             campos = dict(obra=cab["obra"], solicitante=cab["solicitante"], tipo=cab["tipo"],
                           tipo_arquivo=tipo_arquivo(cab["tipo"]), material=cab["material"],
                           prazo_data=prazo.isoformat() if isinstance(prazo, date) else None,
@@ -404,25 +424,21 @@ class Servico:
             if atual:
                 rev = atual["rev"] + 1
                 campos["rev"] = rev
-                con.execute("UPDATE ops SET " + ", ".join(f"{k} = ?" for k in campos) + " WHERE id = ?",
-                            (*campos.values(), op_id))
+                con.execute("UPDATE ops SET " + ", ".join(f"{k} = ?" for k in campos) + " WHERE id = ? AND rev = ?",
+                            (*campos.values(), op_id, atual["rev"]))
                 con.execute("DELETE FROM op_itens WHERE op_id = ?", (op_id,))
                 novo_id = op_id
             else:
-                if chave:
-                    repetida = self._op_da_chave(con.execute("SELECT op_id, assinatura FROM op_chaves WHERE chave = ?", (chave,)).fetchone(), assinatura)
-                    if repetida:
-                        return repetida
                 ano = date.today().year
                 existentes = [r[0] for r in con.execute("SELECT numero FROM ops WHERE ano = ?", (ano,)).fetchall()]
                 seq = proximo_numero(existentes, ano)
                 rev = 0
                 cur = con.execute(
-                    "INSERT INTO ops (numero, ano, seq, origem, prefeitura_id, cliente, modelo_id, solicitado_em, rev, "
-                    "criado_em, " + ", ".join(campos) + ") VALUES (?,?,?,'SISTEMA',?,?,?,?,0,?," +
+                    "INSERT INTO ops (numero, ano, seq, origem, prefeitura_id, cliente, modelo_id, contrato_id, solicitado_em, "
+                    "rev, criado_em, " + ", ".join(campos) + ") VALUES (?,?,?,'SISTEMA',?,?,?,?,?,0,?," +
                     ",".join("?" * len(campos)) + ")",
                     (formatar_numero(seq, ano), ano, seq, modelo["prefeitura_id"], modelo["prefeitura"], modelo["id"],
-                     momento, momento, *campos.values()))
+                     contrato_id, momento, momento, *campos.values()))
                 novo_id = cur.lastrowid
                 if chave:
                     con.execute("INSERT INTO op_chaves (chave, op_id, assinatura, criado_em) VALUES (?,?,?,?)",
@@ -431,7 +447,7 @@ class Servico:
                             "VALUES (?,?,?,?,?,?,?)",
                             [(novo_id, i["linha"], i["codigo"], i["equipamento"], i["quantidade"], i["inauguracao"],
                               i["observacao"]) for i in itens])
-            foto = {**campos, "itens": itens, "modelo_id": modelo["id"]}
+            foto = {**campos, "itens": itens, "modelo_id": modelo["id"], "contrato_id": contrato_id}
             con.execute("INSERT INTO op_revisoes (op_id, rev, momento, usuario, resumo, dados) VALUES (?,?,?,?,?,?)",
                         (novo_id, rev, momento, usuario, "CRIADA" if rev == 0 else str(dados.get("motivo") or "EDITADA"),
                          json.dumps(foto, ensure_ascii=False, default=str)))
@@ -468,12 +484,14 @@ class Servico:
                 "publicacao": o["arquivos"] or None}
 
     def cancelar_op(self, op_id: int, motivo: str, usuario: str = "") -> dict:
-        o = self.op(op_id)
-        if o["origem"] != "SISTEMA":
-            raise ErroValidacao("O.P. DO HISTÓRICO LEGADO NÃO PODE SER CANCELADA AQUI.")
         if not str(motivo or "").strip():
             raise ErroValidacao("INFORME O MOTIVO DO CANCELAMENTO.")
         with self.banco.transacao() as con:
+            o = self.op(op_id)
+            if o["origem"] != "SISTEMA":
+                raise ErroValidacao("O.P. DO HISTÓRICO LEGADO NÃO PODE SER CANCELADA AQUI.")
+            if o["situacao"] != "ATIVA":
+                return o
             con.execute("UPDATE ops SET situacao = 'CANCELADA', atualizado_em = ? WHERE id = ?", (agora(), op_id))
             self.banco.evento(con, "OP_CANCELADA", {"op": op_id, "motivo": motivo, "usuario": usuario})
         return self.op(op_id)

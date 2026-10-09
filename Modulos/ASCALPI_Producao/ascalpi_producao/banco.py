@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
-VERSAO_ESQUEMA = 1
+VERSAO_ESQUEMA = 2
 
 ESQUEMA = """
 CREATE TABLE IF NOT EXISTS meta (chave TEXT PRIMARY KEY, valor TEXT);
@@ -75,6 +75,7 @@ CREATE TABLE IF NOT EXISTS ops (
     prefeitura_id INTEGER REFERENCES prefeituras(id),
     cliente TEXT DEFAULT '',
     modelo_id INTEGER REFERENCES modelos(id),
+    contrato_id INTEGER REFERENCES contratos(id),   -- contrato do saldo no momento da emissão (R05)
     obra TEXT DEFAULT '',
     solicitante TEXT DEFAULT '',
     tipo TEXT DEFAULT '',                 -- B8 (MOB, ABRIGO...)
@@ -151,7 +152,36 @@ class Banco:
         self._con.execute("PRAGMA foreign_keys = ON")
         self._con.execute("PRAGMA journal_mode = WAL")
         self._con.executescript(ESQUEMA)
-        self._con.execute("INSERT OR IGNORE INTO meta VALUES ('versao_esquema', ?)", (str(VERSAO_ESQUEMA),))
+        self._migrar()
+        self._con.execute("INSERT OR REPLACE INTO meta VALUES ('versao_esquema', ?)", (str(VERSAO_ESQUEMA),))
+
+    def _migrar(self) -> None:
+        """Migrações pequenas e auditáveis; nunca apagam histórico para satisfazer uma restrição."""
+        colunas = {r[1] for r in self._con.execute("PRAGMA table_info(ops)")}
+        if "contrato_id" not in colunas:
+            with self.transacao() as con:
+                con.execute("ALTER TABLE ops ADD COLUMN contrato_id INTEGER REFERENCES contratos(id)")
+                # o contrato atual do modelo é só o candidato: se o modelo mudou de contrato depois da O.P., fica listado
+                ambiguas = [r[0] for r in con.execute(
+                    "SELECT DISTINCT o.id FROM ops o JOIN eventos e ON e.acao = 'MODELO_ALTERADO' "
+                    "AND json_extract(e.detalhe, '$.modelo') = o.modelo_id "
+                    "AND json_extract(e.detalhe, '$.contrato') IS NOT NULL AND e.momento > o.criado_em "
+                    "WHERE o.origem = 'SISTEMA'")]
+                n = con.execute("UPDATE ops SET contrato_id = (SELECT m.contrato_id FROM modelos m WHERE m.id = ops.modelo_id) "
+                                "WHERE origem = 'SISTEMA'").rowcount
+                if ambiguas:
+                    con.execute("INSERT OR REPLACE INTO meta VALUES ('migracao_contrato_ambiguas', ?)", (json.dumps(ambiguas),))
+                self.evento(con, "MIGRACAO_CONTRATO_OP", {"preenchidas": n, "ambiguas": ambiguas})
+        if not self._con.execute("SELECT 1 FROM sqlite_master WHERE name = 'ix_revisoes_op_rev'").fetchone():
+            duplicadas = [list(r) for r in self._con.execute(
+                "SELECT op_id, rev FROM op_revisoes GROUP BY op_id, rev HAVING COUNT(*) > 1")]
+            with self.transacao() as con:
+                if duplicadas:
+                    con.execute("INSERT OR REPLACE INTO meta VALUES ('revisoes_duplicadas', ?)", (json.dumps(duplicadas),))
+                    self.evento(con, "REVISOES_DUPLICADAS", {"pares": duplicadas})
+                else:
+                    con.execute("CREATE UNIQUE INDEX ix_revisoes_op_rev ON op_revisoes(op_id, rev)")
+                    con.execute("DELETE FROM meta WHERE chave = 'revisoes_duplicadas'")
 
     @contextmanager
     def transacao(self):

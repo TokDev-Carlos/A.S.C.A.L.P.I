@@ -62,7 +62,7 @@ class TestFluxo(unittest.TestCase):
         self.assertEqual(saldo["1"], 3)
         self.assertEqual(saldo["2"], -1)
         # editar: quantidade e data → REV 1, saldo recalculado sem contar a versão anterior
-        dados = self._op(prazo="2026-12-01")
+        dados = self._op(prazo="2026-12-01", rev_esperada=0)
         dados["itens"] = dados["itens"][:1]
         dados["itens"][0]["quantidade"] = "5"
         r = self.s.salvar_op(dados, op_id=o["id"])
@@ -103,7 +103,7 @@ class TestFluxo(unittest.TestCase):
         self.assertTrue(Path(res["xlsx"]).exists())
         self.assertTrue(Path(res["pdf"]).read_bytes().startswith(b"%PDF"))
         # nova revisão com outra obra substitui os arquivos publicados
-        res2 = self.s.salvar_op(self._op(obra="outra", itens=[{"linha": 10, "quantidade": 1}]), op_id=o["id"],
+        res2 = self.s.salvar_op(self._op(obra="outra", itens=[{"linha": 10, "quantidade": 1}], rev_esperada=0), op_id=o["id"],
                                 publicar=True)["publicacao"]
         self.assertFalse(Path(res["xlsx"]).exists())
         self.assertTrue(Path(res2["xlsx"]).exists())
