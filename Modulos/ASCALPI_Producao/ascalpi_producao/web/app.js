@@ -111,7 +111,11 @@ async function api(caminho, { metodo = 'GET', corpo } = {}) {
       throw new Error('SEM CONEXÃO COM O SERVIDOR. CONFIRA SE O ASCALPI PRODUÇÃO ESTÁ ABERTO.');
     }
     const dados = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(dados.erro || `ERRO ${r.status} NO SERVIDOR.`);
+    if (!r.ok) {
+      const erro = new Error(dados.erro || `ERRO ${r.status} NO SERVIDOR.`);
+      erro.status = r.status;
+      throw erro;
+    }
     return dados;
   } finally {
     if (--pendentes === 0) {
@@ -463,6 +467,7 @@ function descreverEvento(ev) {
     OP_ACOMPANHAMENTO: ['clipboard', 'NA_OBRA', `ACOMPANHAMENTO DA ${opTxt}`,
       Object.entries(d).filter(([k]) => k !== 'op').map(([k, v]) => `${CAMPO_ACOMP[k] || k}: ${k === 'entrega_atualizada' && /^\d{4}-/.test(v) ? dataBR(v) : (v || '—')}`).join(' · ')],
     OP_PUBLICADA: [d.pdf_erro ? 'alert' : 'send', d.pdf_erro ? 'ATRASADA' : 'INSTALADA', `${opTxt} PUBLICADA`, d.pdf_erro ? 'PDF FALHOU: ' + d.pdf_erro : sub],
+    OP_PUBLICACAO_PENDENTE: ['alert', 'PROXIMA', `PUBLICAÇÃO ${d.estado || 'PENDENTE'} DA ${opTxt}`, d.xlsx_erro || d.pdf_erro || sub],
     SALDO_AJUSTADO: ['scale', 'SEM_DATA', `SALDO AJUSTADO · ITEM ${d.codigo ?? ''}`, d.motivo || ''],
     MODELO_ALTERADO: ['layers', 'SEM_DATA', 'MODELO ALTERADO', d.ativo === false ? 'DESATIVADO' : d.ativo === true ? 'ATIVADO' : 'CONTRATO DO SALDO'],
     IMPORTAR_LIVRO: ['download', 'SEM_DATA', 'LIVRO IMPORTADO', d.cliente || d.arquivo || ''],
@@ -623,6 +628,11 @@ TELAS.painel = async (tela, arg, q, vivo) => {
 
 // ================================================================== tela: NOVA O.P. (3 passos) e EDITAR
 const RASCUNHO = 'op.rascunho';
+// chave do pedido de criação: a mesma em todas as tentativas deste rascunho (o servidor não duplica a O.P.)
+const novaChave = () => {
+  try { if (crypto.randomUUID) return crypto.randomUUID(); } catch { /* sem crypto */ }
+  return 'op-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+};
 const baseCodigo = c => { c = String(c ?? '').trim().replace(',', '.'); return c.startsWith('0.') ? c : c.split('.')[0]; };
 const ehBonus = c => String(c ?? '').trim().startsWith('0.');
 
@@ -646,7 +656,7 @@ async function telaNova(tela, editId, q, vivo) {
   const est = {
     editId, origem: null, prefs: [], pref: null, modelos: [], modelo: null, solicitantes: [],
     cab: { obra: '', solicitante: '', tipo: '', modoPrazo: 'data', prazo: '', motivo: '' },
-    qtd: {}, filtro: '', soCom: false, proximo: '', restaurado: null,
+    qtd: {}, filtro: '', soCom: false, proximo: '', restaurado: null, chave: editId ? null : novaChave(),
   };
   const [prefs, prox] = await Promise.all([api('/api/prefeituras'), api('/api/ops/proximo')]);
   est.prefs = prefs;
@@ -668,6 +678,7 @@ async function telaNova(tela, editId, q, vivo) {
       est.cab = { ...est.cab, ...(r.cab || {}) };
       est.qtd = r.qtd || {};
       est.restaurado = r.salvo_em || '';
+      if (r.chave) est.chave = r.chave;
     }
   }
   est.pref = prefs.find(p => p.id === prefId) || null;
@@ -913,7 +924,7 @@ async function telaNova(tela, editId, q, vivo) {
     clearTimeout(rascunhoT);
     rascunhoT = setTimeout(() => {
       if (!est.pref) { memoria.apagar(RASCUNHO); return; }
-      memoria.gravar(RASCUNHO, { pref_id: est.pref.id, modelo_id: est.modelo?.id || null, cab: est.cab, qtd: est.qtd, salvo_em: new Date().toISOString() });
+      memoria.gravar(RASCUNHO, { pref_id: est.pref.id, modelo_id: est.modelo?.id || null, cab: est.cab, qtd: est.qtd, chave: est.chave, salvo_em: new Date().toISOString() });
     }, 350);
   }
 
@@ -950,7 +961,9 @@ async function telaNova(tela, editId, q, vivo) {
     el.addEventListener('input', () => el.classList.remove('erro'), { once: true });
   }
 
+  let enviando = false;
   async function gerar(botao, confirmar = false) {
+    if (enviando && !confirmar) return;            // Enter/clique repetido não dispara outro pedido
     const m = est.modelo, c = est.cab;
     if (!m) return marcarErro(null, 'ESCOLHA A PREFEITURA E O MODELO.');
     if (!c.obra.trim()) return marcarErro($('#n-obra', tela), 'INFORME A OBRA.');
@@ -962,12 +975,13 @@ async function telaNova(tela, editId, q, vivo) {
     if (!itens.length) return marcarErro($('.equip input[data-campo=q]', tela), 'A O.P. PRECISA DE PELO MENOS 1 EQUIPAMENTO COM QUANTIDADE.');
     const corpo = {
       modelo_id: m.id, obra: c.obra, solicitante: c.solicitante, tipo: c.tipo, prazo: c.modoPrazo === 'data' ? c.prazo : 'DEFINIR',
-      itens, motivo: c.motivo, confirmar_negativo: confirmar,
+      itens, motivo: c.motivo, confirmar_negativo: confirmar, ...(editId ? {} : { chave: est.chave }),
     };
     let r;
+    enviando = true;
     try {
       r = await ocupado(botao, () => api(editId ? `/api/ops/${editId}` : '/api/ops', { metodo: editId ? 'PUT' : 'POST', corpo }));
-    } catch (e) { falha(e); return; }
+    } catch (e) { falha(e); return; } finally { enviando = false; }
     if (r.precisa_confirmacao) {
       if (await dialogoNegativo(r.simulacao)) return gerar(botao, true);
       return;
@@ -976,8 +990,10 @@ async function telaNova(tela, editId, q, vivo) {
     clearTimeout(rascunhoT);
     esquecerOPs();
     atualizarProxima();
-    aviso(editId ? `O.P. ${r.op.numero} SALVA NA REV ${r.op.rev}.` : `O.P. ${r.op.numero} GERADA.`, 'ok');
-    if (r.publicacao?.pdf_erro) setTimeout(() => aviso('XLSX PUBLICADO, MAS O PDF FALHOU: ' + r.publicacao.pdf_erro, 'erro'), 1600);
+    const pub = r.publicacao;
+    if (r.repetida) aviso(`O.P. ${r.op.numero} JÁ TINHA SIDO GERADA POR ESTE RASCUNHO (PEDIDO REPETIDO, NADA FOI DUPLICADO).`, 'ok');
+    else if (pub && pub.estado !== 'PUBLICADA') aviso(`O.P. ${r.op.numero} SALVA, MAS A PUBLICAÇÃO FICOU ${pub.estado}: ${pub.xlsx_erro || pub.pdf_erro || ''}. USE "REPUBLICAR" NA O.P.`, 'erro');
+    else aviso(editId ? `O.P. ${r.op.numero} SALVA NA REV ${r.op.rev}.` : `O.P. ${r.op.numero} GERADA.`, 'ok');
     location.hash = `#/ordens?op=${r.op_id}`;
   }
 
@@ -986,7 +1002,7 @@ async function telaNova(tela, editId, q, vivo) {
     const ok = await dialogo({ titulo: 'LIMPAR A O.P.?', sub: 'APAGA OS DADOS, AS QUANTIDADES E O RASCUNHO. A PREFEITURA E O MODELO CONTINUAM ESCOLHIDOS.', rotulo: 'LIMPAR', perigo: true });
     if (!ok) return;
     est.cab = { obra: '', solicitante: '', tipo: est.modelo?.tipo_padrao || '', modoPrazo: 'data', prazo: '', motivo: '' };
-    est.qtd = {}; est.restaurado = null;
+    est.qtd = {}; est.restaurado = null; est.chave = novaChave();
     memoria.apagar(RASCUNHO);
     desenharTudo();
     salvarRascunho();
@@ -1033,7 +1049,7 @@ async function telaNova(tela, editId, q, vivo) {
         atualizarEquips();
       } else if (alvo.dataset.acao === 'descartar') {
         memoria.apagar(RASCUNHO);
-        est.pref = null; est.modelo = null; est.qtd = {}; est.restaurado = null;
+        est.pref = null; est.modelo = null; est.qtd = {}; est.restaurado = null; est.chave = novaChave();
         est.cab = { obra: '', solicitante: '', tipo: '', modoPrazo: 'data', prazo: '', motivo: '' };
         desenharTudo();
         aviso('RASCUNHO DESCARTADO.', 'ok');
@@ -1395,6 +1411,30 @@ async function abrirGaveta(id) {
   if (primeira) $('[data-g=fechar]', gavetaConteudo)?.focus();
 }
 
+// situação da publicação dos arquivos (R01/R02)
+function seloPublicacao(o) {
+  if (o.origem !== 'SISTEMA') return '';
+  const a = o.arquivos || {};
+  if (!a.estado && !a.xlsx) return '<span class="badge gray">NÃO PUBLICADA</span>';
+  if (a.estado === 'PENDENTE') return `<span class="badge orange">${ic('alert')}PUBLICAÇÃO PENDENTE</span>`;
+  if (a.estado === 'PARCIAL') return `<span class="badge orange">${ic('alert')}PUBLICAÇÃO PARCIAL</span>`;
+  if (a.xlsx_rev != null && a.xlsx_rev !== o.rev) return `<span class="badge orange">${ic('alert')}ARQUIVOS DA REV ${a.xlsx_rev}</span>`;
+  return `<span class="badge green">${ic('send')}PUBLICADA</span>`;
+}
+
+function listaArquivos(o) {
+  const a = o.arquivos || {};
+  const linha = (fmt, rot) => {
+    const caminho = a[fmt], rev = a[fmt + '_rev'], erro = a[fmt + '_erro'];
+    const velho = caminho && rev != null && rev !== o.rev;
+    return (caminho ? `<span class="arquivo">${ic('file')}<span>${esc(caminho)}${velho ? ` <b style="color:var(--orange)">(${rot} DA REV ${rev}, NÃO É O ATUAL)</b>` : rev != null ? ` <small class="mudo">· REV ${rev}</small>` : ''}</span></span>` : '') +
+      (erro ? `<span class="arquivo" style="color:var(--red)">${ic('alert')}${rot} FALHOU: ${esc(erro)}</span>` : '');
+  };
+  const corpo = linha('xlsx', 'XLSX') + linha('pdf', 'PDF');
+  return corpo ? `<div class="arquivos">${corpo}${a.tentativa_em ? `<small class="mudo">ÚLTIMA TENTATIVA: ${esc(dataHoraBR(a.tentativa_em))}</small>` : ''}</div>`
+    : '<small>AINDA NÃO PUBLICADA (REPUBLICAR GERA OS ARQUIVOS).</small>';
+}
+
 const detalhe = (rot, val, largo = false) => `<div class="detalhe${largo ? ' largo' : ''}"><span>${rot}</span><b>${val || '—'}</b></div>`;
 const up = v => String(v || '').trim().toUpperCase();
 
@@ -1422,7 +1462,7 @@ function desenharGaveta() {
       <a class="btn ghost small" href="${pdf}?baixar=1" download>${ic('download')}PDF</a>
       ${ativa ? `<a class="btn soft small" href="#/editar/${o.id}">${ic('edit')}EDITAR → REV ${o.rev + 1}</a>` : ''}
       <a class="btn ghost small" href="#/nova?de=${o.id}">${ic('copy')}DUPLICAR</a>
-      ${ativa ? `<button class="btn ghost small" type="button" data-g="publicar">${ic('send')}REPUBLICAR</button>
+      ${ativa ? `<button class="btn ${['PENDENTE', 'PARCIAL'].includes(o.arquivos?.estado) ? 'success' : 'ghost'} small" type="button" data-g="publicar">${ic('send')}REPUBLICAR</button>
       <button class="btn danger small" type="button" data-g="cancelar">${ic('x-circle')}CANCELAR</button>` : ''}
     </div>` : '';
   gavetaConteudo.innerHTML = `
@@ -1435,7 +1475,7 @@ function desenharGaveta() {
       <div class="cliente">${esc(o.cliente)}${o.solicitante ? ` · ${esc(o.solicitante)}` : ''}</div>
       <div class="selos">${pilula(o.estado)}
         ${o.tipo ? `<span class="badge blue">${esc(o.tipo)}</span>` : ''}${o.material ? `<span class="badge teal">${esc(o.material)}</span>` : ''}
-        ${o.modelo ? `<span class="badge slate">${ic('layers')}${esc(o.modelo)}</span>` : ''}${seloSaldo(o.saldo_status)}
+        ${o.modelo ? `<span class="badge slate">${ic('layers')}${esc(o.modelo)}</span>` : ''}${seloSaldo(o.saldo_status)}${seloPublicacao(o)}
         <span class="badge gray">${ic('calendar')}PRAZO ${esc(prazoTexto(o))}</span>
       </div>
     </header>
@@ -1450,10 +1490,7 @@ async function desenharAbaGaveta() {
   const p = $('#g-painel', gavetaConteudo);
   if (!p) return;
   if (gav.aba === 'resumo') {
-    const arq = o.arquivos || {};
-    const arquivos = arq.xlsx || arq.pdf || arq.pdf_erro ? `<div class="arquivos">
-      ${arq.xlsx ? `<span class="arquivo">${ic('file')}${esc(arq.xlsx)}</span>` : ''}${arq.pdf ? `<span class="arquivo">${ic('file')}${esc(arq.pdf)}</span>` : ''}
-      ${arq.pdf_erro ? `<span class="arquivo" style="color:var(--red)">${ic('alert')}PDF FALHOU: ${esc(arq.pdf_erro)}</span>` : ''}</div>` : '<small>AINDA NÃO PUBLICADA (REPUBLICAR GERA OS ARQUIVOS).</small>';
+    const arquivos = listaArquivos(o);
     const prazoOriginal = o.prazo_data ? dataBR(o.prazo_data) : (o.prazo_texto || 'DEFINIR');
     const novaEntrega = /^\d{4}-/.test(o.entrega_atualizada || '') ? ` <small>· NOVA ENTREGA ${dataBR(o.entrega_atualizada)}</small>` : '';
     p.innerHTML = `<div class="detalhes">
@@ -1489,8 +1526,7 @@ async function desenharAbaGaveta() {
         <span class="rev">REV<br>${r.rev}</span>
         <span><b>${esc(r.resumo || (r.rev ? 'EDITADA' : 'CRIADA'))}</b><small>${esc(dataHoraBR(r.momento))}${r.usuario ? ' · ' + esc(r.usuario) : ''}</small></span>
         ${r.rev === o.rev ? '<span class="badge green">ATUAL</span>' : '<span class="badge gray">ANTERIOR</span>'}</div>`).join('') || vazio('SEM REVISÕES', '', 'history')}</div>
-      ${arq.xlsx || arq.pdf ? `<h4 style="margin:18px 0 6px;font-size:11px;letter-spacing:.06em;color:var(--muted)">ARQUIVOS DA REVISÃO ATUAL</h4>
-        <div class="arquivos">${arq.xlsx ? `<span class="arquivo">${ic('file')}${esc(arq.xlsx)}</span>` : ''}${arq.pdf ? `<span class="arquivo">${ic('file')}${esc(arq.pdf)}</span>` : ''}</div>` : ''}`;
+      ${arq.xlsx || arq.pdf ? `<h4 style="margin:18px 0 6px;font-size:11px;letter-spacing:.06em;color:var(--muted)">ARQUIVOS PUBLICADOS</h4>${listaArquivos(o)}` : ''}`;
   }
 }
 
@@ -1565,7 +1601,8 @@ gavetaConteudo.addEventListener('click', async e => {
   } else if (b.dataset.g === 'publicar') {
     try {
       const r = await ocupado(b, () => api(`/api/ops/${o.id}/publicar`, { metodo: 'POST' }));
-      if (r.pdf_erro) aviso('XLSX PUBLICADO, MAS O PDF FALHOU: ' + r.pdf_erro, 'erro'); else aviso(`O.P. ${o.numero} REPUBLICADA (XLSX E PDF).`, 'ok');
+      if (r.estado === 'PUBLICADA') aviso(`O.P. ${o.numero} REPUBLICADA (XLSX E PDF).`, 'ok');
+      else aviso(`PUBLICAÇÃO ${r.estado}: ${r.xlsx_erro || r.pdf_erro || ''}. O ARQUIVO ANTERIOR FOI MANTIDO.`, 'erro');
       gav.op = await api('/api/ops/' + o.id);
       desenharGaveta();
     } catch (erro) { falha(erro); }

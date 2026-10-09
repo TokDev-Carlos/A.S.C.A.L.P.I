@@ -41,6 +41,12 @@ Notas da interface:
 
 Pedido do Carlos: "tabelas em blocos, mais cores, fluidez, CSS e JS, no padrão do ASCALPI, misturando ideias do UStracker; sem testes pesados".
 
+## Estabilização (plano do Codex, `Codex_Plano_para_Claude.md`)
+
+Divisão do trabalho na seção 8 daquele arquivo. Verificado nesta sessão:
+- **Lote A (R01, R02) — corrigido.** Publicação por formato sem apagar o anterior; O.P. salva nunca vira erro de criação; criação idempotente por `chave` (retry após queda de rede devolve a mesma O.P.). `tests/test_publicacao.py` (9 testes). Suíte: 27 testes OK.
+- Próximo: Lote B (R03, R04, R05) pelo Claude; `validacao.py` e `imagens.py` (R06/R08/R09) pelo Codex em `codex/apoio-producao`.
+
 ## API disponível (servidor.py)
 
 | Rota | Retorno |
@@ -57,6 +63,7 @@ Pedido do Carlos: "tabelas em blocos, mais cores, fluidez, CSS e JS, no padrão 
 | `POST /api/ops/{id}/acompanhamento` | campos `status_instalacao`, `entrega_atualizada`, `material_obra`, `fotografico`, `obs` |
 | `POST /api/ops/{id}/cancelar` `{motivo}` · `/publicar` | |
 | `GET /api/ops/{id}/documento.xlsx` · `.pdf?baixar=1` | arquivo |
+| `POST /api/ops` com `chave` | idempotente: mesma chave e mesmo pedido → `{ok, repetida: true, op_id}`; pedido diferente → 409. `publicacao.estado`: PUBLICADA / PARCIAL / PENDENTE |
 | `GET /api/contratos?prefeitura_id=` · `/api/contratos/{id}/saldo` · `POST .../ajuste {codigo,montante,ajuste,motivo}` | |
 | `PATCH /api/modelos/{id}` `{contrato_id, ativo}` · `GET/PUT /api/config` · `GET /api/eventos` (com `op:{numero,obra}`) · `GET /api/ops/proximo` | |
 
