@@ -263,10 +263,10 @@ def agregar_por_base(linhas: Sequence[tuple[object, object]]) -> tuple[dict[str,
 def simular_saldo(itens: Mapping[str, SaldoItem], quantidades: Mapping[str, float]) -> Simulacao:
     sim = Simulacao(SALDO_OK, quantidades=dict(quantidades))
     for base, qtd in quantidades.items():
+        if ignora_checagem(base):           # 0.x = extra: entra na O.P. e na contagem, sem saldo nem contrato
+            continue
         if base not in itens:
             sim.erros.append(f"ITEM {base} NÃO EXISTE NO CONTRATO.")
-            continue
-        if ignora_checagem(base):
             continue
         item = itens[base]
         antes = item.saldo()

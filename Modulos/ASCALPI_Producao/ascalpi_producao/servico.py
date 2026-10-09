@@ -239,7 +239,8 @@ class Servico:
             previsao = it["previsao_inicial"] + s["previsao"] + it["ajuste"]
             si = SaldoItem(it["codigo"], it["equipamento"], it["montante"], quant + previsao)
             saida.append({**it, "quant": quant, "previsao": previsao, "sistema_instalado": s["instalado"],
-                          "sistema_previsao": s["previsao"], "saldo": si.saldo()})
+                          "sistema_previsao": s["previsao"], "saldo": si.saldo(),
+                          "extra": it["codigo"].startswith("0.")})   # 0.x = extra: conta, mas não tem saldo
         saida.sort(key=lambda d: (d["codigo"].startswith("0."), [int(x) for x in d["codigo"].split(".")]))
         return saida
 
@@ -433,7 +434,7 @@ class Servico:
                           prazo_data=prazo.isoformat() if isinstance(prazo, date) else None,
                           prazo_texto=None if isinstance(prazo, date) else prazo,
                           saldo_status=saldo_status, saldo_confirmado=1 if saldo_status == SALDO_NEGATIVO_CONFIRMADO else 0,
-                          atualizado_em=momento)
+                          atualizado_em=momento, revisado_em=momento)   # criado_em/solicitado_em nunca mudam
             if atual:
                 rev = atual["rev"] + 1
                 campos["rev"] = rev
@@ -530,10 +531,12 @@ class Servico:
     # ------------------------------------------------------------ documentos
     def _dados_documento(self, o: dict) -> documento.DadosOP:
         prazo = date.fromisoformat(o["prazo_data"]) if o["prazo_data"] else (o["prazo_texto"] or "DEFINIR")
-        emitido = datetime.fromisoformat(o["atualizado_em"])
+        # "Hoje" = criação da O.P. (imutável); a partir da REV 1 o documento mostra também a data da revisão
+        criada = datetime.fromisoformat(o["criado_em"])
+        revisada = datetime.fromisoformat(o["revisado_em"]) if o.get("revisado_em") and o["rev"] else None
         return documento.DadosOP(
             numero=o["numero"], obra=o["obra"], prazo=prazo, solicitante=o["solicitante"], rev=o["rev"],
-            tipo=o["tipo"] or None, emitido_em=emitido,
+            tipo=o["tipo"] or None, emitido_em=criada, revisado_em=revisada,
             linhas={i["linha"]: documento.LinhaOP(i["quantidade"], _inaug(i["inauguracao"]), i["observacao"])
                     for i in o["itens"]})
 
@@ -647,6 +650,8 @@ class Servico:
         alertas, negativos, encerrados = [], 0, 0
         for c in self.contratos():
             for it in self.saldo_contrato(c["id"]):
+                if it["extra"]:
+                    continue
                 s = it["saldo"]
                 if s == "ACABOU" or (isinstance(s, (int, float)) and s < 0):
                     if s == "ACABOU":

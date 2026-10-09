@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
-VERSAO_ESQUEMA = 3
+VERSAO_ESQUEMA = 4
 
 ESQUEMA = """
 CREATE TABLE IF NOT EXISTS meta (chave TEXT PRIMARY KEY, valor TEXT);
@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS ops (
     entrega_atualizada TEXT DEFAULT '',
     solicitado_em TEXT,
     rev INTEGER NOT NULL DEFAULT 0,
+    revisado_em TEXT,                     -- data da revisão atual (REV 0 = criação); criado_em nunca muda
     situacao TEXT NOT NULL DEFAULT 'ATIVA',   -- ATIVA | CANCELADA
     status_instalacao TEXT DEFAULT '',
     material_obra TEXT DEFAULT '',
@@ -185,6 +186,11 @@ class Banco:
                 for oid, numero in con.execute("SELECT id, numero FROM ops WHERE origem = 'LEGADO' ORDER BY id").fetchall():
                     vistos[numero] = vistos.get(numero, 0) + 1
                     con.execute("UPDATE ops SET chave_origem = ? WHERE id = ?", (f"{numero}#{vistos[numero]}", oid))
+        if "revisado_em" not in {r[1] for r in self._con.execute("PRAGMA table_info(ops)")}:
+            with self.transacao() as con:
+                con.execute("ALTER TABLE ops ADD COLUMN revisado_em TEXT")
+                con.execute("UPDATE ops SET revisado_em = COALESCE((SELECT MAX(r.momento) FROM op_revisoes r "
+                            "WHERE r.op_id = ops.id AND r.rev = ops.rev), criado_em) WHERE origem = 'SISTEMA'")
         self._con.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_ops_legado_chave ON ops(chave_origem) WHERE origem = 'LEGADO'")
         if not self._con.execute("SELECT 1 FROM sqlite_master WHERE name = 'ix_revisoes_op_rev'").fetchone():
             duplicadas = [list(r) for r in self._con.execute(

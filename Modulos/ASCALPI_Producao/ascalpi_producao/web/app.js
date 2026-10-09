@@ -863,7 +863,7 @@ async function telaNova(tela, editId, q, vivo) {
       $('.equip-qtd-selo', card).textContent = q > 0 ? num(q) : '';
       $('.equip-extra', card).inert = !(q > 0);
       let html;
-      if (s.tipo === 'bonus') html = `<div class="linha"><span>BONIFICADO</span><b class="acabou">SEM CONFERÊNCIA</b></div>`;
+      if (s.tipo === 'bonus') html = `<div class="linha"><span>EXTRA (0.X)</span><b class="acabou">SEM SALDO</b></div>`;
       else if (s.tipo === 'semcontrato') html = `<div class="linha"><span>SALDO</span><b>SEM CONTRATO</b></div>`;
       else if (s.tipo === 'fora') html = `<div class="linha"><span>CÓDIGO</span><b class="neg">FORA DO CONTRATO</b></div>`;
       else {
@@ -1523,7 +1523,9 @@ async function desenharAbaGaveta() {
       ${detalhe('OBRA', esc(o.obra), true)}
       ${detalhe('TIPO', esc(o.tipo))}${detalhe('MATERIAL', esc(o.material))}
       ${detalhe('PRAZO', esc(prazoOriginal) + novaEntrega + ` <small>· ${esc(prazoDias(o))}</small>`)}${detalhe('SITUAÇÃO', esc(ESTADO[o.estado].rot) + (o.situacao === 'CANCELADA' ? ' <small>(CANCELADA NO SISTEMA)</small>' : ''))}
-      ${detalhe('SOLICITADA EM', esc(dataHoraBR(o.solicitado_em)))}${detalhe('ATUALIZADA EM', esc(dataHoraBR(o.atualizado_em)))}
+      ${detalhe('CRIADA EM', esc(dataHoraBR(o.origem === 'SISTEMA' ? o.criado_em : o.solicitado_em)))}${o.origem === 'SISTEMA'
+        ? detalhe(`REVISÃO ATUAL (REV ${o.rev})`, o.rev ? esc(dataHoraBR(o.revisado_em)) : '<small>SEM REVISÕES</small>')
+        : detalhe('ATUALIZADA EM', esc(dataHoraBR(o.atualizado_em)))}
       ${detalhe('MODELO', esc(o.modelo))}${detalhe('EQUIPAMENTOS', `${o.itens.length} <small>· ${num(o.itens.reduce((t, i) => t + i.quantidade, 0))} PEÇAS</small>`)}
       ${detalhe('ARQUIVOS PUBLICADOS', arquivos, true)}
       ${o.obs ? detalhe('OBSERVAÇÕES', esc(o.obs), true) : ''}
@@ -1674,6 +1676,7 @@ gaveta.addEventListener('keydown', e => {
 
 // ================================================================== tela: SALDOS
 function classeSaldo(it) {
+  if (it.extra || ehBonus(it.codigo)) return 'extra';     // 0.x: conta na O.P., não tem saldo
   if (it.saldo === 'ACABOU') return 'acabou';
   if (typeof it.saldo === 'number' && it.saldo < 0) return 'neg';
   if (!(it.montante > 0)) return 'zero';
@@ -1689,14 +1692,14 @@ function cartaoSaldo(it) {
   const r1 = controlado ? Math.min(R, M) : R, p1 = controlado ? Math.min(P, M - r1) : P, exc = controlado ? Math.max(0, total - M) : 0;
   const w = v => `${(v / escala) * 100}%`;
   const cls = classeSaldo(it);
-  const valor = it.saldo === 'ACABOU' ? 'ACABOU' : num(it.saldo);
+  const valor = cls === 'extra' ? 'EXTRA' : it.saldo === 'ACABOU' ? 'ACABOU' : num(it.saldo);
   const usado = M ? Math.round((total / M) * 100) : null;
   const bonus = ehBonus(it.codigo);
   return `<article class="saldo-card ${cls}" data-codigo="${esc(it.codigo)}">
     <div class="saldo-cab">
       <span class="cod${bonus ? ' bonus' : ''}">${esc(it.codigo)}</span>
-      <h3>${esc(it.equipamento)}${bonus ? ' <span class="badge purple">BONIFICADO</span>' : ''}</h3>
-      <div class="saldo-valor"><strong>${valor}</strong><small>${cls === 'zero' ? 'SEM MONTANTE' : 'SALDO'}</small></div>
+      <h3>${esc(it.equipamento)}${bonus ? ' <span class="badge purple">EXTRA</span>' : ''}</h3>
+      <div class="saldo-valor"><strong>${valor}</strong><small>${cls === 'extra' ? 'SEM SALDO' : cls === 'zero' ? 'SEM MONTANTE' : 'SALDO'}</small></div>
     </div>
     <div class="medidor" role="img" aria-label="REALIZADO ${num(R)}, PREVISÃO ${num(P)}, MONTANTE ${num(M)}${exc ? `, EXCEDENTE ${num(exc)}` : ''}"
       data-tip-titulo="ITEM ${esc(it.codigo)}${usado != null ? ` · ${usado}% USADO` : ''}" data-tip-valor="${esc(valor)} DE ${num(M)}"
@@ -1754,8 +1757,9 @@ TELAS.saldos = async (tela, arg, q, vivo) => {
     const neg = itens.filter(i => classeSaldo(i) === 'neg').length;
     const acabou = itens.filter(i => classeSaldo(i) === 'acabou').length;
     const comSaldo = itens.filter(i => classeSaldo(i) === 'ok').length;
-    const montante = itens.reduce((t, i) => t + Math.max(0, i.montante || 0), 0);
-    const usado = itens.reduce((t, i) => t + (i.montante > 0 ? i.quant + i.previsao : 0), 0);
+    const conta = itens.filter(i => classeSaldo(i) !== 'extra');      // extras (0.x) fora do % usado
+    const montante = conta.reduce((t, i) => t + Math.max(0, i.montante || 0), 0);
+    const usado = conta.reduce((t, i) => t + (i.montante > 0 ? i.quant + i.previsao : 0), 0);
     const pct = montante ? Math.round((usado / montante) * 100) : 0;
     const termos = norm(texto).split(/\s+/).filter(Boolean);
     const lista = itens.filter(i => {

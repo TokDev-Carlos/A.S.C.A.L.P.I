@@ -54,7 +54,8 @@ class DadosOP:
     rev: int = 0
     tipo: str | None = None          # B8; None = mantém o do modelo
     cliente: str | None = None       # B3; None = mantém o do modelo
-    emitido_em: datetime = field(default_factory=datetime.now)
+    emitido_em: datetime = field(default_factory=datetime.now)   # criação da O.P. (não muda nas revisões)
+    revisado_em: datetime | None = None                          # data da revisão atual (REV ≥ 1)
 
 
 # ---------------------------------------------------------------- textos calculados (antes eram fórmulas)
@@ -362,7 +363,10 @@ def gerar_xlsx(modelo: bytes, dados: DadosOP, senha: str) -> bytes:
                 ws.definir(ref, None)
 
     # 2) cabeçalho
-    ws.definir("B2", texto_hoje(dados.emitido_em))
+    hoje = texto_hoje(dados.emitido_em)
+    if dados.rev and dados.revisado_em:
+        hoje += f" · REV {int(dados.rev)} {dados.revisado_em:%d/%m/%Y}"
+    ws.definir("B2", hoje)
     ws.definir("P2", dados.numero)
     ws.definir("U2", int(dados.rev))
     ws.definir("D3", dados.obra)
