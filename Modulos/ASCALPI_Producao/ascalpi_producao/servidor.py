@@ -11,6 +11,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, quote, urlparse
 
 from .servico import ErroConflito, ErroValidacao, Servico
+from .validacao import booleano, corpo_objeto, inteiro_positivo, itens_op
 
 WEB = Path(__file__).with_name("web")
 # o registro do Windows às vezes associa .js a text/plain, e o navegador recusa módulo ES assim
@@ -25,6 +26,13 @@ def _int(v):
         raise ErroValidacao(f"NÚMERO INVÁLIDO: {v}")
 
 
+def _contrato(v):
+    """contrato_id do PATCH de modelo: ausente = não mexe; 0 = sem contrato; senão inteiro positivo."""
+    if v is None or (type(v) is int and v == 0):
+        return v
+    return inteiro_positivo(v, "CONTRATO")
+
+
 class Rotas:
     def __init__(self, servico: Servico):
         self.s = servico
@@ -34,22 +42,23 @@ class Rotas:
             ("GET", r"/api/prefeituras", lambda q, c: self.s.prefeituras()),
             ("GET", r"/api/modelos", lambda q, c: self.s.modelos(_int(q.get("prefeitura_id")), q.get("todos") == "1")),
             ("GET", r"/api/modelos/(\d+)", lambda q, c, i: self.s.modelo_completo(int(i), _int(q.get("excluir_op")))),
-            ("PATCH", r"/api/modelos/(\d+)", lambda q, c, i: self.s.atualizar_modelo(int(i), c.get("contrato_id"), c.get("ativo"))),
+            ("PATCH", r"/api/modelos/(\d+)", lambda q, c, i: self.s.atualizar_modelo(int(i), _contrato(c.get("contrato_id")),
+                                                                                booleano(c.get("ativo"), "ATIVO", None))),
             ("GET", r"/api/contratos", lambda q, c: self.s.contratos(_int(q.get("prefeitura_id")))),
             ("GET", r"/api/contratos/(\d+)/saldo", lambda q, c, i: self.s.saldo_contrato(int(i))),
             ("POST", r"/api/contratos/(\d+)/ajuste", self._ajuste),
             ("POST", r"/api/simular", lambda q, c: self.s.simular(
-                int(c["modelo_id"]), {int(i["linha"]): i.get("quantidade") for i in c.get("itens", [])
-                                      if str(i.get("quantidade") or "").strip() not in ("", "0")}, _int(c.get("op_id")))),
+                inteiro_positivo(c.get("modelo_id"), "MODELO"), {i["linha"]: i["quantidade"] for i in itens_op(c.get("itens", []))},
+                _int(c.get("op_id")))),
             ("GET", r"/api/ops", lambda q, c: self.s.listar_ops(q.get("texto", ""), _int(q.get("ano")),
                                                                 _int(q.get("prefeitura_id")), q.get("situacao", ""),
                                                                 estado=q.get("estado", ""))),
             ("GET", r"/api/ops/proximo", lambda q, c: {"numero": self.s.proximo_numero()}),
             ("GET", r"/api/ops/(\d+)", lambda q, c, i: self.s.op(int(i))),
-            ("POST", r"/api/ops", lambda q, c: self.s.salvar_op(c, None, c.get("confirmar_negativo") is True, c.get("usuario", ""))),
-            ("PUT", r"/api/ops/(\d+)", lambda q, c, i: self.s.salvar_op(c, int(i), c.get("confirmar_negativo") is True,
+            ("POST", r"/api/ops", lambda q, c: self.s.salvar_op(c, None, booleano(c.get("confirmar_negativo"), "CONFIRMAR SALDO NEGATIVO"), c.get("usuario", ""))),
+            ("PUT", r"/api/ops/(\d+)", lambda q, c, i: self.s.salvar_op(c, int(i), booleano(c.get("confirmar_negativo"), "CONFIRMAR SALDO NEGATIVO"),
                                                                          c.get("usuario", ""))),
-            ("POST", r"/api/ops/(\d+)/cancelar", lambda q, c, i: self.s.cancelar_op(int(i), c.get("motivo", ""))),
+            ("POST", r"/api/ops/(\d+)/cancelar", lambda q, c, i: self.s.cancelar_op(int(i), c.get("motivo"))),
             ("POST", r"/api/ops/(\d+)/acompanhamento", lambda q, c, i: self.s.acompanhar(int(i), c)),
             ("POST", r"/api/ops/(\d+)/publicar", lambda q, c, i: self.s.publicar(int(i))),
             ("GET", r"/api/config", lambda q, c: {k: v for k, v in self.s.config().items() if k != "senha_arquivos"}),
@@ -58,7 +67,10 @@ class Rotas:
         ]
 
     def _ajuste(self, q, c, i):
-        self.s.ajustar_item(int(i), str(c.get("codigo")), c.get("montante"), c.get("ajuste"), c.get("motivo", ""))
+        codigo = c.get("codigo")
+        if isinstance(codigo, bool) or not isinstance(codigo, (str, int, float)) or not str(codigo).strip():
+            raise ErroValidacao("INFORME O CÓDIGO DO ITEM.")
+        self.s.ajustar_item(int(i), str(codigo).strip(), c.get("montante"), c.get("ajuste"), c.get("motivo"))
         return self.s.saldo_contrato(int(i))
 
     def resolver(self, metodo: str, caminho: str):
@@ -123,9 +135,10 @@ def criar_handler(servico: Servico):
             if not n:
                 return {}
             try:
-                return json.loads(self.rfile.read(n).decode("utf-8"))
+                corpo = json.loads(self.rfile.read(n).decode("utf-8"))
             except ValueError:
                 raise ErroValidacao("CORPO JSON INVÁLIDO.")
+            return corpo_objeto(corpo)
 
         def _tratar(self, metodo: str) -> None:
             url = urlparse(self.path)

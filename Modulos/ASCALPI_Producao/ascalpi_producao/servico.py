@@ -14,6 +14,8 @@ from pathlib import Path
 from . import documento, pdf
 from .banco import Banco, agora
 from .imagens import CacheImagens
+from .validacao import (ErroValidacao, data_legada, itens_op, motivo_obrigatorio, numero_finito,
+                        valor_acompanhamento)
 from .regras import (SALDO_ENCERRADO, SALDO_NEGATIVO, SALDO_NEGATIVO_CONFIRMADO, SALDO_OK, SEM_CONTRATO,
                      SaldoItem, agregar_por_base, codigo_base, detectar_material, formatar_numero,
                      interpretar_prazo, montar_nome_base, numero_br, proximo_numero, simular_saldo, tipo_arquivo)
@@ -39,10 +41,14 @@ def estado_op(o: dict, hoje: date | None = None) -> dict:
     mo = str(o.get("material_obra") or "").strip().upper()
     ea = str(o.get("entrega_atualizada") or "").strip().upper()
     prazo = None
+    invalida = False
     if re.fullmatch(r"\d{4}-\d{2}-\d{2}", ea):          # entrega atualizada com nova data vale como prazo
-        prazo = date.fromisoformat(ea)
-    elif o.get("prazo_data"):
-        prazo = date.fromisoformat(o["prazo_data"])
+        prazo = data_legada(ea)
+        invalida = prazo is None
+    if prazo is None and o.get("prazo_data"):
+        prazo = data_legada(o["prazo_data"])
+        invalida = invalida or prazo is None
+    # dado antigo com data impossível não derruba a lista: fica como SEM DATA e marcado para correção (R06)
     dias = (prazo - hoje).days if prazo else None
     if o.get("situacao") == "CANCELADA" or st in ("CANCELADO", "CANCELADA", "DUPLICADO") or mo in ("CANCELADO", "DUPLICADO"):
         estado = "CANCELADA"
@@ -58,11 +64,7 @@ def estado_op(o: dict, hoje: date | None = None) -> dict:
         estado = "PROXIMA"
     else:
         estado = "NO_PRAZO"
-    return {"estado": estado, "dias": dias, "prazo_efetivo": prazo.isoformat() if prazo else None}
-
-
-class ErroValidacao(ValueError):
-    pass
+    return {"estado": estado, "dias": dias, "prazo_efetivo": prazo.isoformat() if prazo else None, "data_invalida": invalida}
 
 
 class ErroConflito(ValueError):
@@ -188,6 +190,11 @@ class Servico:
 
     def ajustar_item(self, contrato_id: int, codigo: str, montante: float | None = None, ajuste: float | None = None,
                      motivo: str = "") -> None:
+        motivo = motivo_obrigatorio(motivo, "MOTIVO DO AJUSTE")
+        if montante is None and ajuste is None:
+            raise ErroValidacao("INFORME O MONTANTE OU O AJUSTE.")
+        montante = None if montante is None else numero_finito(montante, "MONTANTE")
+        ajuste = None if ajuste is None else numero_finito(ajuste, "AJUSTE", negativo=True)
         with self.banco.transacao() as con:
             item = con.execute("SELECT * FROM contrato_itens WHERE contrato_id = ? AND codigo = ?", (contrato_id, codigo)).fetchone()
             if not item:
@@ -353,22 +360,13 @@ class Servico:
         linhas_modelo = {l["linha"]: l for l in self.banco.todos("SELECT * FROM modelo_linhas WHERE modelo_id = ?",
                                                                  (modelo["id"],))}
         itens = []
-        for it in dados.get("itens") or []:
-            linha = int(it.get("linha"))
+        for it in itens_op(dados.get("itens") if dados.get("itens") is not None else []):
+            linha = it["linha"]
             if linha not in linhas_modelo:
                 raise ErroValidacao(f"LINHA {linha} NÃO EXISTE NO MODELO.")
-            bruto = it.get("quantidade")
-            if bruto in (None, ""):
-                continue
-            qtd = numero_br(bruto)
-            if qtd is None or qtd < 0:
-                raise ErroValidacao(f"QUANTIDADE INVÁLIDA NA LINHA {linha} ({linhas_modelo[linha]['equipamento']}).")
-            if qtd == 0:
-                continue
             itens.append({"linha": linha, "codigo": linhas_modelo[linha]["codigo"],
-                          "equipamento": linhas_modelo[linha]["equipamento"], "quantidade": qtd,
-                          "inauguracao": str(it.get("inauguracao") or "").strip().upper(),
-                          "observacao": str(it.get("observacao") or "").strip()})
+                          "equipamento": linhas_modelo[linha]["equipamento"], "quantidade": it["quantidade"],
+                          "inauguracao": it["inauguracao"].upper(), "observacao": it["observacao"]})
         if not itens:
             raise ErroValidacao("A O.P. PRECISA DE PELO MENOS 1 EQUIPAMENTO COM QUANTIDADE.")
         tipo = str(dados.get("tipo") or modelo["tipo_padrao"] or "").strip().upper()
@@ -484,8 +482,7 @@ class Servico:
                 "publicacao": o["arquivos"] or None}
 
     def cancelar_op(self, op_id: int, motivo: str, usuario: str = "") -> dict:
-        if not str(motivo or "").strip():
-            raise ErroValidacao("INFORME O MOTIVO DO CANCELAMENTO.")
+        motivo = motivo_obrigatorio(motivo if isinstance(motivo, str) else "", "MOTIVO DO CANCELAMENTO")
         with self.banco.transacao() as con:
             o = self.op(op_id)
             if o["origem"] != "SISTEMA":
@@ -497,12 +494,12 @@ class Servico:
         return self.op(op_id)
 
     def acompanhar(self, op_id: int, campos: dict) -> dict:
-        self.op(op_id)
-        novos = {k: str(v or "").strip().upper() if k != "obs" else str(v or "").strip()
-                 for k, v in campos.items() if k in CAMPOS_ACOMPANHAMENTO}
-        if not novos:
-            return self.op(op_id)
+        # tudo validado antes de gravar: data impossível ou valor fora da lista não entra no banco (R06)
+        novos = {k: valor_acompanhamento(k, v) for k, v in campos.items()}
         with self.banco.transacao() as con:
+            self.op(op_id)
+            if not novos:
+                return self.op(op_id)
             con.execute("UPDATE ops SET " + ", ".join(f"{k} = ?" for k in novos) + ", atualizado_em = ? WHERE id = ?",
                         (*novos.values(), agora(), op_id))
             self.banco.evento(con, "OP_ACOMPANHAMENTO", {"op": op_id, **novos})
