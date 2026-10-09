@@ -176,6 +176,26 @@ class TestR05Contrato(Base):
             b.fechar()
         self.s.banco = Banco(caminho)   # tearDown fecha
 
+    def test_migracao_marca_contrato_ambiguo_para_conferencia(self):
+        """Parecer do Codex (Lote B): o contrato atual do modelo é só candidato quando o modelo mudou depois da O.P."""
+        oid = self.s.salvar_op(self.dados(1))["op_id"]
+        outra = self.s.salvar_op(self.dados(1))["op_id"]
+        caminho = self.s.banco.caminho
+        with self.s.banco.transacao() as con:     # alteração do contrato do modelo registrada DEPOIS da 1ª O.P.
+            con.execute("UPDATE ops SET criado_em = '2000-01-01T00:00:00' WHERE id = ?", (oid,))
+            self.s.banco.evento(con, "MODELO_ALTERADO", {"modelo": self.modelo["id"], "contrato": self.cid, "ativo": None})
+            con.execute("UPDATE eventos SET momento = '2001-01-01T00:00:00' WHERE acao = 'MODELO_ALTERADO'")
+            con.execute("UPDATE ops SET criado_em = '2002-01-01T00:00:00' WHERE id = ?", (outra,))
+        self.s.banco.fechar()
+        con = sqlite3.connect(caminho)
+        con.execute("ALTER TABLE ops DROP COLUMN contrato_id")
+        con.commit()
+        con.close()
+        self.s.banco = Banco(caminho)
+        self.assertTrue(self.s.op(oid)["contrato_a_conferir"])
+        self.assertFalse(self.s.op(outra)["contrato_a_conferir"])
+        self.assertEqual([p["id"] for p in self.s.resumo()["pendencias"]["contrato_a_conferir"]], [oid])
+
 
 if __name__ == "__main__":
     unittest.main()

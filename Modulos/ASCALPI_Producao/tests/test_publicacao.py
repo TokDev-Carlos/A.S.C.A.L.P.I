@@ -113,6 +113,37 @@ class TestPublicacao(unittest.TestCase):
         self.assertEqual(self.s.op(oid)["arquivos"]["estado"], "PUBLICADA")
         self.assertEqual(self._temporarios(), [])
 
+    def test_r01_edicao_no_meio_da_publicacao_nao_mistura_revisoes(self):
+        """Parecer do Codex (Lote A): o documento publicado e a REV registrada vêm do mesmo retrato da O.P."""
+        from ascalpi_producao import documento
+        oid = self.s.salvar_op(self._dados())["op_id"]
+        pastas_original = self.s.pastas_publicacao
+        editou = []
+
+        def pastas_com_edicao():
+            if not editou:      # a edição entra depois do retrato e antes de gerar o documento
+                editou.append(1)
+                self.s.salvar_op(self._dados(obra="editada no meio", rev_esperada=0), op_id=oid)
+            return pastas_original()
+        gerar_original = documento.gerar_xlsx
+        usadas = []
+
+        def gerar_espiao(bruto, dados, senha):
+            usadas.append((dados.rev, dados.obra))
+            return gerar_original(bruto, dados, senha)
+        with pdf_ok(), patch.object(self.s, "pastas_publicacao", side_effect=pastas_com_edicao), \
+                patch("ascalpi_producao.servico.documento.gerar_xlsx", side_effect=gerar_espiao):
+            pub = self.s.publicar(oid)
+        self.assertEqual(len(usadas), 1)
+        self.assertEqual(usadas[0][0], pub["rev"])                     # documento e registro da mesma REV
+        self.assertEqual(pub["xlsx_rev"], usadas[0][0])
+        self.assertEqual(self.s.op(oid)["rev"], 1)
+        with pdf_ok():
+            pub1 = self.s.publicar(oid)
+        self.assertEqual(pub1["xlsx_rev"], 1)
+        self.assertIn("EDITADA NO MEIO", Path(pub1["xlsx"]).name)
+        self.assertFalse(Path(pub["xlsx"]).exists() and pub["xlsx"] != pub1["xlsx"])
+
     # ------------------------------------------------------------ R02
     def test_r02_falha_na_publicacao_devolve_op_salva_e_pendente(self):
         with pdf_ok(), patch("ascalpi_producao.servico._gravar_atomico", side_effect=PermissionError("SEM PERMISSÃO")):

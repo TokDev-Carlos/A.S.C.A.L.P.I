@@ -1484,7 +1484,7 @@ function desenharGaveta() {
       <div class="cliente">${esc(o.cliente)}${o.solicitante ? ` · ${esc(o.solicitante)}` : ''}</div>
       <div class="selos">${pilula(o.estado)}
         ${o.tipo ? `<span class="badge blue">${esc(o.tipo)}</span>` : ''}${o.material ? `<span class="badge teal">${esc(o.material)}</span>` : ''}
-        ${o.modelo ? `<span class="badge slate">${ic('layers')}${esc(o.modelo)}</span>` : ''}${seloSaldo(o.saldo_status)}${seloPublicacao(o)}
+        ${o.modelo ? `<span class="badge slate">${ic('layers')}${esc(o.modelo)}</span>` : ''}${seloSaldo(o.saldo_status)}${seloPublicacao(o)}${o.contrato_a_conferir ? `<span class="badge orange" title="O MODELO MUDOU DE CONTRATO DEPOIS DESTA O.P.; A MIGRAÇÃO USOU O CONTRATO ATUAL COMO CANDIDATO">${ic('alert')}CONTRATO A CONFERIR</span>` : ''}
         <span class="badge gray">${ic('calendar')}PRAZO ${esc(prazoTexto(o))}</span>
       </div>
     </header>
@@ -1959,6 +1959,9 @@ TELAS.config = async (tela, arg, q, vivo) => {
         <div class="card-head" style="margin-bottom:0"><div><div class="kicker">SITUAÇÃO</div><h2>COMO ESTÁ AGORA</h2><p>VALORES EFETIVOS USADOS PELO SERVIDOR.</p></div>
           <span class="badge ${indisponivel ? 'red' : 'green'}">${ic(indisponivel ? 'alert' : 'check')}PDF: ${esc(indisponivel ? 'INDISPONÍVEL' : String(resumo.motor_pdf).toUpperCase())}</span></div>
         ${indisponivel ? `<div class="nota-legado" style="background:var(--red-soft);color:var(--red)">${ic('alert')}<span>${esc(resumo.motor_pdf)}</span></div>` : ''}
+        ${(resumo.pendencias?.contrato_a_conferir || []).length ? `<div class="nota-legado" style="background:var(--orange-soft);color:#8a4b0f">${ic('alert')}<span>CONTRATO A CONFERIR EM ${plural(resumo.pendencias.contrato_a_conferir.length, 'O.P.', 'O.P.')}: O MODELO MUDOU DE CONTRATO DEPOIS DELAS E A MIGRAÇÃO USOU O CONTRATO ATUAL COMO CANDIDATO.
+          ${resumo.pendencias.contrato_a_conferir.map(o => `<a href="#/ordens?op=${o.id}">${esc(o.numero)}</a>`).join(', ')}</span></div>` : ''}
+        ${(resumo.pendencias?.revisoes_duplicadas || []).length ? `<div class="nota-legado" style="background:var(--orange-soft);color:#8a4b0f">${ic('alert')}<span>HÁ REVISÕES DUPLICADAS ANTIGAS NO BANCO (${resumo.pendencias.revisoes_duplicadas.length}). NADA FOI APAGADO; A TRAVA DE REVISÃO ÚNICA SÓ É ATIVADA DEPOIS DA CONFERÊNCIA.</span></div>` : ''}
         <div class="caminho"><b>.XLSX PUBLICADOS EM</b>${esc(resumo.pastas[0])}</div>
         <div class="caminho"><b>.PDF PUBLICADOS EM</b>${esc(resumo.pastas[1])}</div>
         <div class="kpis" style="margin:0;grid-template-columns:repeat(2,minmax(0,1fr))">

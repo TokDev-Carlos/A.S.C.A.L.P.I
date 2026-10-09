@@ -344,7 +344,22 @@ class Servico:
                                          (op_id,))
         o["arquivos"] = json.loads(o["arquivos"] or "{}")
         o.update(estado_op(o))
+        o["contrato_a_conferir"] = o["id"] in self._pendencia("migracao_contrato_ambiguas")
         return o
+
+    def _pendencia(self, chave: str) -> list:
+        """Listas guardadas pelas migrações (nada é corrigido sozinho; o Carlos confere e decide)."""
+        r = self.banco.um("SELECT valor FROM meta WHERE chave = ?", (chave,))
+        try:
+            return json.loads(r["valor"]) if r else []
+        except ValueError:
+            return []
+
+    def pendencias(self) -> dict:
+        ids = self._pendencia("migracao_contrato_ambiguas")
+        ops = self.banco.todos("SELECT id, numero, cliente, obra FROM ops WHERE id IN (%s) ORDER BY ano, seq"
+                               % ",".join("?" * len(ids)), tuple(ids)) if ids else []
+        return {"contrato_a_conferir": ops, "revisoes_duplicadas": self._pendencia("revisoes_duplicadas")}
 
     def _validar(self, dados: dict, modelo: dict) -> tuple[dict, list[dict]]:
         obra = str(dados.get("obra") or "").strip().upper()
@@ -526,8 +541,9 @@ class Servico:
         return montar_nome_base(o["numero"], o["cliente"], o["obra"], o["tipo_arquivo"] or tipo_arquivo(o["tipo"]),
                                 o["material"])
 
-    def gerar_documento(self, op_id: int, formato: str) -> tuple[str, bytes]:
-        o = self.op(op_id)
+    def gerar_documento(self, op_id: int, formato: str, retrato: dict | None = None) -> tuple[str, bytes]:
+        """Gera o documento da O.P.; `retrato` fixa a versão usada (a publicação passa o mesmo que registra)."""
+        o = retrato if retrato is not None else self.op(op_id)
         if o["origem"] != "SISTEMA" or not o["modelo_id"]:
             raise ErroValidacao("O.P. DO HISTÓRICO LEGADO: O DOCUMENTO ORIGINAL FICA NA PASTA ANTIGA.")
         modelo = self._modelo(o["modelo_id"])
@@ -563,7 +579,7 @@ class Servico:
                    "pdf": ant.get("pdf"), "pdf_rev": ant.get("pdf_rev")}
             xlsx = nome_x = None
             try:
-                nome_x, xlsx = self.gerar_documento(op_id, "xlsx")
+                nome_x, xlsx = self.gerar_documento(op_id, "xlsx", o)   # mesmo retrato da REV registrada
                 px.mkdir(parents=True, exist_ok=True)
                 destino_x = px / nome_x
                 _gravar_atomico(destino_x, xlsx)
@@ -607,6 +623,7 @@ class Servico:
                                       (ano,))["n"],
             "motor_pdf": _motor_ou_erro(self.config()["motor_pdf"]),
             "pastas": [str(p) for p in self.pastas_publicacao()],
+            "pendencias": self.pendencias(),
         }
 
     def painel(self) -> dict:
