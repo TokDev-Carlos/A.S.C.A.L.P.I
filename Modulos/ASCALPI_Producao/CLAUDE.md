@@ -1,6 +1,6 @@
 # ASCALPI Produção — instruções do projeto
 
-Leia este arquivo inteiro e depois `CONTINUAR.md` (estado atual, API e desenho do `web/app.js` que falta) antes de qualquer ação.
+Leia este arquivo inteiro, depois `CONTINUAR.md` (estado atual, API, teste local) e `Codex_Plano_para_Claude.md` (achados R01–R09 e divisão Claude ⇄ Codex) antes de qualquer ação.
 
 ## 1. Objetivo
 
@@ -27,9 +27,13 @@ Módulo independente de **Ordens de Produção** do sistema **ASCALPI** (esse é
 | `banco.py` | Esquema SQLite (WAL) |
 | `legado.py` | Importador dos livros e do Controle |
 | `imagens.py` | Fotos e logos extraídos dos desenhos das abas |
-| `servico.py` | Regras de aplicação: situação da O.P., painel, saldos, salvar/cancelar/publicar |
+| `validacao.py` | Validação pura das entradas (antes de qualquer gravação) |
+| `servico.py` | Fachada e regras de aplicação: situação da O.P., saldos, salvar/cancelar/acompanhar (transação única) |
+| `publicacao.py` | Publicação .xlsx/.pdf por formato, sem apagar o anterior |
+| `consultas.py` | Painel, resumo, eventos e pendências (só leitura) |
+| `configuracao.py` | `config.json` local (senha dos .xlsx nunca sai daqui) |
 | `servidor.py` | API HTTP (stdlib `ThreadingHTTPServer`) |
-| `web/` | `index.html` + `app.css` prontos; `app.js` a escrever |
+| `web/` | `index.html` + `app.css` + `app.js` (módulo ES, 7 telas e gaveta) |
 | `tests/`, `ferramentas/` | Testes leves e dados de demonstração (aqui pode usar openpyxl) |
 
 ## 4. Como trabalhar (ordem de raciocínio)
@@ -61,11 +65,12 @@ Módulo independente de **Ordens de Produção** do sistema **ASCALPI** (esse é
 
 Mensagem curta em português; terminar com as linhas de coautoria e sessão exigidas pelo ambiente.
 
-## 8. Definição de pronto (tarefa de interface)
+## 8. Definição de pronto (1ª etapa funcional)
 
-- `web/app.js` implementa as 7 telas e a gaveta conforme `CONTINUAR.md`.
-- Testes leves passam; capturas desktop e celular conferidas.
-- Módulo copiado (sem `dados/`) para `D:\PROGRAMAS\ASCALPI_Project\Modulos\ASCALPI_Producao` e commitado.
+- Interface (7 telas + gaveta) e correções R01–R09 com testes. ✅
+- Decisões do Carlos aplicadas (datas da O.P., `0.x` extras, contratos editados no sistema prevalecem). ✅
+- Testes leves passam; capturas desktop e celular conferidas. ✅
+- Módulo copiado para o PC do Carlos com `Atualizar_Copia_Local.cmd` (backup de `dados`, sem copiar dados) e validado com dados reais. ⏳ Carlos
 
 ## 9. Próximos marcos
 

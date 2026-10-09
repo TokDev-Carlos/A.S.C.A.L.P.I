@@ -6,3 +6,4 @@ dados/
 __pycache__/
 *.pyc
 ~*.tmp
+backup_dados_*/

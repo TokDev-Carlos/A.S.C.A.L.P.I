@@ -1,6 +1,6 @@
 # Continuar o módulo ASCALPI Produção na nuvem
 
-Estado em 09/10/2026, 21h30. Branch: `modulo/producao-op`.
+Estado em 09/10/2026 (fim da sessão). Branch: `modulo/producao-op`. **1ª etapa funcional pronta para o teste local.**
 
 ## O que é
 
@@ -15,22 +15,35 @@ Módulo independente de **Ordens de Produção** do ASCALPI: tudo é editado no 
 ```bash
 cd Modulos/ASCALPI_Producao
 pip install openpyxl --break-system-packages      # só para testes e dados de demonstração
-python -m unittest discover -s tests -t .         # 18 testes leves
+python -m unittest discover -s tests -t .         # 78 testes leves
 python ferramentas/dados_demo.py /tmp/demo        # livro sintético (2 prefeituras fictícias)
 python -m ascalpi_producao --dados /tmp/demo servir --porta 8765
 ```
 
 Os dados reais (27 livros `OK-*.xlsm`, o Controle e a pasta `dados/` importada) **não vão para o GitHub**: o repositório é público e contém dados de clientes. Na máquina do Carlos eles estão em `D:\PROGRAMAS\ASCALPI_Project\Modulos\ASCALPI_Producao\dados` (importados: 27 prefeituras, 45 modelos com o padrão "OP-" no nome da aba, 1.033 itens de contrato, 230 O.P. do histórico; próxima O.P. 258-26). Para testar com eles numa sessão em nuvem, anexe os arquivos na conversa.
 
-## Progresso da tarefa atual: "interface em blocos" (~90%)
+## Teste local no PC do Carlos (próximo passo)
 
-| Etapa | Situação |
+1. No clone do repositório: `git pull origin modulo/producao-op`.
+2. Rodar `Modulos\ASCALPI_Producao\Atualizar_Copia_Local.cmd`: faz **backup de `dados`** (`backup_dados_<data>`) e copia o módulo para `D:\PROGRAMAS\ASCALPI_Project\Modulos\ASCALPI_Producao` sem tocar em `dados`, `config.json` nem bancos.
+3. Abrir `Iniciar_ASCALPI_Producao.cmd`. Na 1ª abertura o banco antigo (versão 1) é migrado sozinho até a versão 6, sem apagar nada (verificado com um banco criado pelo código original).
+4. Conferir: logos e fotos dos 27 livros; as 230 O.P. do histórico; próxima O.P.; Saldos (itens `0.x` como EXTRA); Configuração → avisos "CONTRATO A CONFERIR" / "SALDO DA PLANILHA A CONFERIR".
+5. Gerar 3–5 O.P. de teste e comparar o PDF (Excel no Windows) com o legado; ver a data "Hoje" (criação) e, ao editar, "· REV n dd/mm/aaaa".
+6. Reimportar só se precisar: `Importar_Legado.cmd` agora mostra a **prévia** e pede S/N antes de gravar.
+7. `Testar.cmd` roda os testes leves (precisa de `openpyxl` no Python usado).
+
+## Estado da 1ª etapa funcional
+
+| Item | Situação |
 |---|---|
-| Backend: fotos dos equipamentos e logo (`imagens.py`), situação da O.P. (`servico.estado_op`), `/api/painel`, rotas de imagem | ✅ pronto e testado |
-| `web/index.html` (casca) e `web/app.css` (visual completo + bloco "complementos usados pelo app.js" no fim) | ✅ |
-| `web/app.js` novo (módulo ES, ~1.950 linhas): infraestrutura + Painel (etapa 1), Nova O.P. + Ordens + gaveta (etapa 2), Saldos + Modelos + Configuração (etapa 3) | ✅ commits `fa799bb`, `b0de808`, `0331524` |
-| Conferido com capturas (Playwright, 1366px e 390px), console sem erros, fluxo gerar → saldo negativo → REV → cancelar testado | ✅ (dados de demonstração, sem fotos/logos) |
-| **Próximo passo:** copiar a pasta `Modulos/ASCALPI_Producao` (sem `dados/`) para `D:\PROGRAMAS\ASCALPI_Project\Modulos\ASCALPI_Producao` no PC do Carlos e conferir com os 27 livros reais (fotos, logos, 230 O.P.) | ⏳ |
+| Interface: 7 telas + gaveta (`web/app.js`, módulo ES) | ✅ |
+| Correções R01–R09 da revisão do Codex | ✅ (ver `Codex_Plano_para_Claude.md`) |
+| Decisões do Carlos: criação imutável + data de cada revisão; `0.x` = extras sem saldo; contratos ficam como estão até o Carlos editar | ✅ |
+| Reimportação segura: prévia, modelo congelado por O.P., conferência do saldo da planilha, montante editado no sistema prevalece | ✅ |
+| Organização do backend: `configuracao.py`, `publicacao.py`, `consultas.py` (Servico como fachada) | ✅ |
+| Pacote de teste local (`Atualizar_Copia_Local.cmd`) | ✅ |
+| Testes de validação pelo Codex sobre o HEAD final | ⏳ Codex |
+| Teste com dados reais, PDF pelo Excel, comparação de amostras | ⏳ Carlos (no PC local) |
 
 Notas da interface:
 - `index.html` carrega `app.js` com `type="module"`; o `servidor.py` força `text/javascript` para `.js` (o registro do Windows às vezes diz `text/plain` e o navegador recusaria o módulo).
@@ -47,9 +60,12 @@ Divisão do trabalho na seção 8 daquele arquivo. Verificado nesta sessão:
 - **Lote A (R01, R02) — corrigido.** Publicação por formato sem apagar o anterior; O.P. salva nunca vira erro de criação; criação idempotente por `chave` (retry após queda de rede devolve a mesma O.P.). `tests/test_publicacao.py` (9 testes). Suíte: 27 testes OK.
 - **Lote B (R03, R04, R05) — corrigido.** Salvar O.P. numa única transação; edição exige `rev_esperada` (conflito 409); cada O.P. guarda o contrato da emissão (`ops.contrato_id`, migração automática ao abrir o banco). `tests/test_concorrencia.py` (10 testes). Suíte: 37 testes OK.
 - **Lote C (R06, R07, R08) e R09 — corrigidos em conjunto.** Codex: `validacao.py`, `imagens.py` por namespace, testes de importação. Claude: validação ligada no serviço/API antes de gravar; data legada inválida não derruba a lista (`data_invalida`); reimportação do Controle sem apagar (identidade `chave_origem`, campos editados no sistema preservados). Suíte: 66 testes OK.
-- Pendente do R07: prévia de diferenças antes de reimportar, reconciliação do saldo da planilha, proteger modelos já usados ao reimportar livros.
 - **Lote D (interface) — corrigido.** Prazo em texto (ex.: A COMBINAR) preservado ao editar; respostas antigas não substituem a tela; Enter/clique repetido ignorado. Parecer do Codex sobre A/B atendido (documento e REV do mesmo retrato; O.P. com contrato ambíguo marcadas "CONTRATO A CONFERIR"). Suíte: **69 testes OK**.
-- Pendente (com o Carlos/Codex): validação com dados reais no PC do Carlos, PDF pelo Excel no Windows, 3–5 amostras para comparação; decisões do carimbo "Hoje" e do bônus fora da tabela; evolução do R07 (prévia antes de reimportar); Lote E (fatoração) só depois disso.
+- **Decisões do Carlos aplicadas:** (1) data de criação imutável ("Hoje" do documento) e cada revisão registra a sua data (`ops.revisado_em`; documento mostra "· REV n dd/mm/aaaa"); (2) itens `0.x` são extras: contam na O.P., não precisam estar no contrato e não têm saldo; (3) contratos ficam como estão; o montante editado no sistema prevalece ao reimportar o livro.
+- **R07 complemento:** `importar --previa`; arquivo de modelo nunca sobrescrito (O.P. emitidas ficam no modelo da emissão, `ops.modelo_arquivo`); falha no banco remove os arquivos novos; conferência do SALDO da planilha e valores ausentes viram pendência.
+- **Lote E:** `configuracao.py`, `publicacao.py` e `consultas.py` extraídos; `Servico` como fachada; API igual. O `web/app.js` não foi dividido de propósito: a divisão só vale depois do teste com dados reais.
+- Suíte: **78 testes OK**. Fluxos no Playwright (queda de rede, duas abas, Enter repetido, respostas fora de ordem) sem regressão.
+- Pendente: validação com dados reais e PDF pelo Excel (Carlos); testes de validação sobre o HEAD final (Codex); §4 pontos 4 (escala acima de 3.000 O.P.), 5 (Excel em timeout) e 8 (autenticação) ficam para os próximos marcos.
 
 ## API disponível (servidor.py)
 
@@ -68,13 +84,14 @@ Divisão do trabalho na seção 8 daquele arquivo. Verificado nesta sessão:
 | `POST /api/ops/{id}/cancelar` `{motivo}` · `/publicar` | |
 | `GET /api/ops/{id}/documento.xlsx` · `.pdf?baixar=1` | arquivo |
 | `PUT /api/ops/{id}` | exige `rev_esperada` (REV que está sendo editada); outra REV → 409 |
+| `GET /api/resumo` | + `pendencias`: `contrato_a_conferir`, `revisoes_duplicadas`, `saldo_a_conferir` |
 | `POST /api/ops` com `chave` | idempotente: mesma chave e mesmo pedido → `{ok, repetida: true, op_id}`; pedido diferente → 409. `publicacao.estado`: PUBLICADA / PARCIAL / PENDENTE |
 | `GET /api/contratos?prefeitura_id=` · `/api/contratos/{id}/saldo` · `POST .../ajuste {codigo,montante,ajuste,motivo}` | |
 | `PATCH /api/modelos/{id}` `{contrato_id, ativo}` · `GET/PUT /api/config` · `GET /api/eventos` (com `op:{numero,obra}`) · `GET /api/ops/proximo` | |
 
 Situação da O.P. (`estado_op`, pelas colunas do Controle): CANCELADA (situação ou status CANCELADO/DUPLICADO) > INSTALADA (status OK) > NA_OBRA (material obra OK ou entrega OK) > SEM_DATA > ATRASADA (prazo efetivo < hoje; entrega atualizada com data substitui o prazo) > PROXIMA (≤ 3 dias) > NO_PRAZO.
 
-## Desenho do novo `app.js` (o que escrever)
+## Referência do `app.js` (implementado)
 
 Base visual (já no CSS): tokens do Painel ASCALPI (`--navy #123252`, `--blue #0f5da8`, `--teal`, `--green`, `--orange`, `--purple`, `--red`, `--slate`), topo em degradê, abas de módulo, `.heroi` com degradê por tela (`.nova .ordens .saldos .modelos .config`), `.kpi` com faixa, `.badge`, `.pilula` + classe `e-<ESTADO>` (define `--estado`/`--estado-soft`). Do UStracker: onda no clique (`.onda`), botão ocupado (`aria-busy`), barra de progresso (`body.carregando`/`carregou`), filtro por coluna (`.tf-*`).
 
