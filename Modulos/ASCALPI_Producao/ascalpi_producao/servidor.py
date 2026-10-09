@@ -13,6 +13,9 @@ from urllib.parse import parse_qs, quote, urlparse
 from .servico import ErroValidacao, Servico
 
 WEB = Path(__file__).with_name("web")
+# o registro do Windows às vezes associa .js a text/plain, e o navegador recusa módulo ES assim
+mimetypes.add_type("text/javascript", ".js")
+mimetypes.add_type("text/css", ".css")
 
 
 def _int(v):
