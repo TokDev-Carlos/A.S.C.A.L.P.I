@@ -601,3 +601,27 @@ th.tf-ativo .tf-btn{background:var(--blue-soft);border-color:var(--blue);color:v
   .ficha-linha>.pilula{grid-column:3;justify-self:start}
   .colunas .coluna span{font-size:8.5px;letter-spacing:0}
 }
+.rotulo-campo{font-size:10px;font-weight:800;letter-spacing:.055em;color:#506a83}
+.legenda i.esta-amostra{background:var(--serie-prev);background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.5) 0 3px,transparent 3px 6px)}
+.legenda i.exc-amostra{background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.35) 0 3px,transparent 3px 7px)}
+.opcao input[type=date]{border:0;background:transparent;min-height:26px;padding:2px 4px;font-size:11.5px;width:auto}
+.g-cab h2{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px}
+.tabela td:nth-child(2){white-space:nowrap}
+.passo{scroll-margin-top:150px}
+.tabela-mini .num{text-align:right}
+.pref-escolhida>div{flex:1 1 180px}
+.prazo-linha .segmentado{flex-wrap:nowrap;flex:none}
+.prazo-linha input{flex:1;min-width:0}
+@media (max-width:520px){
+  .passo>header p{display:none}
+  .resumo-op{grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:8px}
+  .resumo-ficha{padding:6px 10px;min-width:0}
+  .resumo-ficha b{font-size:19px}
+  .resumo-ficha span:nth-child(2){display:none}
+  .resumo-chips{grid-column:1/-1;grid-row:2;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .resumo-acoes .btn.ghost{font-size:0;gap:0;padding:10px}
+  .resumo-acoes .btn.large{padding:11px 14px}
+  .g-acoes{padding:10px 14px}
+  .g-cab{padding:16px 16px 14px 22px}
+  .g-corpo{padding:14px 14px 24px}
+}
