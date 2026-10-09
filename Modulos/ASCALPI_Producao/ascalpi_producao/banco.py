@@ -120,6 +120,14 @@ CREATE TABLE IF NOT EXISTS op_revisoes (
     dados TEXT NOT NULL                   -- json completo da O.P. nesta revisão
 );
 
+-- idempotência da criação de O.P. (R02): mesma chave + mesmo pedido = mesma O.P.
+CREATE TABLE IF NOT EXISTS op_chaves (
+    chave TEXT PRIMARY KEY,
+    op_id INTEGER NOT NULL REFERENCES ops(id),
+    assinatura TEXT NOT NULL,
+    criado_em TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS eventos (
     id INTEGER PRIMARY KEY,
     momento TEXT NOT NULL,

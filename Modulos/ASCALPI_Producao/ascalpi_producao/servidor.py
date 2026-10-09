@@ -10,7 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, quote, urlparse
 
-from .servico import ErroValidacao, Servico
+from .servico import ErroConflito, ErroValidacao, Servico
 
 WEB = Path(__file__).with_name("web")
 # o registro do Windows às vezes associa .js a text/plain, e o navegador recusa módulo ES assim
@@ -153,6 +153,8 @@ def criar_handler(servico: Servico):
                 if metodo != "GET":
                     return self._json(405, {"erro": "MÉTODO NÃO PERMITIDO."})
                 return self._estatico(url.path)
+            except ErroConflito as e:
+                return self._json(409, {"erro": str(e)})
             except ErroValidacao as e:
                 return self._json(400, {"erro": str(e)})
             except Exception as e:

@@ -1,9 +1,12 @@
 """Regras de uso do módulo: O.P., saldo dos contratos, documentos e acompanhamento."""
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
+import tempfile
+import threading
 from collections import Counter
 from datetime import date, datetime
 from pathlib import Path
@@ -62,6 +65,13 @@ class ErroValidacao(ValueError):
     pass
 
 
+class ErroConflito(ValueError):
+    """Pedido coerente, mas em conflito com o estado gravado (HTTP 409)."""
+
+
+CHAVE_VALIDA = re.compile(r"[A-Za-z0-9_-]{8,100}")
+
+
 class Servico:
     def __init__(self, pasta_dados: Path):
         self.dados = Path(pasta_dados).resolve()
@@ -69,6 +79,8 @@ class Servico:
         self.banco = Banco(self.dados / "ascalpi_producao.db")
         self.arquivo_config = self.dados / "config.json"
         self.fotos = CacheImagens()
+        self._travas_publicacao: dict[int, threading.Lock] = {}
+        self._trava_mapa = threading.Lock()
         if not self.arquivo_config.exists():
             self.salvar_config({})
         if not self.config()["senha_arquivos"]:
@@ -365,6 +377,12 @@ class Servico:
         if not atual and not modelo["ativo"]:
             raise ErroValidacao("MODELO DESATIVADO.")
         cab, itens = self._validar(dados, modelo)
+        chave = None if atual else self._chave(dados)
+        assinatura = _assinatura(modelo["id"], cab, itens) if chave else None
+        if chave:
+            repetida = self._op_da_chave(self.banco.um("SELECT op_id, assinatura FROM op_chaves WHERE chave = ?", (chave,)), assinatura)
+            if repetida:
+                return repetida
         sim = self.simular(modelo["id"], {i["linha"]: i["quantidade"] for i in itens}, excluir_op=op_id)
         if sim["status"] == "ESTRUTURA_INVALIDA":
             raise ErroValidacao("CONTRATO: " + " ".join(sim["erros"]))
@@ -391,6 +409,10 @@ class Servico:
                 con.execute("DELETE FROM op_itens WHERE op_id = ?", (op_id,))
                 novo_id = op_id
             else:
+                if chave:
+                    repetida = self._op_da_chave(con.execute("SELECT op_id, assinatura FROM op_chaves WHERE chave = ?", (chave,)).fetchone(), assinatura)
+                    if repetida:
+                        return repetida
                 ano = date.today().year
                 existentes = [r[0] for r in con.execute("SELECT numero FROM ops WHERE ano = ?", (ano,)).fetchall()]
                 seq = proximo_numero(existentes, ano)
@@ -402,6 +424,9 @@ class Servico:
                     (formatar_numero(seq, ano), ano, seq, modelo["prefeitura_id"], modelo["prefeitura"], modelo["id"],
                      momento, momento, *campos.values()))
                 novo_id = cur.lastrowid
+                if chave:
+                    con.execute("INSERT INTO op_chaves (chave, op_id, assinatura, criado_em) VALUES (?,?,?,?)",
+                                (chave, novo_id, assinatura, momento))
             con.executemany("INSERT INTO op_itens (op_id, linha, codigo, equipamento, quantidade, inauguracao, observacao) "
                             "VALUES (?,?,?,?,?,?,?)",
                             [(novo_id, i["linha"], i["codigo"], i["equipamento"], i["quantidade"], i["inauguracao"],
@@ -413,10 +438,34 @@ class Servico:
             self.banco.evento(con, "OP_CRIADA" if rev == 0 else "OP_REVISADA",
                               {"op": novo_id, "rev": rev, "saldo": saldo_status})
         resultado = {"ok": True, "op_id": novo_id, "simulacao": sim}
+        # a O.P. já está gravada: falha ao publicar nunca vira "erro de criação" (R02)
         if self.config()["publicar"] if publicar is None else publicar:
-            resultado["publicacao"] = self.publicar(novo_id)
+            try:
+                resultado["publicacao"] = self.publicar(novo_id)
+            except Exception as e:  # noqa: BLE001 - registrado e devolvido como pendência
+                resultado["publicacao"] = {"estado": "PENDENTE", "xlsx_erro": str(e), "pdf_erro": "NÃO GERADO"}
         resultado["op"] = self.op(novo_id)
         return resultado
+
+    @staticmethod
+    def _chave(dados: dict) -> str | None:
+        chave = dados.get("chave")
+        if chave in (None, ""):
+            return None
+        if not isinstance(chave, str) or not CHAVE_VALIDA.fullmatch(chave):
+            raise ErroValidacao("CHAVE DO PEDIDO INVÁLIDA.")
+        return chave
+
+    def _op_da_chave(self, r, assinatura: str) -> dict | None:
+        if r is None:
+            return None
+        r = dict(r)
+        o = self.op(r["op_id"])
+        if r["assinatura"] != assinatura:
+            raise ErroConflito(f"CHAVE DO RASCUNHO JÁ USADA NA O.P. {o['numero']} COM OUTROS DADOS. "
+                               "LIMPE O RASCUNHO PARA GERAR OUTRA O.P.")
+        return {"ok": True, "op_id": o["id"], "op": o, "repetida": True, "simulacao": None,
+                "publicacao": o["arquivos"] or None}
 
     def cancelar_op(self, op_id: int, motivo: str, usuario: str = "") -> dict:
         o = self.op(op_id)
@@ -469,36 +518,58 @@ class Servico:
             return nome + ".pdf", pdf.gerar_pdf(xlsx, self.config()["motor_pdf"])
         raise ErroValidacao("FORMATO DEVE SER xlsx OU pdf.")
 
+    def _trava_publicacao(self, op_id: int) -> threading.Lock:
+        with self._trava_mapa:
+            return self._travas_publicacao.setdefault(op_id, threading.Lock())
+
     def publicar(self, op_id: int) -> dict:
-        """Grava .xlsx (bloqueado) e .pdf nas pastas configuradas, substituindo a versão anterior desta O.P."""
+        """Grava .xlsx (bloqueado) e .pdf nas pastas configuradas.
+
+        Cada formato só substitui o arquivo anterior depois que o novo foi gravado (R01). Se um formato falha,
+        o anterior continua publicado e o resultado diz de qual revisão ele é. Nunca lança por falha de arquivo
+        ou de motor: devolve estado PUBLICADA, PARCIAL ou PENDENTE com o erro de cada formato.
+        """
         o = self.op(op_id)
-        px, pp = self.pastas_publicacao()
-        anteriores = o["arquivos"] or {}
-        resultado: dict = {}
-        nome_x, xlsx = self.gerar_documento(op_id, "xlsx")
-        px.mkdir(parents=True, exist_ok=True)
-        destino_x = px / nome_x
-        _gravar_atomico(destino_x, xlsx)
-        resultado["xlsx"] = str(destino_x)
-        try:
-            conteudo_pdf = pdf.gerar_pdf(xlsx, self.config()["motor_pdf"])
-            pp.mkdir(parents=True, exist_ok=True)
-            destino_p = pp / (nome_x[:-5] + ".pdf")
-            _gravar_atomico(destino_p, conteudo_pdf)
-            resultado["pdf"] = str(destino_p)
-        except Exception as e:  # PDF falhou: xlsx continua publicado
-            resultado["pdf_erro"] = str(e)
-        for chave in ("xlsx", "pdf"):
-            antigo = anteriores.get(chave)
-            if antigo and antigo != resultado.get(chave) and Path(antigo).exists():
+        if o["origem"] != "SISTEMA" or not o["modelo_id"]:
+            raise ErroValidacao("O.P. DO HISTÓRICO LEGADO: O DOCUMENTO ORIGINAL FICA NA PASTA ANTIGA.")
+        with self._trava_publicacao(op_id):
+            o = self.op(op_id)
+            px, pp = self.pastas_publicacao()
+            ant = o["arquivos"] or {}
+            res = {"rev": o["rev"], "tentativa_em": agora(),
+                   "xlsx": ant.get("xlsx"), "xlsx_rev": ant.get("xlsx_rev"),
+                   "pdf": ant.get("pdf"), "pdf_rev": ant.get("pdf_rev")}
+            xlsx = nome_x = None
+            try:
+                nome_x, xlsx = self.gerar_documento(op_id, "xlsx")
+                px.mkdir(parents=True, exist_ok=True)
+                destino_x = px / nome_x
+                _gravar_atomico(destino_x, xlsx)
+                _remover_substituido(ant.get("xlsx"), destino_x)
+                res.update(xlsx=str(destino_x), xlsx_rev=o["rev"])
+            except ErroValidacao:
+                raise
+            except Exception as e:  # noqa: BLE001
+                res["xlsx_erro"] = str(e) or type(e).__name__
+            if xlsx is None:
+                res["pdf_erro"] = "PDF NÃO GERADO: O XLSX DESTA REVISÃO FALHOU."
+            else:
                 try:
-                    Path(antigo).unlink()
-                except OSError:
-                    pass
-        with self.banco.transacao() as con:
-            con.execute("UPDATE ops SET arquivos = ? WHERE id = ?", (json.dumps(resultado, ensure_ascii=False), op_id))
-            self.banco.evento(con, "OP_PUBLICADA", {"op": op_id, **resultado})
-        return resultado
+                    conteudo_pdf = pdf.gerar_pdf(xlsx, self.config()["motor_pdf"])
+                    pp.mkdir(parents=True, exist_ok=True)
+                    destino_p = pp / (nome_x[:-5] + ".pdf")
+                    _gravar_atomico(destino_p, conteudo_pdf)
+                    _remover_substituido(ant.get("pdf"), destino_p)
+                    res.update(pdf=str(destino_p), pdf_rev=o["rev"])
+                except Exception as e:  # noqa: BLE001
+                    res["pdf_erro"] = str(e) or type(e).__name__
+            atuais = [res.get(f + "_rev") == o["rev"] and not res.get(f + "_erro") for f in ("xlsx", "pdf")]
+            res["estado"] = "PUBLICADA" if all(atuais) else "PARCIAL" if any(atuais) else "PENDENTE"
+            with self.banco.transacao() as con:
+                con.execute("UPDATE ops SET arquivos = ? WHERE id = ?", (json.dumps(res, ensure_ascii=False), op_id))
+                self.banco.evento(con, "OP_PUBLICADA" if res["estado"] == "PUBLICADA" else "OP_PUBLICACAO_PENDENTE",
+                                  {"op": op_id, **res})
+            return res
 
     # ------------------------------------------------------------ painel
     def resumo(self) -> dict:
@@ -596,6 +667,31 @@ def _motor_ou_erro(motor: str) -> str:
 
 
 def _gravar_atomico(destino: Path, conteudo: bytes) -> None:
-    tmp = destino.with_name("~" + destino.name + ".tmp")
-    tmp.write_bytes(conteudo)
-    os.replace(tmp, destino)
+    """Grava num temporário exclusivo da mesma pasta e troca de uma vez (nunca deixa arquivo pela metade)."""
+    fd, nome = tempfile.mkstemp(prefix="~" + destino.stem[:40] + ".", suffix=".tmp", dir=destino.parent)
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(conteudo)
+        os.replace(nome, destino)
+    except BaseException:
+        try:
+            os.unlink(nome)
+        except OSError:
+            pass
+        raise
+
+
+def _remover_substituido(antigo: str | None, novo: Path) -> None:
+    """Apaga o arquivo da publicação anterior só quando ele foi substituído por outro nome já gravado."""
+    if not antigo or Path(antigo) == novo:
+        return
+    try:
+        Path(antigo).unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
+def _assinatura(modelo_id: int, cab: dict, itens: list[dict]) -> str:
+    corpo = {"modelo": modelo_id, **{k: (v.isoformat() if isinstance(v, date) else v) for k, v in cab.items()},
+             "itens": sorted(([i["linha"], i["quantidade"], i["inauguracao"], i["observacao"]] for i in itens))}
+    return hashlib.sha256(json.dumps(corpo, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
