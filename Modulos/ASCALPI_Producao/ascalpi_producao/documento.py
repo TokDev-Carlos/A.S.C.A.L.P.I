@@ -16,7 +16,6 @@ import math
 import os
 import re
 import struct
-import zipfile
 from dataclasses import dataclass, field
 from datetime import date, datetime
 

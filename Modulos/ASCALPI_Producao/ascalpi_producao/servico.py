@@ -3,35 +3,24 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import re
-import tempfile
-import threading
-from collections import Counter
 from datetime import date, datetime
 from pathlib import Path
 
-from . import documento, pdf
+from . import consultas, documento, pdf
 from .banco import Banco, agora
+from .configuracao import Configuracao
 from .imagens import CacheImagens
+from .publicacao import Publicacao
 from .validacao import (ErroValidacao, data_legada, itens_op, motivo_obrigatorio, numero_finito,
                         valor_acompanhamento)
-from .regras import (SALDO_ENCERRADO, SALDO_NEGATIVO, SALDO_NEGATIVO_CONFIRMADO, SALDO_OK, SEM_CONTRATO,
+from .regras import (SALDO_NEGATIVO, SALDO_NEGATIVO_CONFIRMADO, SEM_CONTRATO,
                      SaldoItem, agregar_por_base, codigo_base, normalizar_codigo, detectar_material, formatar_numero,
                      interpretar_prazo, montar_nome_base, numero_br, proximo_numero, simular_saldo, tipo_arquivo)
 
-CONFIG_PADRAO = {
-    "senha_arquivos": "",      # vazio = gerada na 1ª execução e guardada só no config.json local
-    "motor_pdf": "auto",
-    "publicar": True,
-    "pasta_xlsx": "",          # vazio = <dados>/Documentos/O.Ps
-    "pasta_pdf": "",           # vazio = <dados>/Documentos/PDFs
-}
+from .configuracao import CONFIG_PADRAO  # noqa: F401  (reexportado para quem importava daqui)
 CAMPOS_ACOMPANHAMENTO = ("status_instalacao", "entrega_atualizada", "material_obra", "fotografico", "obs")
-ESTADOS = ("ATRASADA", "PROXIMA", "NO_PRAZO", "SEM_DATA", "NA_OBRA", "INSTALADA", "CANCELADA")
-EM_PRODUCAO = ("ATRASADA", "PROXIMA", "NO_PRAZO", "SEM_DATA")
 DIAS_PROXIMA = 3
-MESES = ("JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ")
 
 
 def estado_op(o: dict, hoje: date | None = None) -> dict:
@@ -79,38 +68,21 @@ class Servico:
         self.dados = Path(pasta_dados).resolve()
         self.dados.mkdir(parents=True, exist_ok=True)
         self.banco = Banco(self.dados / "ascalpi_producao.db")
-        self.arquivo_config = self.dados / "config.json"
+        self._configuracao = Configuracao(self.dados)
+        self.arquivo_config = self._configuracao.arquivo
         self.fotos = CacheImagens()
-        self._travas_publicacao: dict[int, threading.Lock] = {}
+        self._publicacao = Publicacao(self)
         self._linhas_cache: dict[tuple, list] = {}
-        self._trava_mapa = threading.Lock()
-        if not self.arquivo_config.exists():
-            self.salvar_config({})
-        if not self.config()["senha_arquivos"]:
-            import secrets
-            self.salvar_config({"senha_arquivos": secrets.token_urlsafe(12)})
 
     # ------------------------------------------------------------ configuração
     def config(self) -> dict:
-        try:
-            atual = json.loads(self.arquivo_config.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            atual = {}
-        return {**CONFIG_PADRAO, **{k: v for k, v in atual.items() if k in CONFIG_PADRAO}}
+        return self._configuracao.ler()
 
     def salvar_config(self, novos: dict) -> dict:
-        cfg = {**(self.config() if self.arquivo_config.exists() else CONFIG_PADRAO),
-               **{k: v for k, v in novos.items() if k in CONFIG_PADRAO}}
-        tmp = self.arquivo_config.with_suffix(".tmp")
-        tmp.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
-        os.replace(tmp, self.arquivo_config)
-        return cfg
+        return self._configuracao.salvar(novos)
 
     def pastas_publicacao(self) -> tuple[Path, Path]:
-        cfg = self.config()
-        px = Path(cfg["pasta_xlsx"]) if cfg["pasta_xlsx"] else self.dados / "Documentos" / "O.Ps"
-        pp = Path(cfg["pasta_pdf"]) if cfg["pasta_pdf"] else self.dados / "Documentos" / "PDFs"
-        return px, pp
+        return self._configuracao.pastas()
 
     # ------------------------------------------------------------ cadastros
     def prefeituras(self) -> list[dict]:
@@ -369,19 +341,10 @@ class Servico:
         return o
 
     def _pendencia(self, chave: str) -> list:
-        """Listas guardadas pelas migrações (nada é corrigido sozinho; o Carlos confere e decide)."""
-        r = self.banco.um("SELECT valor FROM meta WHERE chave = ?", (chave,))
-        try:
-            return json.loads(r["valor"]) if r else []
-        except ValueError:
-            return []
+        return consultas.pendencia(self, chave)
 
     def pendencias(self) -> dict:
-        ids = self._pendencia("migracao_contrato_ambiguas")
-        ops = self.banco.todos("SELECT id, numero, cliente, obra FROM ops WHERE id IN (%s) ORDER BY ano, seq"
-                               % ",".join("?" * len(ids)), tuple(ids)) if ids else []
-        return {"contrato_a_conferir": ops, "revisoes_duplicadas": self._pendencia("revisoes_duplicadas"),
-                "saldo_a_conferir": self._pendencia("saldo_a_conferir")}
+        return consultas.pendencias(self)
 
     def _validar(self, dados: dict, modelo: dict) -> tuple[dict, list[dict]]:
         obra = str(dados.get("obra") or "").strip().upper()
@@ -580,180 +543,23 @@ class Servico:
             return nome + ".pdf", pdf.gerar_pdf(xlsx, self.config()["motor_pdf"])
         raise ErroValidacao("FORMATO DEVE SER xlsx OU pdf.")
 
-    def _trava_publicacao(self, op_id: int) -> threading.Lock:
-        with self._trava_mapa:
-            return self._travas_publicacao.setdefault(op_id, threading.Lock())
-
     def publicar(self, op_id: int) -> dict:
-        """Grava .xlsx (bloqueado) e .pdf nas pastas configuradas.
-
-        Cada formato só substitui o arquivo anterior depois que o novo foi gravado (R01). Se um formato falha,
-        o anterior continua publicado e o resultado diz de qual revisão ele é. Nunca lança por falha de arquivo
-        ou de motor: devolve estado PUBLICADA, PARCIAL ou PENDENTE com o erro de cada formato.
-        """
-        o = self.op(op_id)
-        if o["origem"] != "SISTEMA" or not o["modelo_id"]:
-            raise ErroValidacao("O.P. DO HISTÓRICO LEGADO: O DOCUMENTO ORIGINAL FICA NA PASTA ANTIGA.")
-        with self._trava_publicacao(op_id):
-            o = self.op(op_id)
-            px, pp = self.pastas_publicacao()
-            ant = o["arquivos"] or {}
-            res = {"rev": o["rev"], "tentativa_em": agora(),
-                   "xlsx": ant.get("xlsx"), "xlsx_rev": ant.get("xlsx_rev"),
-                   "pdf": ant.get("pdf"), "pdf_rev": ant.get("pdf_rev")}
-            xlsx = nome_x = None
-            try:
-                nome_x, xlsx = self.gerar_documento(op_id, "xlsx", o)   # mesmo retrato da REV registrada
-                px.mkdir(parents=True, exist_ok=True)
-                destino_x = px / nome_x
-                _gravar_atomico(destino_x, xlsx)
-                _remover_substituido(ant.get("xlsx"), destino_x)
-                res.update(xlsx=str(destino_x), xlsx_rev=o["rev"])
-            except ErroValidacao:
-                raise
-            except Exception as e:  # noqa: BLE001
-                res["xlsx_erro"] = str(e) or type(e).__name__
-            if xlsx is None:
-                res["pdf_erro"] = "PDF NÃO GERADO: O XLSX DESTA REVISÃO FALHOU."
-            else:
-                try:
-                    conteudo_pdf = pdf.gerar_pdf(xlsx, self.config()["motor_pdf"])
-                    pp.mkdir(parents=True, exist_ok=True)
-                    destino_p = pp / (nome_x[:-5] + ".pdf")
-                    _gravar_atomico(destino_p, conteudo_pdf)
-                    _remover_substituido(ant.get("pdf"), destino_p)
-                    res.update(pdf=str(destino_p), pdf_rev=o["rev"])
-                except Exception as e:  # noqa: BLE001
-                    res["pdf_erro"] = str(e) or type(e).__name__
-            atuais = [res.get(f + "_rev") == o["rev"] and not res.get(f + "_erro") for f in ("xlsx", "pdf")]
-            res["estado"] = "PUBLICADA" if all(atuais) else "PARCIAL" if any(atuais) else "PENDENTE"
-            with self.banco.transacao() as con:
-                con.execute("UPDATE ops SET arquivos = ? WHERE id = ?", (json.dumps(res, ensure_ascii=False), op_id))
-                self.banco.evento(con, "OP_PUBLICADA" if res["estado"] == "PUBLICADA" else "OP_PUBLICACAO_PENDENTE",
-                                  {"op": op_id, **res})
-            return res
+        return self._publicacao.publicar(op_id)
 
     # ------------------------------------------------------------ painel
     def resumo(self) -> dict:
-        ano = date.today().year
-        return {
-            "ano": ano,
-            "proximo_numero": self.proximo_numero(ano),
-            "prefeituras": self.banco.um("SELECT COUNT(*) n FROM prefeituras WHERE ativo = 1")["n"],
-            "modelos": self.banco.um("SELECT COUNT(*) n FROM modelos WHERE ativo = 1")["n"],
-            "ops_ano": self.banco.um("SELECT COUNT(*) n FROM ops WHERE ano = ? AND situacao = 'ATIVA'", (ano,))["n"],
-            "ops_sistema": self.banco.um("SELECT COUNT(*) n FROM ops WHERE origem = 'SISTEMA'")["n"],
-            "sem_data": self.banco.um("SELECT COUNT(*) n FROM ops WHERE ano = ? AND prazo_data IS NULL AND situacao = 'ATIVA'",
-                                      (ano,))["n"],
-            "motor_pdf": _motor_ou_erro(self.config()["motor_pdf"]),
-            "pastas": [str(p) for p in self.pastas_publicacao()],
-            "pendencias": self.pendencias(),
-        }
+        return consultas.resumo(self)
 
     def painel(self) -> dict:
-        hoje = date.today()
-        ano = hoje.year
-        ops = self.listar_ops(ano=ano)
-        validas = [o for o in ops if o["estado"] != "CANCELADA"]
-        contagem = Counter(o["estado"] for o in ops)
-        por_mes = [0] * 12
-        for o in validas:
-            if o["solicitado_em"]:
-                por_mes[int(o["solicitado_em"][5:7]) - 1] += 1
-        por_prefeitura = Counter(o["cliente"] or "SEM CLIENTE" for o in validas).most_common()
-        topo = [{"nome": n, "ops": q} for n, q in por_prefeitura[:8]]
-        resto = sum(q for _, q in por_prefeitura[8:])
-        if resto:
-            topo.append({"nome": f"OUTRAS ({len(por_prefeitura) - 8})", "ops": resto, "outras": True})
-        producao = [o for o in ops if o["estado"] in ("PROXIMA", "NO_PRAZO")]
-        producao.sort(key=lambda o: (o["dias"], o["seq"]))
-        atrasadas = sorted((o for o in ops if o["estado"] == "ATRASADA"), key=lambda o: (-o["dias"], -o["seq"]))
-        alertas, negativos, encerrados = [], 0, 0
-        for c in self.contratos():
-            for it in self.saldo_contrato(c["id"]):
-                if it["extra"]:
-                    continue
-                s = it["saldo"]
-                if s == "ACABOU" or (isinstance(s, (int, float)) and s < 0):
-                    if s == "ACABOU":
-                        encerrados += 1
-                    else:
-                        negativos += 1
-                    alertas.append({"prefeitura": c["prefeitura"], "prefeitura_id": c["prefeitura_id"],
-                                    "contrato_id": c["id"], "ata": c["ata"], "codigo": it["codigo"],
-                                    "equipamento": it["equipamento"], "saldo": s, "montante": it["montante"]})
-        alertas.sort(key=lambda a: (a["saldo"] == "ACABOU", a["saldo"] if a["saldo"] != "ACABOU" else 0))
-        semana = [o for o in producao if o["dias"] is not None and 0 <= o["dias"] <= 7]
-        return {
-            "ano": ano, "hoje": hoje.isoformat(), "proximo_numero": self.proximo_numero(ano),
-            "contagem": {e: contagem.get(e, 0) for e in ESTADOS},
-            "total_ano": len(validas), "em_producao": sum(contagem.get(e, 0) for e in EM_PRODUCAO),
-            "semana": len(semana),
-            "por_mes": [{"mes": MESES[i], "ops": n} for i, n in enumerate(por_mes)],
-            "por_prefeitura": topo,
-            "proximas": producao[:8],
-            "atrasadas": atrasadas[:8],
-            "sem_data": sorted((o for o in ops if o["estado"] == "SEM_DATA"), key=lambda o: -o["seq"])[:6],
-            "alertas_saldo": alertas[:8], "saldo_negativos": negativos, "saldo_encerrados": encerrados,
-            "eventos": self.eventos(10),
-        }
+        return consultas.painel(self)
 
     def eventos(self, limite: int = 200) -> list[dict]:
-        lista = self.banco.todos("SELECT * FROM eventos ORDER BY id DESC LIMIT ?", (limite,))
-        ids = set()
-        for e in lista:
-            try:
-                e["dados"] = json.loads(e["detalhe"]) if e["detalhe"].startswith("{") else {}
-            except ValueError:
-                e["dados"] = {}
-            if isinstance(e["dados"].get("op"), int):
-                ids.add(e["dados"]["op"])
-        if ids:
-            marcas = ",".join("?" * len(ids))
-            numeros = {r["id"]: r for r in self.banco.todos(
-                f"SELECT id, numero, cliente, obra FROM ops WHERE id IN ({marcas})", tuple(ids))}
-            for e in lista:
-                o = numeros.get(e["dados"].get("op"))
-                if o:
-                    e["op"] = o
-        return lista
+        return consultas.eventos(self, limite)
 
 
 def _inaug(valor: str):
     n = numero_br(valor) if valor else None
     return n if n is not None else (valor or None)
-
-
-def _motor_ou_erro(motor: str) -> str:
-    try:
-        return pdf.motor_escolhido(motor)
-    except pdf.ErroPDF as e:
-        return f"INDISPONÍVEL ({e})"
-
-
-def _gravar_atomico(destino: Path, conteudo: bytes) -> None:
-    """Grava num temporário exclusivo da mesma pasta e troca de uma vez (nunca deixa arquivo pela metade)."""
-    fd, nome = tempfile.mkstemp(prefix="~" + destino.stem[:40] + ".", suffix=".tmp", dir=destino.parent)
-    try:
-        with os.fdopen(fd, "wb") as f:
-            f.write(conteudo)
-        os.replace(nome, destino)
-    except BaseException:
-        try:
-            os.unlink(nome)
-        except OSError:
-            pass
-        raise
-
-
-def _remover_substituido(antigo: str | None, novo: Path) -> None:
-    """Apaga o arquivo da publicação anterior só quando ele foi substituído por outro nome já gravado."""
-    if not antigo or Path(antigo) == novo:
-        return
-    try:
-        Path(antigo).unlink(missing_ok=True)
-    except OSError:
-        pass
 
 
 def _assinatura(modelo_id: int, cab: dict, itens: list[dict]) -> str:

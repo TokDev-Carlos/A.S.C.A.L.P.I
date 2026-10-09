@@ -89,7 +89,7 @@ class TestPublicacao(unittest.TestCase):
         oid = self.s.salvar_op(self._dados())["op_id"]
         with pdf_ok():
             antes = self.s.publicar(oid)
-        with pdf_ok(), patch("ascalpi_producao.servico._gravar_atomico", side_effect=PermissionError("PASTA BLOQUEADA")):
+        with pdf_ok(), patch("ascalpi_producao.publicacao.gravar_atomico", side_effect=PermissionError("PASTA BLOQUEADA")):
             depois = self.s.publicar(oid)
         self.assertEqual(depois["estado"], "PENDENTE")
         self.assertIn("PASTA BLOQUEADA", depois["xlsx_erro"])
@@ -146,7 +146,7 @@ class TestPublicacao(unittest.TestCase):
 
     # ------------------------------------------------------------ R02
     def test_r02_falha_na_publicacao_devolve_op_salva_e_pendente(self):
-        with pdf_ok(), patch("ascalpi_producao.servico._gravar_atomico", side_effect=PermissionError("SEM PERMISSÃO")):
+        with pdf_ok(), patch("ascalpi_producao.publicacao.gravar_atomico", side_effect=PermissionError("SEM PERMISSÃO")):
             r = self.s.salvar_op(self._dados(), publicar=True)
         self.assertTrue(r["ok"])
         self.assertEqual(r["op"]["numero"], r["op"]["numero"])

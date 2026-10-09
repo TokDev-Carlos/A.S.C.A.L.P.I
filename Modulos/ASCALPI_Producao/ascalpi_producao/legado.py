@@ -4,7 +4,6 @@ Nada é gravado nos arquivos de origem: eles são apenas lidos.
 """
 from __future__ import annotations
 
-import io
 import re
 from datetime import date, datetime, timedelta
 from pathlib import Path
