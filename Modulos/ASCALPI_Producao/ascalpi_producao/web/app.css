@@ -628,3 +628,5 @@ th.tf-ativo .tf-btn{background:var(--blue-soft);border-color:var(--blue);color:v
 .saldo-pe{min-height:30px;display:flex;flex-direction:column;justify-content:center;gap:2px;padding-right:100px}
 .saldo-cab h3 .badge{margin-left:4px;vertical-align:1px;padding:2px 7px;font-size:9px}
 .modelo-info .btn{margin-top:2px}
+.campos .prazo-campo{grid-column:span 2}
+@media (max-width:820px){.campos .prazo-campo{grid-column:auto}}

@@ -127,9 +127,14 @@ async function api(caminho, { metodo = 'GET', corpo } = {}) {
 }
 
 // botão ocupado (aria-busy) enquanto a ação roda
+const OCUPADO = Symbol('ocupado');
 async function ocupado(botao, acao) {
-  if (botao) botao.setAttribute('aria-busy', 'true');
-  try { return await acao(); } finally { if (botao) botao.removeAttribute('aria-busy'); }
+  if (botao?.getAttribute('aria-busy') === 'true') return OCUPADO;   // Enter/clique repetido: ignora
+  const estava = botao?.disabled;
+  if (botao) { botao.setAttribute('aria-busy', 'true'); botao.disabled = true; }
+  try { return await acao(); } finally {
+    if (botao) { botao.removeAttribute('aria-busy'); botao.disabled = !!estava; }
+  }
 }
 
 // ================================================================== aviso e diálogo
@@ -655,7 +660,7 @@ TELAS.editar = (tela, arg, q, vivo) => telaNova(tela, Number(arg), q, vivo);
 async function telaNova(tela, editId, q, vivo) {
   const est = {
     editId, origem: null, prefs: [], pref: null, modelos: [], modelo: null, solicitantes: [],
-    cab: { obra: '', solicitante: '', tipo: '', modoPrazo: 'data', prazo: '', motivo: '' },
+    cab: { obra: '', solicitante: '', tipo: '', modoPrazo: 'data', prazo: '', prazoTexto: 'DEFINIR', motivo: '' },
     qtd: {}, filtro: '', soCom: false, proximo: '', restaurado: null, chave: editId ? null : novaChave(),
   };
   const [prefs, prox] = await Promise.all([api('/api/prefeituras'), api('/api/ops/proximo')]);
@@ -668,7 +673,7 @@ async function telaNova(tela, editId, q, vivo) {
     if (o.origem !== 'SISTEMA' || !o.modelo_id) throw new Error('O.P. DO HISTÓRICO LEGADO: SÓ O ACOMPANHAMENTO PODE SER ALTERADO.');
     if (editId && o.situacao !== 'ATIVA') throw new Error('O.P. CANCELADA NÃO PODE SER ALTERADA.');
     est.origem = o;
-    est.cab = { obra: o.obra || '', solicitante: o.solicitante || '', tipo: o.tipo || '', modoPrazo: o.prazo_data ? 'data' : 'definir', prazo: o.prazo_data || '', motivo: '' };
+    est.cab = { obra: o.obra || '', solicitante: o.solicitante || '', tipo: o.tipo || '', modoPrazo: o.prazo_data ? 'data' : 'definir', prazo: o.prazo_data || '', prazoTexto: o.prazo_texto || 'DEFINIR', motivo: '' };
     o.itens.forEach(i => { est.qtd[i.linha] = { q: String(i.quantidade).replace('.', ','), inaug: i.inauguracao || '', obs: i.observacao || '' }; });
     prefId = o.prefeitura_id; modeloId = o.modelo_id;
   } else {
@@ -742,15 +747,17 @@ async function telaNova(tela, editId, q, vivo) {
     $('#n-p2c', tela).innerHTML = `<div class="campos">
       <label class="campo largo">OBRA<input id="n-obra" data-cab="obra" value="${esc(cab.obra)}" maxlength="140" autocomplete="off" placeholder="EX.: PRAÇA DA MATRIZ"></label>
       <label class="campo">SOLICITANTE<input id="n-solic" data-cab="solicitante" list="n-solics" value="${esc(cab.solicitante)}" maxlength="80" autocomplete="off" placeholder="QUEM PEDIU"></label>
+      <label class="campo">TIPO<input id="n-tipo" data-cab="tipo" list="n-tipos" value="${esc(cab.tipo || est.modelo.tipo_padrao || '')}" maxlength="30" autocomplete="off" placeholder="MOB, ABRIGO, PLACA"></label>
       <div class="prazo-campo"><span class="rotulo-campo" id="n-prazo-rot">PRAZO</span>
         <div class="prazo-linha">
           <div class="segmentado" role="group" aria-labelledby="n-prazo-rot">
             <button type="button" data-prazo-modo="data" aria-pressed="${cab.modoPrazo === 'data'}">${ic('calendar')}DATA</button>
-            <button type="button" data-prazo-modo="definir" aria-pressed="${cab.modoPrazo === 'definir'}">${ic('calendar-q')}DEFINIR</button>
+            <button type="button" data-prazo-modo="definir" aria-pressed="${cab.modoPrazo === 'definir'}">${ic('calendar-q')}TEXTO</button>
           </div>
-          <input id="n-prazo" type="date" value="${esc(cab.prazo)}" aria-labelledby="n-prazo-rot"${cab.modoPrazo === 'definir' ? ' disabled' : ''}>
+          <input id="n-prazo" type="date" value="${esc(cab.prazo)}" aria-labelledby="n-prazo-rot"${cab.modoPrazo === 'definir' ? ' hidden' : ''}>
+          <input id="n-prazo-texto" data-cab="prazoTexto" value="${esc(cab.prazoTexto || 'DEFINIR')}" maxlength="40" autocomplete="off"
+            aria-label="PRAZO EM TEXTO" placeholder="DEFINIR"${cab.modoPrazo === 'definir' ? '' : ' hidden'}>
         </div></div>
-      <label class="campo">TIPO<input id="n-tipo" data-cab="tipo" list="n-tipos" value="${esc(cab.tipo || est.modelo.tipo_padrao || '')}" maxlength="30" autocomplete="off" placeholder="MOB, ABRIGO, PLACA"></label>
       ${editId ? `<label class="campo largo">MOTIVO DA REVISÃO<input id="n-motivo" data-cab="motivo" value="${esc(cab.motivo)}" maxlength="140" autocomplete="off" placeholder="EX.: INCLUÍDO 1 BALANÇO"></label>` : ''}
       <datalist id="n-solics">${est.solicitantes.map(s => `<option value="${esc(s)}">`).join('')}</datalist>
       <datalist id="n-tipos"><option value="MOB"><option value="ABRIGO"><option value="PLACA"></datalist>
@@ -931,10 +938,14 @@ async function telaNova(tela, editId, q, vivo) {
   const temQuantidade = () => Object.values(est.qtd).some(v => lerNumero(v.q) > 0);
 
   // ---------------------------------------------------------------- ações
+  let pedido = 0;                                     // só a escolha mais recente vale
   async function escolherPref(id) {
-    est.pref = est.prefs.find(p => p.id === id);
-    est.modelo = null; est.qtd = {};
-    await carregarPref(est);
+    const meu = ++pedido;
+    const pref = est.prefs.find(p => p.id === id);
+    const dados = await dadosDaPref(pref);
+    if (meu !== pedido) return;                       // outra prefeitura foi escolhida enquanto esta carregava
+    est.pref = pref; est.modelo = null; est.qtd = {};
+    Object.assign(est, dados);
     if (est.modelos.length === 1) await escolherModelo(est.modelos[0].id, true);
     else { desenharTudo(); salvarRascunho(); }
   }
@@ -945,7 +956,10 @@ async function telaNova(tela, editId, q, vivo) {
       const ok = await dialogo({ titulo: 'TROCAR O MODELO?', sub: 'AS QUANTIDADES JÁ PREENCHIDAS SERÃO APAGADAS.', rotulo: 'TROCAR MODELO', perigo: true });
       if (!ok) return;
     }
-    est.modelo = await api(`/api/modelos/${id}`);
+    const meu = ++pedido;
+    const modelo = await api(`/api/modelos/${id}`);
+    if (meu !== pedido) return;
+    est.modelo = modelo;
     est.qtd = {};
     est.cab.tipo = est.cab.tipo || est.modelo.tipo_padrao || '';
     desenharTudo();
@@ -968,19 +982,20 @@ async function telaNova(tela, editId, q, vivo) {
     if (!m) return marcarErro(null, 'ESCOLHA A PREFEITURA E O MODELO.');
     if (!c.obra.trim()) return marcarErro($('#n-obra', tela), 'INFORME A OBRA.');
     if (!c.solicitante.trim()) return marcarErro($('#n-solic', tela), 'INFORME O SOLICITANTE.');
-    if (c.modoPrazo === 'data' && !c.prazo) return marcarErro($('#n-prazo', tela), 'INFORME A DATA DO PRAZO OU ESCOLHA "DEFINIR".');
+    if (c.modoPrazo === 'data' && !c.prazo) return marcarErro($('#n-prazo', tela), 'INFORME A DATA DO PRAZO OU ESCOLHA "TEXTO" (EX.: DEFINIR).');
     const itens = m.linhas.filter(l => lerNumero(est.qtd[l.linha]?.q) > 0).map(l => ({
       linha: l.linha, quantidade: lerNumero(est.qtd[l.linha].q), inauguracao: est.qtd[l.linha].inaug || '', observacao: est.qtd[l.linha].obs || '',
     }));
     if (!itens.length) return marcarErro($('.equip input[data-campo=q]', tela), 'A O.P. PRECISA DE PELO MENOS 1 EQUIPAMENTO COM QUANTIDADE.');
     const corpo = {
-      modelo_id: m.id, obra: c.obra, solicitante: c.solicitante, tipo: c.tipo, prazo: c.modoPrazo === 'data' ? c.prazo : 'DEFINIR',
+      modelo_id: m.id, obra: c.obra, solicitante: c.solicitante, tipo: c.tipo, prazo: c.modoPrazo === 'data' ? c.prazo : ((c.prazoTexto || '').trim() || 'DEFINIR'),
       itens, motivo: c.motivo, confirmar_negativo: confirmar, ...(editId ? { rev_esperada: est.origem.rev } : { chave: est.chave }),
     };
     let r;
     enviando = true;
     try {
       r = await ocupado(botao, () => api(editId ? `/api/ops/${editId}` : '/api/ops', { metodo: editId ? 'PUT' : 'POST', corpo }));
+      if (r === OCUPADO) return;
     } catch (e) {
       enviando = false;
       if (e.status === 409 && editId) {
@@ -1010,7 +1025,7 @@ async function telaNova(tela, editId, q, vivo) {
     if (editId) { baseAtual = null; rotear(); return; }
     const ok = await dialogo({ titulo: 'LIMPAR A O.P.?', sub: 'APAGA OS DADOS, AS QUANTIDADES E O RASCUNHO. A PREFEITURA E O MODELO CONTINUAM ESCOLHIDOS.', rotulo: 'LIMPAR', perigo: true });
     if (!ok) return;
-    est.cab = { obra: '', solicitante: '', tipo: est.modelo?.tipo_padrao || '', modoPrazo: 'data', prazo: '', motivo: '' };
+    est.cab = { obra: '', solicitante: '', tipo: est.modelo?.tipo_padrao || '', modoPrazo: 'data', prazo: '', prazoTexto: 'DEFINIR', motivo: '' };
     est.qtd = {}; est.restaurado = null; est.chave = novaChave();
     memoria.apagar(RASCUNHO);
     desenharTudo();
@@ -1037,9 +1052,10 @@ async function telaNova(tela, editId, q, vivo) {
       } else if (alvo.dataset.prazoModo) {
         est.cab.modoPrazo = alvo.dataset.prazoModo;
         $$('[data-prazo-modo]', tela).forEach(b => b.setAttribute('aria-pressed', String(b === alvo)));
-        const inp = $('#n-prazo', tela);
-        inp.disabled = est.cab.modoPrazo === 'definir';
-        if (!inp.disabled) inp.focus();
+        const texto = est.cab.modoPrazo === 'definir';
+        $('#n-prazo', tela).hidden = texto;
+        $('#n-prazo-texto', tela).hidden = !texto;
+        $(texto ? '#n-prazo-texto' : '#n-prazo', tela).focus();
         marcarP2(); salvarRascunho();
       } else if (alvo.dataset.passo) {
         const card = alvo.closest('.equip');
@@ -1059,7 +1075,7 @@ async function telaNova(tela, editId, q, vivo) {
       } else if (alvo.dataset.acao === 'descartar') {
         memoria.apagar(RASCUNHO);
         est.pref = null; est.modelo = null; est.qtd = {}; est.restaurado = null; est.chave = novaChave();
-        est.cab = { obra: '', solicitante: '', tipo: '', modoPrazo: 'data', prazo: '', motivo: '' };
+        est.cab = { obra: '', solicitante: '', tipo: '', modoPrazo: 'data', prazo: '', prazoTexto: 'DEFINIR', motivo: '' };
         desenharTudo();
         aviso('RASCUNHO DESCARTADO.', 'ok');
       } else if (alvo.dataset.acao === 'limpar') await limpar();
@@ -1101,11 +1117,11 @@ async function telaNova(tela, editId, q, vivo) {
   desenharTudo();
 }
 
-async function carregarPref(est) {
-  const [modelos, ops] = await Promise.all([api('/api/modelos?prefeitura_id=' + est.pref.id), todasOPs()]);
-  est.modelos = modelos;
-  est.solicitantes = [...new Set(ops.filter(o => o.prefeitura_id === est.pref.id && o.solicitante).map(o => o.solicitante))].sort();
+async function dadosDaPref(pref) {
+  const [modelos, ops] = await Promise.all([api('/api/modelos?prefeitura_id=' + pref.id), todasOPs()]);
+  return { modelos, solicitantes: [...new Set(ops.filter(o => o.prefeitura_id === pref.id && o.solicitante).map(o => o.solicitante))].sort() };
 }
+async function carregarPref(est) { Object.assign(est, await dadosDaPref(est.pref)); }
 
 function dialogoNegativo(sim) {
   const fmt = v => typeof v === 'number' ? num(v) : esc(String(v).split(' ')[0]);
@@ -1515,8 +1531,11 @@ async function desenharAbaGaveta() {
   } else if (gav.aba === 'equip') {
     if (!gav.modelo && o.modelo_id) {
       p.innerHTML = vazio('CARREGANDO EQUIPAMENTOS…', '', 'box');
-      try { gav.modelo = await api(`/api/modelos/${o.modelo_id}`); } catch { gav.modelo = { linhas: [] }; }
-      if (gav.op !== o || gav.aba !== 'equip') return;
+      let modelo;
+      try { modelo = await api(`/api/modelos/${o.modelo_id}`); } catch { modelo = { linhas: [] }; }
+      if (gav.op?.id !== o.id) return;                 // resposta antiga: a gaveta já é de outra O.P.
+      gav.modelo = modelo;
+      if (gav.aba !== 'equip') return;
     }
     const comFoto = new Set((gav.modelo?.linhas || []).filter(l => l.foto).map(l => l.linha));
     p.innerHTML = `<div class="itens-op">${o.itens.map(i => {
@@ -1579,6 +1598,8 @@ async function salvarAcomp(campos, alvo) {
   if (alvo) alvo.disabled = true;
   try {
     const novo = await ocupado(alvo?.classList.contains('btn') ? alvo : null, () => api(`/api/ops/${o.id}/acompanhamento`, { metodo: 'POST', corpo: campos }));
+    if (novo === OCUPADO) return;
+    esquecerOPs();
     if (gav.id !== o.id) return;
     gav.op = novo;
     desenharGaveta();
@@ -1610,9 +1631,12 @@ gavetaConteudo.addEventListener('click', async e => {
   } else if (b.dataset.g === 'publicar') {
     try {
       const r = await ocupado(b, () => api(`/api/ops/${o.id}/publicar`, { metodo: 'POST' }));
+      if (r === OCUPADO || gav.id !== o.id) return;      // gaveta já mostra outra O.P.
       if (r.estado === 'PUBLICADA') aviso(`O.P. ${o.numero} REPUBLICADA (XLSX E PDF).`, 'ok');
       else aviso(`PUBLICAÇÃO ${r.estado}: ${r.xlsx_erro || r.pdf_erro || ''}. O ARQUIVO ANTERIOR FOI MANTIDO.`, 'erro');
-      gav.op = await api('/api/ops/' + o.id);
+      const nova = await api('/api/ops/' + o.id);
+      if (gav.id !== o.id) return;
+      gav.op = nova;
       desenharGaveta();
     } catch (erro) { falha(erro); }
   } else if (b.dataset.g === 'cancelar') {
@@ -1624,9 +1648,13 @@ gavetaConteudo.addEventListener('click', async e => {
     });
     if (!c) return;
     try {
-      gav.op = await ocupado(b, () => api(`/api/ops/${o.id}/cancelar`, { metodo: 'POST', corpo: { motivo: $('#d-motivo', c).value.trim().toUpperCase() } }));
+      const cancelada = await ocupado(b, () => api(`/api/ops/${o.id}/cancelar`, { metodo: 'POST', corpo: { motivo: $('#d-motivo', c).value.trim().toUpperCase() } }));
+      if (cancelada === OCUPADO) return;
       aviso(`O.P. ${o.numero} CANCELADA. SALDO DEVOLVIDO AO CONTRATO.`, 'ok');
-      desenharGaveta(); esquecerOPs(); atualizarFundo();
+      esquecerOPs(); atualizarFundo();
+      if (gav.id !== o.id) return;
+      gav.op = cancelada;
+      desenharGaveta();
     } catch (erro) { falha(erro); }
   }
 });
@@ -1759,11 +1787,14 @@ TELAS.saldos = async (tela, arg, q, vivo) => {
         ${lista.map(i => `<tr><td>${esc(i.codigo)}</td><td>${esc(i.equipamento)}</td><td>${num(i.montante)}</td><td>${num(i.quant)}</td><td>${num(i.previsao)}</td><td>${esc(i.saldo)}</td></tr>`).join('')}</table>`;
   }
 
+  let pedido = 0;                                     // só a escolha mais recente vale
   async function trocarPref(id) {
+    const meu = ++pedido;
+    const cs = await api('/api/contratos?prefeitura_id=' + id);
+    const its = cs[0] ? await api(`/api/contratos/${cs[0].id}/saldo`) : [];
+    if (meu !== pedido) return;
     pref = prefs.find(p => p.id === id);
-    contratos = await api('/api/contratos?prefeitura_id=' + id);
-    contrato = contratos[0];
-    itens = contrato ? await api(`/api/contratos/${contrato.id}/saldo`) : [];
+    contratos = cs; contrato = cs[0]; itens = its;
     trocarQuery({ p: id, c: contrato?.id || '' });
     desenharPrefs(); desenharContratos(); desenharCorpo();
   }
@@ -1790,9 +1821,11 @@ TELAS.saldos = async (tela, arg, q, vivo) => {
     if (!c) return;
     const n = v => Number(v.trim().replace(',', '.'));
     try {
-      itens = await ocupado(botao, () => api(`/api/contratos/${contrato.id}/ajuste`, {
+      const novos = await ocupado(botao, () => api(`/api/contratos/${contrato.id}/ajuste`, {
         metodo: 'POST', corpo: { codigo, montante: n($('#d-montante', c).value), ajuste: n($('#d-ajuste', c).value), motivo: $('#d-motivo', c).value.trim().toUpperCase() },
       }));
+      if (novos === OCUPADO) return;
+      itens = novos;
       desenharCorpo();
       aviso(`SALDO DO ITEM ${codigo} AJUSTADO.`, 'ok');
     } catch (e) { falha(e); }
@@ -1804,8 +1837,11 @@ TELAS.saldos = async (tela, arg, q, vivo) => {
     try {
       if (b.dataset.pref) await trocarPref(Number(b.dataset.pref));
       else if (b.dataset.contrato) {
-        contrato = contratos.find(c => c.id === Number(b.dataset.contrato));
-        itens = await api(`/api/contratos/${contrato.id}/saldo`);
+        const meu = ++pedido;
+        const escolhido = contratos.find(c => c.id === Number(b.dataset.contrato));
+        const its = await api(`/api/contratos/${escolhido.id}/saldo`);
+        if (meu !== pedido) return;
+        contrato = escolhido; itens = its;
         trocarQuery({ c: contrato.id });
         desenharContratos(); desenharCorpo();
       } else if (b.dataset.filtro) {
@@ -1987,7 +2023,7 @@ TELAS.config = async (tela, arg, q, vivo) => {
     e.preventDefault();
     const corpo = { publicar: $('#c-publicar', tela).checked, pasta_xlsx: $('#c-xlsx', tela).value.trim(), pasta_pdf: $('#c-pdf', tela).value.trim(), motor_pdf: $('#c-motor', tela).value };
     try {
-      await ocupado($('#c-salvar', tela), () => api('/api/config', { metodo: 'PUT', corpo }));
+      if (await ocupado($('#c-salvar', tela), () => api('/api/config', { metodo: 'PUT', corpo })) === OCUPADO) return;
       aviso('CONFIGURAÇÃO SALVA.', 'ok');
       baseAtual = null; desenharTela(lerRota(), { manterRolagem: true });
     } catch (erro) { falha(erro); }
