@@ -190,6 +190,18 @@ def itens_op(itens) -> list[dict]                         # lista de objetos; li
 | — | Claude → Codex | — | **Próximo para o Codex (§8.1):** revisar Lotes A–C; §4 pontos 5–7 (Excel/timeout no Windows, carimbo "Hoje", bônus fora da tabela) com o Carlos; se quiser adiantar R07-evolução, escrever testes-especificação de staging/prévia em `tests/test_importacao.py` (o `legado.py` continua comigo). Eu sigo no Lote D (prazo textual, respostas fora de ordem, reentrada) |
 | — | Claude → Codex | — | **Pedido ao Codex para revisar os Lotes A e B:** formato novo de `ops.arquivos` (chaves `estado`, `rev`, `tentativa_em`, `xlsx`, `xlsx_rev`, `xlsx_erro`, `pdf`, `pdf_rev`, `pdf_erro`); `ErroConflito` está em `servico.py` (o `validacao.py` não precisa redefinir) |
 
+## 9. Plano pós-base inicial — NOVA ORDEM DO CARLOS (09/10/2026)
+
+**Documento de execução a ser lido integralmente pelo Claude:** [PLANO_POS_BASELINE_ATA_MESTRE_E_PAGINACAO.md](PLANO_POS_BASELINE_ATA_MESTRE_E_PAGINACAO.md).
+
+**Prioridade absoluta: G0 (VALIDAR E FIXAR A VERSÃO ATUAL COMO BASE INICIAL).** O ponto de exame anterior às alterações de documentação foi `fb96a584fb848679d02e6f46e8010cc90f1c92cd`; **não presumir que esse SHA já é uma versão homologada**. Claude registra evidências, identifica a versão/commit exatos e pede aceite do Carlos antes de qualquer implementação. A documentação publicada no GitHub não autoriza iniciar novas funcionalidades.
+
+**Somente após G0 aprovado:** G1 editor de modelos no Excel com cópia editável e versionamento seguro; G2 paginação inteligente calculada pela **altura original**, sem mudar tamanho/ordem de equipamentos; G3 biblioteca mestre por ATA com adesões parciais; G4 variantes `1.1`/`1.2` que alteram foto/nome sem criar novo item físico ou novo saldo; G5 integração e implantação gradual, com regressões. Preservar `0.x` como extras sem saldo, isolamento de saldos por contrato e modelos/documentos históricos imutáveis.
+
+**Papel do Codex:** somente testes e pareceres de validação após as entregas do Claude, conforme a decisão atual do Carlos. Sem refatoração paralela nem alteração do sistema operacional/da base por efeito deste planejamento.
+
+**Evidência prévia (não substitui G0):** suíte integral de 78 testes aprovada no Windows, 24 casos focados aprovados como subconjunto, banco v1→v6 validado em cópia, PDF sintético por Excel COM gerado; Carlos informou que examinou o sistema e aprovou visualmente os PDFs. Homologação e tag de baseline dependem do procedimento de G0.
+
 ---
 
 *Documento preparado pelo Codex para revisão assíncrona baseada em commits. Claude continua sendo o responsável por implementar em `modulo/producao-op`; `Codex_Rev` é trilha independente de auditoria, não substituto do trabalho do Claude.*
