@@ -1,6 +1,7 @@
 """Servidor HTTP local (biblioteca padrão) com a API JSON e a tela web do ASCALPI Produção."""
 from __future__ import annotations
 
+import ipaddress
 import json
 import mimetypes
 import re
@@ -88,6 +89,24 @@ class Rotas:
         return None, ()
 
 
+def host_permitido(host: str | None) -> bool:
+    """Aceita localhost e endereços IP (com ou sem porta); recusa nomes de domínio."""
+    if not host:
+        return True                                  # HTTP/1.0 sem Host: não vem de navegador
+    nome = host.strip()
+    if nome.startswith("["):                         # IPv6: [::1]:8765
+        nome = nome[1:nome.find("]")] if "]" in nome else nome
+    else:
+        nome = nome.rsplit(":", 1)[0] if nome.count(":") == 1 else nome
+    if nome.lower() == "localhost":
+        return True
+    try:
+        ipaddress.ip_address(nome)
+        return True
+    except ValueError:
+        return False
+
+
 def criar_handler(servico: Servico):
     rotas = Rotas(servico)
 
@@ -147,6 +166,9 @@ def criar_handler(servico: Servico):
             return corpo_objeto(corpo)
 
         def _tratar(self, metodo: str) -> None:
+            if not host_permitido(self.headers.get("Host")):
+                # nome de domínio apontando para cá (DNS rebinding): o navegador o trataria como mesma origem
+                return self._json(403, {"erro": "ACESSE O ASCALPI PELO ENDEREÇO IP OU POR LOCALHOST."})
             url = urlparse(self.path)
             q = {k: v[-1] for k, v in parse_qs(url.query).items()}
             try:
@@ -167,9 +189,9 @@ def criar_handler(servico: Servico):
                     func, grupos = rotas.resolver(metodo, url.path)
                     if not func:
                         return self._json(404, {"erro": "ROTA NÃO ENCONTRADA."})
-                    if ("/edicao" in url.path and metodo == "POST") and self.headers.get("X-ASCALPI") != "1":
-                        # ações que abrem programa ou trocam o modelo: só a tela do ASCALPI (cabeçalho próprio
-                        # obriga o navegador a pedir permissão, que este servidor não concede a outros sites)
+                    if metodo != "GET" and self.headers.get("X-ASCALPI") != "1":
+                        # toda gravação: só a tela do ASCALPI (cabeçalho próprio obriga o navegador a pedir
+                        # permissão, que este servidor não concede a outros sites; bloqueia POST text/plain)
                         return self._json(403, {"erro": "AÇÃO PERMITIDA SÓ PELA TELA DO ASCALPI."})
                     corpo = self._corpo() if metodo in ("POST", "PUT", "PATCH") else {}
                     return self._json(200, func(q, corpo, *grupos))

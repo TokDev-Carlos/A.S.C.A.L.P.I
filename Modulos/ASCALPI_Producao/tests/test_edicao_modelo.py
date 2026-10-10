@@ -206,6 +206,132 @@ class TestEdicaoModelo(unittest.TestCase):
             httpd.shutdown()
             httpd.server_close()
 
+    # ------------------------------------------------------------ revisão própria do G1 (10/10/2026)
+    def test_config_em_texto_nao_liga_a_funcao(self):
+        cfg = json.loads(self.s.arquivo_config.read_text(encoding="utf-8"))
+        cfg["edicao_modelo_excel"] = "false"                        # config.json editado à mão
+        self.s.arquivo_config.write_text(json.dumps(cfg), encoding="utf-8")
+        with self.assertRaises(ErroValidacao):
+            self.s.edicao.iniciar(self.modelo["id"])
+
+    def test_iniciar_concorrente_devolve_a_mesma_edicao(self):
+        resultados, falhas = [], []
+        barreira = threading.Barrier(4)
+
+        def iniciar():
+            barreira.wait()
+            try:
+                resultados.append(self.s.edicao.iniciar(self.modelo["id"])["id"])
+            except Exception as erro:                               # pragma: no cover - falha do teste
+                falhas.append(erro)
+        ts = [threading.Thread(target=iniciar) for _ in range(4)]
+        for t in ts:
+            t.start()
+        for t in ts:
+            t.join()
+        self.assertEqual(falhas, [])
+        self.assertEqual(len(set(resultados)), 1)
+        self.assertEqual(self.s.banco.um("SELECT COUNT(*) n FROM modelo_edicoes")["n"], 1)
+
+    def test_origem_apagada_vira_conflito(self):
+        e = self.s.edicao.iniciar(self.modelo["id"])
+        self._editar(e, lambda ws: ws.__setitem__("B10", "OUTRO NOME"))
+        r = self.s.edicao.validar(e["id"])
+        origem = self.modelo_arquivo()
+        with self.s.banco.transacao() as con:     # reimportação trocou o arquivo e apagou o antigo (sem uso)
+            con.execute("UPDATE modelos SET arquivo = ? WHERE id = ?", (origem + ".novo.xlsx", self.modelo["id"]))
+        (self.s.dados / origem).unlink()
+        with self.assertRaises(ErroConflitoEdicao):
+            self.s.edicao.validar(e["id"])
+        with self.assertRaises(ErroConflitoEdicao):
+            self.s.edicao.publicar(e["id"], "motivo", r["hash"])
+
+    def test_publicar_exige_a_validacao_gravada(self):
+        e = self.s.edicao.iniciar(self.modelo["id"])
+        self._editar(e, lambda ws: ws.__setitem__("B10", "SEM VALIDAR"))
+        import hashlib
+        h = hashlib.sha256(self._copia(e).read_bytes()).hexdigest()   # hash certo, mas nunca validado
+        with self.assertRaises(ErroConflitoEdicao):
+            self.s.edicao.publicar(e["id"], "motivo", h)
+        r = self.s.edicao.validar(e["id"])
+        self.assertEqual(r["hash"], h)
+        self.assertTrue(self.s.edicao.publicar(e["id"], "motivo", h)["ok"])
+
+    def test_ata_s4_e_tipo_publicados_sobrevivem_a_reimportacao(self):
+        e = self.s.edicao.iniciar(self.modelo["id"])
+
+        def mudar(ws):
+            ws["S4"] = "ATA NOVA 2027"
+            ws["B8"] = "TIPO NOVO"
+        self._editar(e, mudar)
+        r = self.s.edicao.validar(e["id"])
+        self.assertIn("ATA (S4)", {d.get("campo") for d in r["diferencas"]})
+        self.s.edicao.publicar(e["id"], "ata nova", r["hash"])
+        m = self.s.banco.um("SELECT titulo, tipo_padrao, aba FROM modelos WHERE id = ?", (self.modelo["id"],))
+        self.assertEqual((m["titulo"], m["tipo_padrao"]), ("ATA NOVA 2027", "TIPO NOVO"))
+        legado.importar_pasta(self.s.banco, self.base / "legado", self.base / "dados")
+        depois = self.s.banco.um("SELECT titulo, tipo_padrao, aba FROM modelos WHERE id = ?", (self.modelo["id"],))
+        self.assertEqual(dict(depois), dict(m))
+
+    def test_arquivo_publicado_sumiu_reimportacao_desmarca_editado(self):
+        e = self.s.edicao.iniciar(self.modelo["id"])
+        self._editar(e, lambda ws: ws.__setitem__("B10", "EDITADO"))
+        r = self.s.edicao.validar(e["id"])
+        self.s.edicao.publicar(e["id"], "ajuste", r["hash"])
+        (self.s.dados / self.modelo_arquivo()).unlink()            # versão do sistema perdida
+        legado.importar_pasta(self.s.banco, self.base / "legado", self.base / "dados")
+        m = self.s.banco.um("SELECT editado_sistema FROM modelos WHERE id = ?", (self.modelo["id"],))
+        self.assertEqual(m["editado_sistema"], 0)                  # o livro volta a valer nas próximas importações
+
+    def test_aba_renomeada(self):
+        e = self.s.edicao.iniciar(self.modelo["id"])
+        self._editar(e, lambda ws: setattr(ws, "title", "PLANILHA1"))
+        r = self.s.edicao.validar(e["id"])
+        self.assertFalse(r["ok"])
+        self.assertTrue(any("OP-" in x for x in r["erros"]))
+        self._editar(e, lambda ws: setattr(ws, "title", "O.P-ATA-TESTE2"))
+        r = self.s.edicao.validar(e["id"])
+        self.assertTrue(r["ok"], r["erros"])
+        self.assertIn("ABA", {d.get("campo") for d in r["diferencas"]})
+        self.s.edicao.publicar(e["id"], "aba nova", r["hash"])
+        self.assertEqual(self.s.banco.um("SELECT aba FROM modelos WHERE id = ?", (self.modelo["id"],))["aba"],
+                         "O.P-ATA-TESTE2")
+
+
+class TestProtecaoDaApi(unittest.TestCase):
+    """Toda ação que grava exige o cabeçalho da tela; nomes de domínio no Host são recusados (DNS rebinding)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.s = Servico(Path(self.tmp.name) / "dados")
+        self.httpd = servir(self.s, porta=0)
+        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.httpd.server_address[1]}"
+
+    def tearDown(self):
+        self.httpd.shutdown()
+        self.httpd.server_close()
+        self.s.banco.fechar()
+        self.tmp.cleanup()
+
+    def _pedir(self, metodo, url, cabecalhos):
+        req = urllib.request.Request(self.base + url, data=b"{}" if metodo != "GET" else None, method=metodo,
+                                     headers=cabecalhos)
+        try:
+            with urllib.request.urlopen(req) as r:
+                return r.status
+        except urllib.error.HTTPError as erro:
+            return erro.code
+
+    def test_post_sem_cabecalho_e_recusado(self):
+        for metodo, url in (("POST", "/api/ops"), ("POST", "/api/ops/1/cancelar"), ("PUT", "/api/config")):
+            self.assertEqual(self._pedir(metodo, url, {"Content-Type": "text/plain"}), 403, url)
+
+    def test_host_com_nome_de_dominio_e_recusado(self):
+        self.assertEqual(self._pedir("GET", "/api/painel", {"Host": "ataque.example:8765"}), 403)
+        self.assertEqual(self._pedir("GET", "/api/painel", {"Host": "localhost"}), 200)
+        self.assertEqual(self._pedir("GET", "/api/painel", {}), 200)
+
 
 if __name__ == "__main__":
     unittest.main()

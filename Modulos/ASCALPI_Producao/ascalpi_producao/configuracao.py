@@ -32,7 +32,9 @@ class Configuracao:
             atual = json.loads(self.arquivo.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             atual = {}
-        return {**CONFIG_PADRAO, **{k: v for k, v in atual.items() if k in CONFIG_PADRAO}}
+        # valor de tipo errado (config.json editado à mão) vale o padrão: texto "false" não liga nada
+        return {**CONFIG_PADRAO, **{k: v for k, v in atual.items() if k in CONFIG_PADRAO
+                                    and (not isinstance(CONFIG_PADRAO[k], bool) or type(v) is bool)}}
 
     def salvar(self, novos: dict) -> dict:
         for k, v in novos.items():

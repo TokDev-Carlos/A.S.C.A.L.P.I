@@ -7,13 +7,15 @@ Garantias:
 - o arquivo publicado do modelo e os arquivos das O.P. já emitidas nunca são alterados no lugar;
 - O.P. emitidas continuam no modelo da emissão (ops.modelo_arquivo);
 - uma edição aberta por modelo; publicar sobre uma versão que mudou desde o início → conflito (409);
-- o que é publicado é exatamente o que foi validado (hash conferido);
+- o que é publicado é exatamente o que foi validado (hash da última validação gravada, conferido com a cópia);
 - nada é apagado: cópias descartadas ficam na pasta de edição.
 """
 from __future__ import annotations
 
 import hashlib
+import io
 import json
+import sqlite3
 import os
 import re
 import secrets
@@ -23,6 +25,7 @@ from pathlib import Path
 from . import documento, pacote
 from .banco import agora
 from .imagens import mapa_imagens
+from .legado import aba_modelo_valida
 from .regras import codigo_base, normalizar_codigo, sanitizar_nome
 from .validacao import ErroValidacao, motivo_obrigatorio
 
@@ -40,7 +43,7 @@ def _hash(conteudo: bytes) -> str:
 
 def _sem_protecao(conteudo: bytes) -> bytes:
     """Cópia de trabalho editável: tira a proteção só da cópia (o modelo publicado não muda)."""
-    partes = pacote.carregar(_bytes_io(conteudo))
+    partes = pacote.carregar(io.BytesIO(conteudo))
     for nome in list(partes):
         if re.fullmatch(r"xl/worksheets/sheet\d+\.xml", nome):
             xml = partes[nome].decode("utf-8")
@@ -48,11 +51,6 @@ def _sem_protecao(conteudo: bytes) -> bytes:
     wb = partes["xl/workbook.xml"].decode("utf-8")
     partes["xl/workbook.xml"] = re.sub(r"<workbookProtection\b[^>]*/>", "", wb).encode("utf-8")
     return pacote.salvar(partes)
-
-
-def _bytes_io(conteudo: bytes):
-    import io
-    return io.BytesIO(conteudo)
 
 
 def _alturas(partes: dict, parte: str) -> dict[int, str | None]:
@@ -78,7 +76,7 @@ def analisar(original: bytes, novo: bytes, codigos_contrato: set[str] | None) ->
     avisos: list[str] = []
     dif: list[dict] = []
     try:
-        partes = pacote.carregar(_bytes_io(novo))
+        partes = pacote.carregar(io.BytesIO(novo))
         abas = pacote.abas(partes)
     except Exception as e:  # zip corrompido, XML ilegível
         return {"ok": False, "hash": _hash(novo), "erros": [f"ARQUIVO ILEGÍVEL: {e}"], "avisos": [], "diferencas": []}
@@ -90,8 +88,13 @@ def analisar(original: bytes, novo: bytes, codigos_contrato: set[str] | None) ->
     if erros:
         return {"ok": False, "hash": _hash(novo), "erros": erros, "avisos": avisos, "diferencas": dif}
 
-    p_orig = pacote.carregar(_bytes_io(original))
+    p_orig = pacote.carregar(io.BytesIO(original))
     aba_orig, aba_nova = pacote.abas(p_orig)[0], abas[0]
+    if not aba_modelo_valida(aba_nova["nome"]):
+        erros.append(f"O NOME DA ABA PRECISA CONTER \"OP-\" (ESTÁ \"{aba_nova['nome']}\").")
+    elif aba_nova["nome"] != aba_orig["nome"]:
+        dif.append({"tipo": "CABECALHO", "linha": None, "campo": "ABA", "antes": aba_orig["nome"], "depois": aba_nova["nome"]})
+        avisos.append("O NOME DA ABA MUDOU: AS PRÓXIMAS O.P. USAM O NOME NOVO.")
     l_orig = {l["linha"]: l for l in documento.linhas_do_modelo(original)}
     l_nova = {l["linha"]: l for l in documento.linhas_do_modelo(novo)}
     if not l_nova:
@@ -111,7 +114,8 @@ def analisar(original: bytes, novo: bytes, codigos_contrato: set[str] | None) ->
 
     # cabeçalho
     c_orig, c_novo = documento.cabecalho_do_modelo(original), documento.cabecalho_do_modelo(novo)
-    for campo, rotulo in (("cliente", "CLIENTE (B3)"), ("tipo", "TIPO (B8)"), ("titulo", "TÍTULO (D2)"), ("empresa", "EMPRESA (L2)")):
+    for campo, rotulo in (("cliente", "CLIENTE (B3)"), ("tipo", "TIPO (B8)"), ("titulo", "TÍTULO (D2)"), ("ata", "ATA (S4)"),
+                          ("empresa", "EMPRESA (L2)")):
         if c_orig[campo] != c_novo[campo]:
             dif.append({"tipo": "CABECALHO", "linha": None, "campo": rotulo, "antes": c_orig[campo], "depois": c_novo[campo]})
     if c_orig["cliente"] != c_novo["cliente"]:
@@ -177,7 +181,7 @@ class EdicaoModelos:
 
     # ------------------------------------------------------------ apoio
     def _ativa(self) -> None:
-        if not self.s.config().get("edicao_modelo_excel"):
+        if self.s.config().get("edicao_modelo_excel") is not True:
             raise ErroValidacao("EDIÇÃO DE MODELO NO EXCEL DESATIVADA (CONFIGURAÇÃO).")
 
     def _sessao(self, sessao_id: int) -> dict:
@@ -198,6 +202,15 @@ class EdicaoModelos:
         if raiz not in alvo.parents:                       # nunca abre caminho fora da pasta de edição
             raise ErroValidacao("CAMINHO DA CÓPIA DE TRABALHO INVÁLIDO.")
         return alvo
+
+    def _origem(self, e: dict, modelo: dict) -> bytes:
+        """Conteúdo do modelo de quando a edição começou; se o modelo mudou desde então, é conflito."""
+        if modelo["arquivo"] != e["arquivo_origem"]:
+            raise ErroConflitoEdicao("O MODELO FOI ATUALIZADO DEPOIS QUE ESTA EDIÇÃO COMEÇOU. DESCARTE E COMECE OUTRA.")
+        try:
+            return (self.s.dados / e["arquivo_origem"]).read_bytes()
+        except FileNotFoundError:
+            raise ErroConflitoEdicao("O ARQUIVO DO MODELO NÃO EXISTE MAIS. DESCARTE E COMECE OUTRA.")
 
     def _codigos_contrato(self, modelo: dict) -> set[str] | None:
         if not modelo.get("contrato_id"):
@@ -243,6 +256,14 @@ class EdicaoModelos:
                                   "estado, criado_em) VALUES (?,?,?,?, 'ABERTA', ?)",
                                   (modelo_id, m["arquivo"], _hash(conteudo), rel.as_posix(), agora()))
                 self.s.banco.evento(con, "MODELO_EDICAO_INICIADA", {"modelo": modelo_id, "edicao": cur.lastrowid})
+        except sqlite3.IntegrityError:
+            # outra requisição abriu a edição ao mesmo tempo (índice único): devolve a que ficou valendo
+            destino.unlink(missing_ok=True)
+            existente = self.s.banco.um("SELECT * FROM modelo_edicoes WHERE modelo_id = ? AND estado = 'ABERTA'",
+                                        (modelo_id,))
+            if not existente:
+                raise
+            return self._publico(existente)
         except Exception:
             destino.unlink(missing_ok=True)
             raise
@@ -269,13 +290,8 @@ class EdicaoModelos:
             novo = alvo.read_bytes()
         except OSError as erro:
             raise ErroValidacao(f"NÃO FOI POSSÍVEL LER A CÓPIA (FECHE O EXCEL E TENTE DE NOVO): {erro}")
-        original = (self.s.dados / e["arquivo_origem"]).read_bytes()
-        r = analisar(original, novo, self._codigos_contrato(m))
+        r = analisar(self._origem(e, m), novo, self._codigos_contrato(m))
         r["usada_em_ops"] = self.s.banco.um("SELECT COUNT(*) n FROM ops WHERE modelo_id = ?", (m["id"],))["n"]
-        r["modelo_mudou"] = m["arquivo"] != e["arquivo_origem"]
-        if r["modelo_mudou"]:
-            r["ok"] = False
-            r["erros"].append("O MODELO FOI ATUALIZADO DEPOIS QUE ESTA EDIÇÃO COMEÇOU. DESCARTE E COMECE OUTRA.")
         with self.s.banco.transacao() as con:
             con.execute("UPDATE modelo_edicoes SET validacao = ? WHERE id = ?", (json.dumps(r, ensure_ascii=False), sessao_id))
         return r
@@ -285,11 +301,20 @@ class EdicaoModelos:
         motivo = motivo_obrigatorio(motivo)
         e = self._aberta(sessao_id)
         m = self.s._modelo(e["modelo_id"])
+        original = self._origem(e, m)
         alvo = self._caminho_trabalho(e)
-        novo = alvo.read_bytes()
-        if not isinstance(hash_validado, str) or hash_validado != _hash(novo):
+        try:
+            novo = alvo.read_bytes()
+        except OSError as erro:
+            raise ErroValidacao(f"NÃO FOI POSSÍVEL LER A CÓPIA (FECHE O EXCEL E TENTE DE NOVO): {erro}")
+        try:
+            gravada = json.loads(e["validacao"]) if e["validacao"] else {}
+        except ValueError:
+            gravada = {}
+        if not isinstance(hash_validado, str) or gravada.get("hash") != hash_validado or hash_validado != _hash(novo):
             raise ErroConflitoEdicao("A CÓPIA MUDOU DEPOIS DA VALIDAÇÃO. VALIDE DE NOVO ANTES DE PUBLICAR.")
-        original = (self.s.dados / e["arquivo_origem"]).read_bytes()
+        if not gravada.get("ok"):
+            raise ErroValidacao("CORRIJA ANTES DE PUBLICAR: " + " | ".join(gravada.get("erros") or []))
         r = analisar(original, novo, self._codigos_contrato(m))
         if not r["ok"]:
             raise ErroValidacao("CORRIJA ANTES DE PUBLICAR: " + " | ".join(r["erros"]))
@@ -311,8 +336,9 @@ class EdicaoModelos:
                 estado = con.execute("SELECT estado FROM modelo_edicoes WHERE id = ?", (sessao_id,)).fetchone()[0]
                 if estado != "ABERTA":
                     raise ErroConflitoEdicao(f"ESTA EDIÇÃO JÁ FOI {estado}.")
-                con.execute("UPDATE modelos SET arquivo = ?, tipo_padrao = ?, editado_sistema = 1 WHERE id = ?",
-                            (rel, cab["tipo"] or m["tipo_padrao"], m["id"]))
+                con.execute("UPDATE modelos SET arquivo = ?, aba = ?, titulo = ?, tipo_padrao = ?, editado_sistema = 1 "
+                            "WHERE id = ?", (rel, cab["aba"] or m["aba"], cab["ata"] or m["titulo"],
+                                             cab["tipo"] or m["tipo_padrao"], m["id"]))
                 con.execute("DELETE FROM modelo_linhas WHERE modelo_id = ?", (m["id"],))
                 con.executemany("INSERT INTO modelo_linhas (modelo_id, linha, codigo, equipamento) VALUES (?,?,?,?)",
                                 [(m["id"], l["linha"], normalizar_codigo(l["codigo"]), l["equipamento"]) for l in linhas])

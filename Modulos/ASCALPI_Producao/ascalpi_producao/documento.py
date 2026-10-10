@@ -333,7 +333,8 @@ def cabecalho_do_modelo(modelo: bytes) -> dict:
     ws = Planilha(partes[parte].decode("utf-8"))
     ss = _compartilhadas(partes)
     return {"aba": nome, "cliente": ws.valor_texto("B3", ss).strip(), "tipo": ws.valor_texto("B8", ss).strip(),
-            "titulo": ws.valor_texto("D2", ss).strip(), "empresa": ws.valor_texto("L2", ss).strip()}
+            "titulo": ws.valor_texto("D2", ss).strip(), "ata": ws.valor_texto("S4", ss).strip(),
+            "empresa": ws.valor_texto("L2", ss).strip()}
 
 
 def _inserir_antes(xml: str, novo: str, candidatos: list[str]) -> str:
