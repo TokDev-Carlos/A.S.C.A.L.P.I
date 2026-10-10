@@ -428,6 +428,44 @@ class TestEdicaoModelo(unittest.TestCase):
         x = re.sub(r'<row r="(1[02-9])"(?![^>]*\bht=)', r'<row r="\1" ht="15"', x)
         return x.replace('<c r="A12" t="inlineStr"><is><t>2.1</t></is></c>', '<c r="A12"><v>2.1000000000000001</v></c>')
 
+    @staticmethod
+    def _com_foto(caminho: Path, linha: int) -> None:
+        """Acrescenta uma foto (PNG 1×1) ancorada na coluna C da linha, sem Pillow: desenho + relações no pacote."""
+        import base64
+        import re
+        from ascalpi_producao import pacote
+        R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+        png = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=")
+        partes = pacote.carregar(io.BytesIO(caminho.read_bytes()))
+        aba = pacote.abas(partes)[0]["parte"]                         # ex.: xl/worksheets/sheet1.xml
+        rels_aba = aba.replace("worksheets/", "worksheets/_rels/") + ".rels"
+        assert "<drawing" not in partes[aba].decode("utf-8")          # o modelo de teste não tem desenho
+        xml = partes[aba].decode("utf-8")
+        if "xmlns:r=" not in xml.split(">", 2)[1]:
+            xml = re.sub(r"<worksheet\b", f'<worksheet xmlns:r="{R}"', xml, count=1)
+        partes[aba] = xml.replace("</worksheet>", '<drawing r:id="rDesenhoTeste"/></worksheet>').encode("utf-8")
+        rels = partes.get(rels_aba, f'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>'.encode())
+        partes[rels_aba] = rels.decode("utf-8").replace("</Relationships>",
+            f'<Relationship Id="rDesenhoTeste" Type="{R}/drawing" Target="../drawings/drawingTeste.xml"/></Relationships>').encode()
+        xdr = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"
+        a_ns = "http://schemas.openxmlformats.org/drawingml/2006/main"
+        partes["xl/drawings/drawingTeste.xml"] = (
+            f'<xdr:wsDr xmlns:xdr="{xdr}" xmlns:a="{a_ns}" xmlns:r="{R}"><xdr:oneCellAnchor>'
+            f'<xdr:from><xdr:col>2</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>{linha - 1}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>'
+            f'<xdr:ext cx="9525" cy="9525"/><xdr:pic><xdr:blipFill><a:blip r:embed="rFotoTeste"/></xdr:blipFill></xdr:pic>'
+            f'<xdr:clientData/></xdr:oneCellAnchor></xdr:wsDr>').encode()
+        partes["xl/drawings/_rels/drawingTeste.xml.rels"] = (
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            f'<Relationship Id="rFotoTeste" Type="{R}/image" Target="../media/fotoTeste.png"/></Relationships>').encode()
+        partes["xl/media/fotoTeste.png"] = png
+        tipos = partes["[Content_Types].xml"].decode("utf-8")
+        if 'Extension="png"' not in tipos:
+            tipos = tipos.replace("</Types>", '<Default Extension="png" ContentType="image/png"/></Types>')
+        tipos = tipos.replace("</Types>", '<Override PartName="/xl/drawings/drawingTeste.xml" '
+                              'ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/></Types>')
+        partes["[Content_Types].xml"] = tipos.encode("utf-8")
+        caminho.write_bytes(pacote.salvar(partes))
+
     def test_excel_abrir_e_salvar_sem_editar_nao_gera_diferencas(self):
         self._com_altura_80()
         e = self.s.edicao.iniciar(self.modelo["id"])
@@ -455,22 +493,12 @@ class TestEdicaoModelo(unittest.TestCase):
         self._com_altura_80()
         e = self.s.edicao.iniciar(self.modelo["id"])
         caminho = self._copia(e)
-        wb = openpyxl.load_workbook(caminho)
-        ws = wb.active
-        ws["B10"] = "BALANÇO NOVO"
-        from openpyxl.drawing.image import Image as Imagem
-        from PIL import Image as PIL
-        png = io.BytesIO()
-        PIL.new("RGB", (8, 8), (200, 0, 0)).save(png, "PNG")
-        png.seek(0)
-        img = Imagem(png)
-        img.anchor = "C12"
-        ws.add_image(img)
-        wb.save(caminho)
+        self._editar(e, lambda ws: ws.__setitem__("B10", "BALANÇO NOVO"))
+        self._com_foto(caminho, linha=12)                             # só openpyxl nos testes: foto direto no OPC
         self._mexer_xml(caminho, self._salvo_pelo_excel)
         tipos = {(d["tipo"], d["linha"]) for d in self.s.edicao.validar(e["id"])["diferencas"]}
         self.assertIn(("NOME", 10), tipos)
-        self.assertTrue(any(t == "FOTO" for t, _ in tipos), tipos)
+        self.assertIn(("FOTO", 12), tipos)
         self.assertFalse([t for t in tipos if t[0] in ("CODIGO", "ALTURA")], tipos)
 
 
