@@ -4,15 +4,39 @@ Estado em 10/10/2026. **Branches (ordens ORG-2/ORG-3, ver `REGRAS_CENTRAIS.md` �
 
 > **Base inicial congelada:** `producao-base-inicial-v1` (commit `fb96a58`, aceita pelo Carlos). Veja `docs/producao/releases/BASE_INICIAL.md` e `PLANO_AJUSTES.md`. Melhorias só depois do aceite de início de G1.
 
-## G1 — edição do modelo no Excel (branch `claude/producao`; origem preservada na tag `historico/2026-10-09/g1-edicao-modelo`)
+## G1 — edição do modelo no Excel (branch `claude/producao`, PR #5; origem preservada na tag `historico/2026-10-09/g1-edicao-modelo`)
 
-- Ligar em **Configuração → EDITAR MODELOS NO EXCEL** (vem desligado). Aparece o botão **EDITAR NO EXCEL** em cada modelo.
-- Fluxo: COMEÇAR EDIÇÃO (cópia sem proteção em `dados/Modelos/_edicao/`) → ABRIR NO EXCEL (só Windows) → salvar e fechar → VALIDAR ALTERAÇÕES (nome, código, equipamento novo/removido, altura da linha, foto, logo, cabeçalho; código sem contrato; prova de geração da O.P.) → PUBLICAR NOVA VERSÃO (motivo obrigatório) ou DESCARTAR (a cópia fica guardada).
-- Garantias: arquivo novo por versão (nada sobrescrito), O.P. emitidas ficam no modelo da emissão, uma edição aberta por modelo, publicar sobre versão que mudou → 409, publica exatamente o arquivo validado (hash), reimportar o livro não substitui modelo editado no sistema (`modelos.editado_sistema`).
-- Código: `ascalpi_producao/modelos_edicao.py`; tabela `modelo_edicoes` (esquema 7); rotas `/api/modelos/{id}/edicao`, `/api/edicoes/{id}/abrir|validar|publicar|descartar` (POST exige o cabeçalho `X-ASCALPI: 1`, enviado pela tela).
-- Testes: `tests/test_edicao_modelo.py` (10). Suíte: **88 testes OK**. Fluxo conferido no navegador (1366 e 390 px), sem erro no console.
-- Falta: validação do Codex (tarefa V-G1 no quadro) e teste do Carlos no Windows com o Excel real (abrir, editar foto/altura, salvar).
-- **Teste do G1 no PC:** o G1 muda o esquema do banco para a versão 7. Testar com o código da `claude/producao` numa **pasta separada**, com uma **cópia** de `dados`; a instalação operacional só recebe o G1 depois do aceite e com autorização do Admin.
+**Estado:** `0ac1f8a` com **DE ACORDO técnico do Codex** (V-G1 em 4 passadas; relatórios em `docs/producao/revisao/V-G1_*.md`). Falta o **teste do Carlos no Windows com o Excel real** e a H-1; só depois o G1 entra no módulo e o G2 começa.
+
+- Ligar em **Configuração → EDITAR MODELOS NO EXCEL** (vem desligado; `config.json` com texto no lugar de verdadeiro/falso vale desligado). Aparece o botão **EDITAR NO EXCEL** em cada modelo.
+- Fluxo: COMEÇAR EDIÇÃO (cópia sem proteção em `dados/Modelos/_edicao/`) → ABRIR NO EXCEL (só Windows) → salvar e fechar → VALIDAR ALTERAÇÕES (nome, código, equipamento novo/removido, altura da linha, foto, logo, cabeçalho B3/B8/D2/S4/L2, nome da aba; código sem contrato; prova de geração da O.P.) → PUBLICAR NOVA VERSÃO (motivo obrigatório) ou DESCARTAR (a cópia fica guardada).
+- Garantias (todas com teste):
+  - arquivo novo por versão; nada é sobrescrito; versões publicadas e originais nunca são apagadas pela reimportação (V-G1-01);
+  - O.P. emitidas ficam no modelo da emissão; O.P. novas usam a versão nova;
+  - uma edição aberta por modelo (dois cliques ao mesmo tempo devolvem a mesma);
+  - modelo trocado, apagado ou alterado por fora (hash da origem) durante a edição → conflito 409 (V-G1-02);
+  - publica exatamente o arquivo da última validação gravada (hash e `ok`);
+  - gravação por temporário + promoção: falha de disco não deixa `.tmp`, cópia parcial nem pasta vazia (V-G1-03);
+  - validar uma edição já descartada/publicada → conflito, nada gravado (V-G1-04);
+  - aba sem `OP-` é recusada; reimportar o livro não substitui aba, título (S4), tipo (B8) nem arquivo do modelo editado no sistema.
+- Servidor local: **toda gravação** exige o cabeçalho `X-ASCALPI: 1` (a tela envia) e endereços por **nome de domínio** são recusados. Acesse por `http://127.0.0.1:8765`, `localhost` ou pelo **IP** do PC (nome do PC na rede não funciona mais).
+- Código: `ascalpi_producao/modelos_edicao.py`; tabela `modelo_edicoes` (esquema 7); rotas `/api/modelos/{id}/edicao`, `/api/edicoes/{id}/abrir|validar|publicar|descartar`.
+- Testes: `tests/test_edicao_modelo.py` (24, incluindo `test_vg1_*` e a proteção da API). Suíte: **102 testes OK**.
+
+### Roteiro do teste do G1 no Windows (Carlos)
+
+O G1 muda o banco para o esquema 7. **Não usar a instalação do dia a dia.**
+
+1. Criar uma pasta só para o teste, por exemplo `D:\PROGRAMAS\ASCALPI_Teste_G1`, e nela clonar o repositório: `git clone -b claude/producao https://github.com/TokDev-Carlos/A.S.C.A.L.P.I.git`.
+2. Copiar a pasta `dados` da instalação atual para `D:\PROGRAMAS\ASCALPI_Teste_G1\dados` (**cópia**, nunca mover).
+3. **Antes de abrir:** na cópia, editar `dados\config.json` e pôr `"publicar": false` (ou apontar `pasta_xlsx`/`pasta_pdf` para pastas dentro da pasta de teste), para o teste não publicar nas pastas reais.
+4. Abrir: `cd A.S.C.A.L.P.I\Modulos\ASCALPI_Producao` e `python -m ascalpi_producao --dados D:\PROGRAMAS\ASCALPI_Teste_G1\dados servir --abrir`. O banco da cópia migra sozinho para o esquema 7.
+5. Configuração → ligar **EDITAR MODELOS NO EXCEL**.
+6. Escolher um modelo que já tenha O.P. emitida: **EDITAR NO EXCEL → COMEÇAR EDIÇÃO → ABRIR NO EXCEL**. No Excel: mudar o nome de um equipamento, a altura de uma linha e trocar uma foto; salvar e **fechar** o Excel.
+7. **VALIDAR ALTERAÇÕES**: conferir se a prévia lista exatamente o que foi mudado (sem itens a mais nem a menos). Anotar como o sistema se comporta se validar com o Excel ainda aberto (comportamento do Excel real, não coberto na nuvem).
+8. **PUBLICAR NOVA VERSÃO** com um motivo. Conferir: uma O.P. **antiga** desse modelo continua gerando o documento antigo (XLSX e PDF pelo Excel); uma O.P. **nova** sai com o modelo novo, foto e altura certas.
+9. Começar outra edição e **DESCARTAR**: a cópia fica em `dados\Modelos\_edicao\`.
+10. Anotar no quadro (ou para o Codex registrar) o resultado de cada passo; com tudo certo, o Admin dá o aceite do G1.
 
 ## O que é
 
