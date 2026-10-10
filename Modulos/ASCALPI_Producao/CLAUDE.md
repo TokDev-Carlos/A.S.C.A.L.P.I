@@ -1,6 +1,6 @@
 # ASCALPI Produção — instruções do projeto
 
-Leia este arquivo inteiro, depois `CONTINUAR.md` (estado atual, API, teste local) e `Codex_Plano_para_Claude.md` (achados R01–R09 e divisão Claude ⇄ Codex) antes de qualquer ação.
+Leia este arquivo inteiro, depois `docs/producao/releases/BASE_INICIAL.md` (versão congelada `producao-base-inicial-v1`), `PLANO_AJUSTES.md` e `PLANO_POS_BASELINE_ATA_MESTRE_E_PAGINACAO.md` (o que fazer a partir da base), `CONTINUAR.md` (estado atual, API, teste local) e `Codex_Plano_para_Claude.md` (achados R01–R09 e divisão Claude ⇄ Codex) antes de qualquer ação.
 
 ## 1. Objetivo
 
