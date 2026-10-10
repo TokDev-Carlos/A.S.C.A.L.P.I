@@ -3,6 +3,7 @@ import io
 import shutil
 import socket
 import subprocess
+import sys
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
@@ -141,7 +142,8 @@ class TestSincronizar(unittest.TestCase):
         externo = Path(self.tmp.name) / "temp" / "sincronizar.py"
         externo.parent.mkdir()
         shutil.copy(Path(sinc.__file__), externo)
-        r = subprocess.run(["python3" if shutil.which("python3") else "python", str(externo), "--raiz", str(self.clone),
+        r = subprocess.run([sys.executable, str(externo),   # o mesmo Python da suíte (no Windows, "python" do PATH pode ser o atalho da Store)
+                             "--raiz", str(self.clone),
                             "--arquivo", str(self.arquivo), "--porta", str(self.porta), "--sha", self.b, "--sim"],
                            capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)

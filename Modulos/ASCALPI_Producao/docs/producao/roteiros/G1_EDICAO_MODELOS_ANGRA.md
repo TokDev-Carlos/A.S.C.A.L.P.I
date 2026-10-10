@@ -12,8 +12,9 @@ Anote para cada passo: **OK** / **FALHOU** + o que apareceu na tela (texto do av
    ```bat
    git -C D:\Programas\ASCALPI_Project fetch origin --prune
    git -C D:\Programas\ASCALPI_Project show <SHA>:Modulos/ASCALPI_Producao/ferramentas/sincronizar.py > "%TEMP%\sincronizar.py"
-   python "%TEMP%\sincronizar.py" --raiz D:\Programas\ASCALPI_Project --sha <SHA>
+   "C:\.Dev CJL\3-Git_Main\System\Runtime\Python\python.exe" "%TEMP%\sincronizar.py" --raiz "D:\Programas\ASCALPI_Project" --sha <SHA>
    ```
+   Use o **Python instalado do projeto** (o mesmo dos `.cmd`), não `python` do PATH: no Windows ele pode ser o atalho da Microsoft Store (erro 9009). Se esse caminho não existir, use `py -3` no lugar.
    **Das próximas vezes:** `D:\Programas\ASCALPI_Project\Modulos\ASCALPI_Producao\Sincronizar_ASCALPI.cmd <SHA>`.
    - Esperado: `AUTORIZADO: <sha> = origin/modulo/producao-op`, `CÓPIA DE DADOS: …\snapshots_dados\dados_<data>_<sha antigo> (N ARQUIVOS CONFERIDOS)` e `SINCRONIZADO: <antes> -> <SHA>`.
    - Se aparecer `RECUSADO:` ou `FALHA:`, **não testar**: anotar a mensagem no quadro. `RECUSADO` significa que nada foi alterado.

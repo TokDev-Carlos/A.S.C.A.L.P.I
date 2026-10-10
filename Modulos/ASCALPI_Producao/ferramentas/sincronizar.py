@@ -5,11 +5,12 @@ autorizado. Só então: cópia de `dados` (com o ASCALPI fechado) → `git pull 
 Qualquer divergência encerra com código ≠ 0 e nunca anuncia sincronização.
 
 Uso no PC (Windows):
-    python ferramentas\\sincronizar.py --sha <SHA autorizado>            (branch padrão: modulo/producao-op)
+    Sincronizar_ASCALPI.cmd <SHA autorizado>                            (branch padrão: modulo/producao-op)
 Primeira vez (o clone ainda não tem este arquivo): rodar a cópia do commit revisado, sem checkout:
     git -C D:\\Programas\\ASCALPI_Project fetch origin --prune
     git -C D:\\Programas\\ASCALPI_Project show <SHA>:Modulos/ASCALPI_Producao/ferramentas/sincronizar.py > "%TEMP%\\sincronizar.py"
-    python "%TEMP%\\sincronizar.py" --raiz D:\\Programas\\ASCALPI_Project --sha <SHA>
+    "C:\\.Dev CJL\\3-Git_Main\\System\\Runtime\\Python\\python.exe" "%TEMP%\\sincronizar.py" --raiz D:\\Programas\\ASCALPI_Project --sha <SHA>
+(usar o Python do projeto, não "python" do PATH: no Windows pode ser o atalho da Microsoft Store, erro 9009)
 """
 from __future__ import annotations
 
