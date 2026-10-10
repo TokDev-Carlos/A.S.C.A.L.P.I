@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
-VERSAO_ESQUEMA = 6
+VERSAO_ESQUEMA = 7
 
 ESQUEMA = """
 CREATE TABLE IF NOT EXISTS meta (chave TEXT PRIMARY KEY, valor TEXT);
@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS modelos (
     tipo_padrao TEXT DEFAULT '',          -- B8 do modelo
     arquivo TEXT NOT NULL,                -- caminho relativo do .xlsx do modelo
     ativo INTEGER NOT NULL DEFAULT 1,
+    editado_sistema INTEGER NOT NULL DEFAULT 0,   -- versão publicada pelo ASCALPI (G1): reimportar o livro não substitui
     UNIQUE (prefeitura_id, codename)
 );
 
@@ -134,6 +135,22 @@ CREATE TABLE IF NOT EXISTS op_chaves (
     criado_em TEXT NOT NULL
 );
 
+-- G1: edição do modelo no Excel (cópia de trabalho → validação → nova versão)
+CREATE TABLE IF NOT EXISTS modelo_edicoes (
+    id INTEGER PRIMARY KEY,
+    modelo_id INTEGER NOT NULL REFERENCES modelos(id),
+    arquivo_origem TEXT NOT NULL,         -- versão publicada quando a edição começou
+    hash_origem TEXT NOT NULL,
+    arquivo_trabalho TEXT NOT NULL,       -- cópia editável em Modelos/_edicao/
+    estado TEXT NOT NULL DEFAULT 'ABERTA',    -- ABERTA | PUBLICADA | DESCARTADA
+    criado_em TEXT NOT NULL,
+    finalizado_em TEXT,
+    arquivo_publicado TEXT,
+    motivo TEXT DEFAULT '',
+    validacao TEXT DEFAULT ''             -- json da última validação
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ix_edicao_aberta ON modelo_edicoes(modelo_id) WHERE estado = 'ABERTA';
+
 CREATE TABLE IF NOT EXISTS eventos (
     id INTEGER PRIMARY KEY,
     momento TEXT NOT NULL,
@@ -205,6 +222,9 @@ class Banco:
                             "WHERE e.acao = 'SALDO_AJUSTADO' AND json_extract(e.detalhe, '$.contrato') = contrato_itens.contrato_id "
                             "AND json_extract(e.detalhe, '$.codigo') = contrato_itens.codigo "
                             "AND json_extract(e.detalhe, '$.montante') IS NOT NULL)")
+        if "editado_sistema" not in {r[1] for r in self._con.execute("PRAGMA table_info(modelos)")}:
+            with self.transacao() as con:
+                con.execute("ALTER TABLE modelos ADD COLUMN editado_sistema INTEGER NOT NULL DEFAULT 0")
         self._con.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_ops_legado_chave ON ops(chave_origem) WHERE origem = 'LEGADO'")
         if not self._con.execute("SELECT 1 FROM sqlite_master WHERE name = 'ix_revisoes_op_rev'").fetchone():
             duplicadas = [list(r) for r in self._con.execute(

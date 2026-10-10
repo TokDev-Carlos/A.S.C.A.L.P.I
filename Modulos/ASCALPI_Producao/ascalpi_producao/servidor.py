@@ -1,14 +1,18 @@
 """Servidor HTTP local (biblioteca padrão) com a API JSON e a tela web do ASCALPI Produção."""
 from __future__ import annotations
 
+import ipaddress
 import json
 import mimetypes
+import os
 import re
+import socket
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, quote, urlparse
 
+from .modelos_edicao import ErroConflitoEdicao
 from .servico import ErroConflito, ErroValidacao, Servico
 from .validacao import booleano, corpo_objeto, inteiro_positivo, itens_op
 
@@ -43,6 +47,12 @@ class Rotas:
             ("GET", r"/api/modelos/(\d+)", lambda q, c, i: self.s.modelo_completo(int(i), _int(q.get("excluir_op")))),
             ("PATCH", r"/api/modelos/(\d+)", lambda q, c, i: self.s.atualizar_modelo(int(i), _contrato(c.get("contrato_id")),
                                                                                 booleano(c.get("ativo"), "ATIVO", None))),
+            ("GET", r"/api/modelos/(\d+)/edicao", lambda q, c, i: self.s.edicao.situacao(int(i))),
+            ("POST", r"/api/modelos/(\d+)/edicao", lambda q, c, i: self.s.edicao.iniciar(int(i))),
+            ("POST", r"/api/edicoes/(\d+)/abrir", lambda q, c, i: self.s.edicao.abrir(int(i))),
+            ("POST", r"/api/edicoes/(\d+)/validar", lambda q, c, i: self.s.edicao.validar(int(i))),
+            ("POST", r"/api/edicoes/(\d+)/publicar", lambda q, c, i: self.s.edicao.publicar(int(i), c.get("motivo"), c.get("hash"))),
+            ("POST", r"/api/edicoes/(\d+)/descartar", lambda q, c, i: self.s.edicao.descartar(int(i), c.get("motivo", ""))),
             ("GET", r"/api/contratos", lambda q, c: self.s.contratos(_int(q.get("prefeitura_id")))),
             ("GET", r"/api/contratos/(\d+)/saldo", lambda q, c, i: self.s.saldo_contrato(int(i))),
             ("POST", r"/api/contratos/(\d+)/ajuste", self._ajuste),
@@ -79,6 +89,24 @@ class Rotas:
                 if achado:
                     return func, achado.groups()
         return None, ()
+
+
+def host_permitido(host: str | None) -> bool:
+    """Aceita localhost e endereços IP (com ou sem porta); recusa nomes de domínio."""
+    if not host:
+        return True                                  # HTTP/1.0 sem Host: não vem de navegador
+    nome = host.strip()
+    if nome.startswith("["):                         # IPv6: [::1]:8765
+        nome = nome[1:nome.find("]")] if "]" in nome else nome
+    else:
+        nome = nome.rsplit(":", 1)[0] if nome.count(":") == 1 else nome
+    if nome.lower() == "localhost":
+        return True
+    try:
+        ipaddress.ip_address(nome)
+        return True
+    except ValueError:
+        return False
 
 
 def criar_handler(servico: Servico):
@@ -140,6 +168,9 @@ def criar_handler(servico: Servico):
             return corpo_objeto(corpo)
 
         def _tratar(self, metodo: str) -> None:
+            if not host_permitido(self.headers.get("Host")):
+                # nome de domínio apontando para cá (DNS rebinding): o navegador o trataria como mesma origem
+                return self._json(403, {"erro": "ACESSE O ASCALPI PELO ENDEREÇO IP OU POR LOCALHOST."})
             url = urlparse(self.path)
             q = {k: v[-1] for k, v in parse_qs(url.query).items()}
             try:
@@ -160,12 +191,16 @@ def criar_handler(servico: Servico):
                     func, grupos = rotas.resolver(metodo, url.path)
                     if not func:
                         return self._json(404, {"erro": "ROTA NÃO ENCONTRADA."})
+                    if metodo != "GET" and self.headers.get("X-ASCALPI") != "1":
+                        # toda gravação: só a tela do ASCALPI (cabeçalho próprio obriga o navegador a pedir
+                        # permissão, que este servidor não concede a outros sites; bloqueia POST text/plain)
+                        return self._json(403, {"erro": "AÇÃO PERMITIDA SÓ PELA TELA DO ASCALPI."})
                     corpo = self._corpo() if metodo in ("POST", "PUT", "PATCH") else {}
                     return self._json(200, func(q, corpo, *grupos))
                 if metodo != "GET":
                     return self._json(405, {"erro": "MÉTODO NÃO PERMITIDO."})
                 return self._estatico(url.path)
-            except ErroConflito as e:
+            except (ErroConflito, ErroConflitoEdicao) as e:
                 return self._json(409, {"erro": str(e)})
             except ErroValidacao as e:
                 return self._json(400, {"erro": str(e)})
@@ -204,7 +239,18 @@ def criar_handler(servico: Servico):
     return Handler
 
 
+class ServidorExclusivo(ThreadingHTTPServer):
+    """Porta de uso exclusivo: no Windows, SO_REUSEADDR deixa um 2º processo abrir a MESMA porta sem erro
+    (duas instâncias na 8765 foram encontradas no PC de homologação); aqui a 2ª abertura falha com OSError."""
+    allow_reuse_address = os.name != "nt"
+
+    def server_bind(self):
+        if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
 def servir(servico: Servico, host: str = "127.0.0.1", porta: int = 8765) -> ThreadingHTTPServer:
-    httpd = ThreadingHTTPServer((host, porta), criar_handler(servico))
+    httpd = ServidorExclusivo((host, porta), criar_handler(servico))
     httpd.daemon_threads = True
     return httpd

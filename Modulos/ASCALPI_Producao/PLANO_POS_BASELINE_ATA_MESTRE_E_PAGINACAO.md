@@ -1,5 +1,7 @@
 # Plano de evolução pós-base inicial — ASCALPI Produção
 
+> **Nota do Claude (10/10/2026, ordem do Admin):** G1 **ACEITO** pelo Admin; G2 **EM REVISÃO** (`e800f30`). Ambientes reclassificados: tudo em `D:\Programas` é desenvolvimento e homologação (instalação única `D:\Programas\ASCALPI_Project`); o uso real é o legado VBA no servidor, não tocado. Onde este plano fala em "dados reais", "base operacional" ou implantação para proteger a operação, leia **base de homologação**; os dados continuam fora do GitHub. Regra de ambientes: `REGRAS_CENTRAIS.md` §10 e §11.1.
+
 > **Nota de 10/10/2026 (ORG-2):** a execução acontece na executora `claude/producao` e chega ao módulo `modulo/producao-op` conforme `REGRAS_CENTRAIS.md`.
 > **Destinatário e responsável técnico:** Claude, branch `modulo/producao-op`.  
 > **Solicitante:** Carlos. **Planejamento:** Codex, 09/10/2026.  

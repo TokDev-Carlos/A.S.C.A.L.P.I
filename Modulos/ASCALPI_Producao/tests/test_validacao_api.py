@@ -96,7 +96,7 @@ class TestValidacaoAPI(TestValidacaoServico):
 
     def chamar(self, metodo, url, corpo=None, cru=None):
         dados = cru if cru is not None else (json.dumps(corpo).encode() if corpo is not None else None)
-        req = urllib.request.Request(self.base + url, method=metodo, data=dados, headers={"Content-Type": "application/json"})
+        req = urllib.request.Request(self.base + url, method=metodo, data=dados, headers={"Content-Type": "application/json", "X-ASCALPI": "1"})
         try:
             with urllib.request.urlopen(req) as r:
                 return r.status, json.loads(r.read())

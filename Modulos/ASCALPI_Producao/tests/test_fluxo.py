@@ -116,7 +116,7 @@ class TestFluxo(unittest.TestCase):
         try:
             def chamar(metodo, url, corpo=None):
                 req = urllib.request.Request(base + url, method=metodo, data=json.dumps(corpo).encode() if corpo else None,
-                                             headers={"Content-Type": "application/json"})
+                                             headers={"Content-Type": "application/json", "X-ASCALPI": "1"})
                 try:
                     with urllib.request.urlopen(req) as r:
                         return r.status, json.loads(r.read())

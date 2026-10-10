@@ -100,7 +100,7 @@ async function api(caminho, { metodo = 'GET', corpo } = {}) {
     try {
       r = await fetch(caminho, {
         method: metodo,
-        headers: corpo ? { 'Content-Type': 'application/json' } : {},
+        headers: corpo ? { 'Content-Type': 'application/json', 'X-ASCALPI': '1' } : { 'X-ASCALPI': '1' },
         body: corpo ? JSON.stringify(corpo) : undefined,
         cache: 'no-store',
       });
@@ -475,6 +475,9 @@ function descreverEvento(ev) {
     OP_PUBLICACAO_PENDENTE: ['alert', 'PROXIMA', `PUBLICAÇÃO ${d.estado || 'PENDENTE'} DA ${opTxt}`, d.xlsx_erro || d.pdf_erro || sub],
     SALDO_AJUSTADO: ['scale', 'SEM_DATA', `SALDO AJUSTADO · ITEM ${d.codigo ?? ''}`, d.motivo || ''],
     MODELO_ALTERADO: ['layers', 'SEM_DATA', 'MODELO ALTERADO', d.ativo === false ? 'DESATIVADO' : d.ativo === true ? 'ATIVADO' : 'CONTRATO DO SALDO'],
+    MODELO_VERSAO_PUBLICADA: ['layers', 'INSTALADA', 'NOVA VERSÃO DE MODELO PUBLICADA', d.motivo || ''],
+    MODELO_EDICAO_INICIADA: ['edit', 'PROXIMA', 'EDIÇÃO DE MODELO INICIADA', ''],
+    MODELO_EDICAO_DESCARTADA: ['x-circle', 'SEM_DATA', 'EDIÇÃO DE MODELO DESCARTADA', ''],
     IMPORTAR_LIVRO: ['download', 'SEM_DATA', 'LIVRO IMPORTADO', d.cliente || d.arquivo || ''],
     IMPORTAR_CONTROLE: ['download', 'SEM_DATA', 'CONTROLE IMPORTADO', d.ops != null ? `${d.ops} O.P. NO HISTÓRICO` : ''],
   };
@@ -1867,7 +1870,8 @@ TELAS.saldos = async (tela, arg, q, vivo) => {
 
 // ================================================================== tela: MODELOS
 TELAS.modelos = async (tela, arg, q, vivo) => {
-  const [modelos, prefs, contratos] = await Promise.all([api('/api/modelos?todos=1'), api('/api/prefeituras'), api('/api/contratos')]);
+  const [modelos, prefs, contratos, cfg] = await Promise.all([api('/api/modelos?todos=1'), api('/api/prefeituras'), api('/api/contratos'), api('/api/config')]);
+  const podeEditar = !!cfg.edicao_modelo_excel;
   if (!vivo()) return;
   const ativos = modelos.filter(m => m.ativo).length;
   const semContrato = modelos.filter(m => m.ativo && !m.contrato_id).length;
@@ -1899,8 +1903,12 @@ TELAS.modelos = async (tela, arg, q, vivo) => {
           <span class="badge purple">${ic('clipboard')}${plural(m.ops, 'O.P.', 'O.P.')}</span>
           ${m.tipo_padrao ? `<span class="badge gray">${esc(m.tipo_padrao)}</span>` : ''}
           ${m.contrato_id ? '' : `<span class="badge orange">${ic('alert')}SEM CONTRATO</span>`}
+          ${m.editado_sistema ? `<span class="badge green">${ic('edit')}EDITADO NO SISTEMA</span>` : ''}
         </div>
-        <button class="btn soft small" type="button" data-galeria="${m.id}" style="justify-self:start">${ic('eye')}VER EQUIPAMENTOS</button>
+        <div class="linha" style="gap:8px">
+          <button class="btn soft small" type="button" data-galeria="${m.id}">${ic('eye')}VER EQUIPAMENTOS</button>
+          ${podeEditar ? `<button class="btn ghost small" type="button" data-editar="${m.id}">${ic('edit')}EDITAR NO EXCEL</button>` : ''}
+        </div>
       </div>
       <div class="modelo-acoes">
         <select data-contrato-de="${m.id}" aria-label="CONTRATO DO SALDO DO MODELO ${esc(m.aba)}"><option value="0"${m.contrato_id ? '' : ' selected'}>SEM CONTRATO</option>${opcoes}</select>
@@ -1950,6 +1958,8 @@ TELAS.modelos = async (tela, arg, q, vivo) => {
   tela.addEventListener('click', e => {
     const g = e.target.closest('[data-galeria]');
     if (g) galeria(Number(g.dataset.galeria)).catch(falha);
+    const ed = e.target.closest('[data-editar]');
+    if (ed) editarModelo(Number(ed.dataset.editar), () => { baseAtual = null; desenharTela(lerRota(), { manterRolagem: true }); }).catch(falha);
   });
   tela.addEventListener('keydown', e => {
     const g = e.target.closest?.('.modelo-fotos[data-galeria]');
@@ -1971,6 +1981,96 @@ TELAS.modelos = async (tela, arg, q, vivo) => {
   desenhar();
 };
 
+// ================================================================== G1: editar modelo no Excel
+const TIPO_DIF = { NOME: 'NOME', CODIGO: 'CÓDIGO', ADICIONADO: 'NOVO EQUIPAMENTO', REMOVIDO: 'EQUIPAMENTO REMOVIDO',
+  ALTURA: 'ALTURA DA LINHA', FOTO: 'FOTO', LOGO: 'LOGO', CABECALHO: 'CABEÇALHO' };
+
+async function editarModelo(modeloId, aoPublicar) {
+  let sit = await api(`/api/modelos/${modeloId}/edicao`);
+  let validacao = sit.edicao?.validacao || null;
+  let confirmarDescarte = false;
+  const corpo = document.createElement('div');
+  corpo.className = 'edicao-modelo';
+
+  function listaDif(v) {
+    if (!v.diferencas.length) return '';
+    return `<div class="tabela-wrap" style="max-height:260px"><table class="tabela"><thead><tr><th>O QUE MUDOU</th><th>LINHA</th><th>ANTES</th><th>DEPOIS</th></tr></thead><tbody>
+      ${v.diferencas.map(d => `<tr><td><b>${esc(TIPO_DIF[d.tipo] || d.tipo)}${d.campo ? ' · ' + esc(d.campo) : ''}</b></td><td>${d.linha ?? '—'}</td><td>${esc(d.antes ?? '')}</td><td>${esc(d.depois ?? '')}</td></tr>`).join('')}
+    </tbody></table></div>`;
+  }
+
+  function desenhar() {
+    const e = sit.edicao;
+    const versoes = sit.versoes_publicadas.length
+      ? `<p class="mudo" style="font-size:11.5px;font-weight:600;margin:12px 0 0">VERSÕES PUBLICADAS PELO SISTEMA: ${sit.versoes_publicadas.map(v => `${esc(dataHoraBR(v.finalizado_em))} — ${esc(v.motivo || '')}`).join(' · ')}</p>` : '';
+    if (!e) {
+      corpo.innerHTML = `<div class="nota-legado">${ic('shield')}<span>O SISTEMA FAZ UMA CÓPIA DE TRABALHO DO MODELO. VOCÊ EDITA A CÓPIA NO EXCEL (FOTOS, TEXTOS, ALTURAS), O SISTEMA CONFERE E SÓ ENTÃO PUBLICA COMO NOVA VERSÃO.
+        O MODELO ATUAL E AS O.P. JÁ EMITIDAS NUNCA SÃO ALTERADOS.</span></div>
+        <button class="btn primary" type="button" data-acao="iniciar">${ic('copy')}COMEÇAR EDIÇÃO</button>${versoes}`;
+      return;
+    }
+    const v = validacao;
+    const podePublicar = v && v.ok && v.diferencas.length;
+    corpo.innerHTML = `
+      <ol class="edicao-passos">
+        <li><b>ABRA A CÓPIA NO EXCEL</b><span>EDITE FOTOS, TEXTOS E ALTURAS. NÃO MUDE AS COLUNAS NEM A ORDEM DAS LINHAS 10 A 100. <b>SALVE E FECHE O EXCEL.</b></span>
+          ${sit.windows ? `<button class="btn soft small" type="button" data-acao="abrir">${ic('file')}ABRIR NO EXCEL</button>`
+            : `<span class="caminho"><b>CÓPIA DE TRABALHO</b>${esc(e.arquivo)} (ABRIR NO EXCEL SÓ NO WINDOWS)</span>`}</li>
+        <li><b>CONFIRA AS ALTERAÇÕES</b><span>O SISTEMA LÊ A CÓPIA E MOSTRA O QUE MUDOU ANTES DE PUBLICAR.</span>
+          <button class="btn soft small" type="button" data-acao="validar">${ic('check')}VALIDAR ALTERAÇÕES</button></li>
+        <li><b>PUBLIQUE A NOVA VERSÃO</b><span>VALE PARA AS PRÓXIMAS O.P.; AS JÁ EMITIDAS CONTINUAM NA VERSÃO ANTERIOR.</span>
+          <label class="campo">MOTIVO<input id="ed-motivo" maxlength="200" autocomplete="off" placeholder="Ex.: foto nova do balanço"${podePublicar ? '' : ' disabled'}></label>
+          <div class="linha" style="gap:8px">
+            <button class="btn success" type="button" data-acao="publicar"${podePublicar ? '' : ' disabled'}>${ic('send')}PUBLICAR NOVA VERSÃO</button>
+            <button class="btn ${confirmarDescarte ? 'danger' : 'ghost'} small" type="button" data-acao="descartar">${ic('x-circle')}${confirmarDescarte ? 'CONFIRMAR DESCARTE' : 'DESCARTAR EDIÇÃO'}</button>
+          </div></li>
+      </ol>
+      <div id="ed-resultado">${v ? `
+        ${v.erros.map(x => `<div class="nota-legado" style="background:var(--red-soft);color:var(--red)">${ic('alert')}<span>${esc(x)}</span></div>`).join('')}
+        ${v.avisos.map(x => `<div class="nota-legado" style="background:var(--orange-soft);color:#8a4b0f">${ic('alert')}<span>${esc(x)}</span></div>`).join('')}
+        ${v.ok && v.diferencas.length ? `<div class="nota-legado" style="background:var(--green-soft);color:var(--green)">${ic('check')}<span>${plural(v.diferencas.length, 'ALTERAÇÃO CONFERIDA', 'ALTERAÇÕES CONFERIDAS')} · ${v.equipamentos?.antes ?? ''} → ${v.equipamentos?.depois ?? ''} EQUIPAMENTOS${v.usada_em_ops ? ` · ${plural(v.usada_em_ops, 'O.P. EMITIDA CONTINUA', 'O.P. EMITIDAS CONTINUAM')} NA VERSÃO ANTERIOR` : ''}</span></div>` : ''}
+        ${listaDif(v)}` : ''}</div>${versoes}`;
+  }
+
+  corpo.addEventListener('click', async ev => {
+    const b = ev.target.closest('[data-acao]');
+    if (!b) return;
+    const acao = b.dataset.acao;
+    try {
+      if (acao === 'iniciar') {
+        if (await ocupado(b, () => api(`/api/modelos/${modeloId}/edicao`, { metodo: 'POST', corpo: {} })) === OCUPADO) return;
+        sit = await api(`/api/modelos/${modeloId}/edicao`); validacao = null; aviso('CÓPIA DE TRABALHO CRIADA.', 'ok');
+      } else if (acao === 'abrir') {
+        if (await ocupado(b, () => api(`/api/edicoes/${sit.edicao.id}/abrir`, { metodo: 'POST', corpo: {} })) === OCUPADO) return;
+        aviso('CÓPIA ABERTA NO EXCEL. SALVE E FECHE ANTES DE VALIDAR.', 'ok'); return;
+      } else if (acao === 'validar') {
+        const r = await ocupado(b, () => api(`/api/edicoes/${sit.edicao.id}/validar`, { metodo: 'POST', corpo: {} }));
+        if (r === OCUPADO) return;
+        validacao = r; confirmarDescarte = false;
+      } else if (acao === 'publicar') {
+        const motivo = $('#ed-motivo', corpo).value.trim();
+        if (!motivo) { aviso('INFORME O MOTIVO DA NOVA VERSÃO.', 'erro'); $('#ed-motivo', corpo).focus(); return; }
+        const r = await ocupado(b, () => api(`/api/edicoes/${sit.edicao.id}/publicar`, { metodo: 'POST', corpo: { motivo, hash: validacao.hash } }));
+        if (r === OCUPADO) return;
+        aviso('NOVA VERSÃO DO MODELO PUBLICADA.', 'ok');
+        dlg.close(); aoPublicar?.(); return;
+      } else if (acao === 'descartar') {
+        if (!confirmarDescarte) { confirmarDescarte = true; desenhar(); return; }
+        if (await ocupado(b, () => api(`/api/edicoes/${sit.edicao.id}/descartar`, { metodo: 'POST', corpo: {} })) === OCUPADO) return;
+        sit = await api(`/api/modelos/${modeloId}/edicao`); validacao = null; confirmarDescarte = false;
+        aviso('EDIÇÃO DESCARTADA. A CÓPIA FICOU GUARDADA NA PASTA DE EDIÇÃO.', 'ok');
+      }
+      desenhar();
+    } catch (erro) {
+      falha(erro);
+      if (erro.status === 409) { sit = await api(`/api/modelos/${modeloId}/edicao`).catch(() => sit); validacao = null; desenhar(); }
+    }
+  });
+
+  desenhar();
+  dialogo({ titulo: `EDITAR MODELO · ${sit.aba}`, sub: 'CÓPIA DE TRABALHO NO EXCEL → CONFERÊNCIA → NOVA VERSÃO', corpo, largo: true, semRodape: true });
+}
+
 // ================================================================== tela: CONFIGURAÇÃO
 TELAS.config = async (tela, arg, q, vivo) => {
   const [cfg, resumo, eventos] = await Promise.all([api('/api/config'), api('/api/resumo'), api('/api/eventos')]);
@@ -1987,6 +2087,7 @@ TELAS.config = async (tela, arg, q, vivo) => {
       <form class="card" id="c-form" novalidate>
         <div class="card-head" style="margin-bottom:0"><div><div class="kicker">PUBLICAÇÃO</div><h2>ARQUIVOS DAS O.P.</h2><p>CADA O.P. NOVA OU REVISADA GERA O .XLSX BLOQUEADO E O .PDF.</p></div></div>
         <label class="interruptor"><input type="checkbox" id="c-publicar"${cfg.publicar ? ' checked' : ''}><span>PUBLICAR AUTOMATICAMENTE AO GERAR OU EDITAR</span></label>
+        <label class="interruptor"><input type="checkbox" id="c-edicao"${cfg.edicao_modelo_excel ? ' checked' : ''}><span>EDITAR MODELOS NO EXCEL (CÓPIA DE TRABALHO → NOVA VERSÃO)</span></label>
         <label class="campo">PASTA DOS .XLSX<input id="c-xlsx" value="${esc(cfg.pasta_xlsx)}" placeholder="${esc(resumo.pastas[0])}" autocomplete="off"></label>
         <label class="campo">PASTA DOS .PDF<input id="c-pdf" value="${esc(cfg.pasta_pdf)}" placeholder="${esc(resumo.pastas[1])}" autocomplete="off"></label>
         <label class="campo">MOTOR DE PDF<select id="c-motor">
@@ -2027,7 +2128,7 @@ TELAS.config = async (tela, arg, q, vivo) => {
 
   $('#c-form', tela).addEventListener('submit', async e => {
     e.preventDefault();
-    const corpo = { publicar: $('#c-publicar', tela).checked, pasta_xlsx: $('#c-xlsx', tela).value.trim(), pasta_pdf: $('#c-pdf', tela).value.trim(), motor_pdf: $('#c-motor', tela).value };
+    const corpo = { publicar: $('#c-publicar', tela).checked, edicao_modelo_excel: $('#c-edicao', tela).checked, pasta_xlsx: $('#c-xlsx', tela).value.trim(), pasta_pdf: $('#c-pdf', tela).value.trim(), motor_pdf: $('#c-motor', tela).value };
     try {
       if (await ocupado($('#c-salvar', tela), () => api('/api/config', { metodo: 'PUT', corpo })) === OCUPADO) return;
       aviso('CONFIGURAÇÃO SALVA.', 'ok');

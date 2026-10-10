@@ -8,9 +8,13 @@ Estados: `A FAZER` · `EM ANDAMENTO` · `EM REVISÃO` · `AJUSTES PEDIDOS` · `I
 | Item | Valor |
 |---|---|
 | Base aceita (G0) | tag `producao-base-inicial-v1` → `fb96a58` |
-| Integração | `modulo/producao-op` (origem do PR #4 → `main`, decisão do Carlos) |
-| Branch do Claude | `claude/producao` |
-| Branch do Codex | `codex/producao` |
+| Fluxo (ORG-2/ORG-3) | `temporária → executora → modulo/producao-op → Dev-Work → main` |
+| Oficial | `main` (só o Admin) |
+| Desenvolvimento conjunto | `Dev-Work` (módulo entra só por ordem expressa do Admin) |
+| Módulo | `modulo/producao-op` (origem do PR #4 → `main`: decisão do Admin, ver `REGRAS_CENTRAIS.md` §2.6) |
+| Nomes permitidos (ORG-3) | `main`, `Dev-Work`, `modulo/*`, `claude/*` (temporárias `claude/temp/*`), `codex/*` (temporárias `codex/temp/*`); histórico em tags `historico/*` |
+| Executora do Claude | `claude/producao` |
+| Executora do Codex | `codex/producao` |
 
 ## Tarefas
 

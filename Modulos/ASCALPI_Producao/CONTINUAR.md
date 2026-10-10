@@ -1,48 +1,96 @@
-# Continuar o módulo ASCALPI Produção na nuvem
+# Continuar o módulo ASCALPI Produção
 
-Estado em 10/10/2026. **Branches (ordens ORG-2/ORG-3, ver `REGRAS_CENTRAIS.md` §2):** fluxo `temporária → claude/producao | codex/producao → modulo/producao-op → Dev-Work → main`. Somente `main`, `Dev-Work`, `claude/*`, `codex/*` e `modulo/*` são permitidas; histórico encerrado fica em tags anotadas `historico/*`. O módulo (`modulo/producao-op`) tem a base G0 aceita; o G1 está só na executora do Claude (`claude/producao`). Integração em `Dev-Work` só por ordem do Admin; `main` só o Admin.
+Estado em 10/10/2026. **Branches (ordens ORG-2/ORG-3, ver `REGRAS_CENTRAIS.md` §2):** fluxo `temporária → claude/producao | codex/producao → modulo/producao-op → Dev-Work → main`. Somente `main`, `Dev-Work`, `claude/*`, `codex/*` e `modulo/*`; histórico encerrado em tags anotadas `historico/*`. Integração em `Dev-Work` só por ordem do Admin; `main` só o Admin.
 
-> **Base inicial congelada:** `producao-base-inicial-v1` (commit `fb96a58`, aceita pelo Carlos). Veja `docs/producao/releases/BASE_INICIAL.md` e `PLANO_AJUSTES.md`. Melhorias só depois do aceite de início de G1.
+> **Base inicial congelada:** `producao-base-inicial-v1` (commit `fb96a58`). Veja `docs/producao/releases/BASE_INICIAL.md` e `PLANO_AJUSTES.md`.
 
-## G1 — edição do modelo no Excel (branch `claude/producao`; origem preservada na tag `historico/2026-10-09/g1-edicao-modelo`)
+## Ambientes (decisão do Admin, 10/10/2026 — vale para toda a documentação)
 
-- Ligar em **Configuração → EDITAR MODELOS NO EXCEL** (vem desligado). Aparece o botão **EDITAR NO EXCEL** em cada modelo.
-- Fluxo: COMEÇAR EDIÇÃO (cópia sem proteção em `dados/Modelos/_edicao/`) → ABRIR NO EXCEL (só Windows) → salvar e fechar → VALIDAR ALTERAÇÕES (nome, código, equipamento novo/removido, altura da linha, foto, logo, cabeçalho; código sem contrato; prova de geração da O.P.) → PUBLICAR NOVA VERSÃO (motivo obrigatório) ou DESCARTAR (a cópia fica guardada).
-- Garantias: arquivo novo por versão (nada sobrescrito), O.P. emitidas ficam no modelo da emissão, uma edição aberta por modelo, publicar sobre versão que mudou → 409, publica exatamente o arquivo validado (hash), reimportar o livro não substitui modelo editado no sistema (`modelos.editado_sistema`).
-- Código: `ascalpi_producao/modelos_edicao.py`; tabela `modelo_edicoes` (esquema 7); rotas `/api/modelos/{id}/edicao`, `/api/edicoes/{id}/abrir|validar|publicar|descartar` (POST exige o cabeçalho `X-ASCALPI: 1`, enviado pela tela).
-- Testes: `tests/test_edicao_modelo.py` (10). Suíte: **88 testes OK**. Fluxo conferido no navegador (1366 e 390 px), sem erro no console.
-- Falta: validação do Codex (tarefa V-G1 no quadro) e teste do Carlos no Windows com o Excel real (abrir, editar foto/altura, salvar).
-- **Teste do G1 no PC:** o G1 muda o esquema do banco para a versão 7. Testar com o código da `claude/producao` numa **pasta separada**, com uma **cópia** de `dados`; a instalação operacional só recebe o G1 depois do aceite e com autorização do Admin.
+| Onde | O que é | Pode |
+|---|---|---|
+| **Legado VBA no servidor da empresa** | o sistema em **uso real** hoje | **nada**: não tocar, não ler escrevendo, não testar nele |
+| `D:\MACROS\Legacy_Modules` | cópia de referência do legado | **só leitura** |
+| `D:\Programas\ASCALPI_Project` | **desenvolvimento e homologação** (clone Git único) | mexer, reiniciar, migrar e regerar a base à vontade |
+| `D:\Programas\ASCALPI_Project\Modulos\ASCALPI_Producao\dados` | **base de homologação** (234 O.P., 45 modelos, 27 prefeituras de teste) | idem; backup só para recuperar testes |
+| `D:\Programas\ASCALPI_Local_Archive` | arquivo morto e cópias de segurança dos testes | guardar; não é instalação |
+| Nuvem (sessões do Claude/Codex) | implementação e revisão com dados sintéticos | tudo, sem dados de cliente |
+| WSL (Ubuntu 24.04) no PC | laboratório de apoio: testes rápidos, git, hashes, LibreOffice | **não vale como aceite** (ver `REGRAS_CENTRAIS.md` §11.1) |
+
+- **Uma instalação só:** `D:\Programas\ASCALPI_Project\Modulos\ASCALPI_Producao`, que é o próprio clone Git. Não criar outra pasta para testar marco nenhum: troca-se o commit do clone (`Sincronizar_ASCALPI.cmd <SHA>`), não a pasta.
+- Nada de `dados/`, banco, documentos de cliente, senhas ou caminhos de servidor no GitHub (repositório público). As O.P. locais são de teste, mas têm nomes de clientes, modelos e fotos.
+
+## Fluxo de uma entrega até o teste no Windows
+
+1. Claude implementa e testa na nuvem (`claude/producao` ou `claude/temp/*`).
+2. Codex revisa e valida tecnicamente no GitHub; parecer no `QUADRO_TAREFAS.md`.
+3. A entrega aprovada sobe pela hierarquia (`executora → modulo/producao-op`).
+4. O Admin sincroniza o clone local com o **SHA exato** autorizado: `Sincronizar_ASCALPI.cmd <SHA>` (só `modulo/producao-op`).
+5. Testes funcionais no **Windows com Microsoft Excel**, na instalação única.
+6. Resultado volta ao GitHub (quadro); correção segue o mesmo ciclo.
+
+## G1 — edição do modelo no Excel
+
+**Estado:** **ACEITO pelo Admin** (10/10/2026), com **DE ACORDO técnico do Codex** em `0ac1f8a` (V-G1, 4 passadas) e na correção da prévia para o Excel real em `955826a` (Windows: 47 diferenças falsas de altura → 0). Relatórios em `docs/producao/revisao/V-G1_*.md`. **Integração no módulo:** candidato preparado na `claude/temp/integracao-g1` (G1 sem o G2), aguardando a revisão do Codex; ver o quadro. Pendência: **MEL-G1-01** — o fluxo funcionar pela tela na instalação única (roteiro abaixo).
+
+**Por que a edição dos modelos de Angra não funcionou (diagnóstico de 10/10):**
+1. **Causa principal:** a instalação única está em `modulo/producao-op`, que ainda é G0 — o `web/app.js` não tem o botão EDITAR NO EXCEL, e o servidor não tem as rotas de edição. O G1 só existe na `claude/producao` até a integração.
+2. Depois de integrar: a função **nasce desligada** (`edicao_modelo_excel=false` no `config.json` local, que não é versionado). A migração do banco não liga nada; é preciso ligar em Configuração.
+3. A tela envia o cabeçalho `X-ASCALPI` em toda gravação (exigido desde `64eeed2`); abrir o sistema por **nome de domínio** é recusado — usar `http://127.0.0.1:8765` ou `http://localhost:8765`.
+4. ABRIR NO EXCEL só funciona com o **servidor rodando no Windows** (o servidor abre o arquivo no programa padrão do `.xlsx`). Pelo WSL ou na nuvem, o botão avisa e mostra o caminho da cópia.
+5. Nada indica problema nos modelos de Angra em si (`O.P-ATA-ANGRA-MOB` e `O.P-ATA-ANGRA-PLACAS` têm `OP-` no nome da aba; o modelo é extraído com uma aba só e sem macros). Se a validação recusar algum, a mensagem diz o motivo — anotar no roteiro.
+
+- Fluxo: Configuração → EDITAR MODELOS NO EXCEL → Modelos → EDITAR NO EXCEL → COMEÇAR EDIÇÃO (cópia sem proteção em `dados\Modelos\_edicao\`) → ABRIR NO EXCEL → salvar e fechar → VALIDAR ALTERAÇÕES (nome, código, equipamento novo/removido, altura, foto, logo, cabeçalho B3/B8/D2/S4/L2, nome da aba; código sem contrato; prova de geração) → PUBLICAR NOVA VERSÃO (motivo obrigatório) ou DESCARTAR (a cópia fica guardada).
+- Garantias (todas com teste):
+  - arquivo novo por versão; nada é sobrescrito; versões publicadas e originais nunca são apagadas pela reimportação (V-G1-01);
+  - **O.P. já emitida continua ligada ao arquivo do modelo da época; só as novas usam a versão nova**;
+  - uma edição aberta por modelo (dois cliques ao mesmo tempo devolvem a mesma);
+  - modelo trocado, apagado ou alterado por fora (hash da origem) durante a edição → conflito 409 (V-G1-02);
+  - publica exatamente o arquivo da última validação gravada (hash e `ok`);
+  - gravação por temporário + promoção: falha de disco não deixa `.tmp`, cópia parcial nem pasta vazia (V-G1-03);
+  - validar uma edição já descartada/publicada → conflito, nada gravado (V-G1-04);
+  - a prévia segue a precisão real do Excel (altura numérica com tolerância de 0,25 pt; código sem a precisão binária);
+  - aba sem `OP-` é recusada; reimportar o livro não substitui aba, título (S4), tipo (B8) nem arquivo do modelo editado no sistema.
+- Banco: o G1 leva o esquema de 6 para **7** sozinho na 1ª abertura (verificado com base criada pelo código G0, com O.P.: nada perdido, edição completa funciona depois). `Sincronizar_ASCALPI.cmd` guarda uma cópia da base antes.
+- Servidor: porta de uso **exclusivo** — uma 2ª abertura na 8765 não sobe outro servidor sobre a mesma base (no Windows o `SO_REUSEADDR` deixava; foi assim que apareceram duas instâncias); ela avisa e abre o navegador no que já está rodando.
+- Código: `ascalpi_producao/modelos_edicao.py`; tabela `modelo_edicoes`; rotas `/api/modelos/{id}/edicao`, `/api/edicoes/{id}/abrir|validar|publicar|descartar`. Testes: `tests/test_edicao_modelo.py`, `tests/test_servidor_porta.py`.
+- **Roteiro do teste funcional com os modelos de Angra:** `docs/producao/roteiros/G1_EDICAO_MODELOS_ANGRA.md`.
+
+## G2 — paginação pela altura real
+
+**EM REVISÃO** na `claude/producao` (`e800f30`), aguardando o V-G2. Não está no candidato de integração do G1 e **o aceite do G1 não aprova o G2**. G3, G4 e G5 seguem bloqueados.
 
 ## O que é
 
-Módulo independente de **Ordens de Produção** do ASCALPI: tudo é editado no sistema (quantidades, datas ou "DEFINIR", observações); os arquivos `.xlsx` publicados ficam 100% bloqueados (só visualizar) e o PDF sai no padrão exato do VBA legado (`MOD_GERAR_OP V2.4.22`). Depois de validado, entra no núcleo ASCALPI.
+Módulo independente de **Ordens de Produção** do ASCALPI: tudo é editado no sistema (quantidades, datas ou "DEFINIR", observações); os arquivos `.xlsx` publicados ficam 100% bloqueados (só visualizar) e o PDF sai no padrão exato do VBA legado (`MOD_GERAR_OP V2.4.22`). Depois de validado, entra no núcleo ASCALPI e substitui o legado do servidor.
 
 - Só biblioteca padrão do Python (servidor HTTP + SQLite + HTML/CSS/JS sem build).
-- PDF: Excel no Windows (`pdf.py`, motor `excel`) ou LibreOffice (nuvem/testes).
+- PDF: Excel no Windows (`pdf.py`, motor `excel`) ou LibreOffice (nuvem/WSL, só para teste).
 - Especificação e planos: `docs/producao/superpowers/`.
 
-## Como rodar na nuvem (sem dados reais)
+## Como rodar na nuvem (dados sintéticos)
 
 ```bash
 cd Modulos/ASCALPI_Producao
 pip install openpyxl --break-system-packages      # só para testes e dados de demonstração
-python -m unittest discover -s tests -t .         # 78 testes leves
+python -m unittest discover -s tests -t .         # testes leves
 python ferramentas/dados_demo.py /tmp/demo        # livro sintético (2 prefeituras fictícias)
 python -m ascalpi_producao --dados /tmp/demo servir --porta 8765
 ```
 
-Os dados reais (27 livros `OK-*.xlsm`, o Controle e a pasta `dados/` importada) **não vão para o GitHub**: o repositório é público e contém dados de clientes. Na máquina do Carlos eles estão em `D:\PROGRAMAS\ASCALPI_Project\Modulos\ASCALPI_Producao\dados` (importados: 27 prefeituras, 45 modelos com o padrão "OP-" no nome da aba, 1.033 itens de contrato, 230 O.P. do histórico; próxima O.P. 258-26). Para testar com eles numa sessão em nuvem, anexe os arquivos na conversa.
+A base de homologação (importada dos 27 livros `OK-*.xlsm` e do Controle: 27 prefeituras, 45 modelos, 234 O.P. de teste) fica só no PC, em `D:\Programas\ASCALPI_Project\Modulos\ASCALPI_Producao\dados`, ignorada pelo Git. Para usar algum arquivo dela numa sessão em nuvem, anexar na conversa (sem publicar no GitHub).
 
-## Teste local no PC do Carlos (base aceita)
+## Instalação única no PC do Admin (homologação)
 
-1. No clone do repositório: `git pull origin modulo/producao-op` (módulo com a base G0; para o G1 veja a seção acima).
-2. Rodar `Modulos\ASCALPI_Producao\Atualizar_Copia_Local.cmd`: faz **backup de `dados`** (`backup_dados_<data>`) e copia o módulo para `D:\PROGRAMAS\ASCALPI_Project\Modulos\ASCALPI_Producao` sem tocar em `dados`, `config.json` nem bancos.
-3. Abrir `Iniciar_ASCALPI_Producao.cmd`. Na 1ª abertura o banco antigo (versão 1) é migrado sozinho até a versão 6, sem apagar nada (verificado com um banco criado pelo código original).
-4. Conferir: logos e fotos dos 27 livros; as 230 O.P. do histórico; próxima O.P.; Saldos (itens `0.x` como EXTRA); Configuração → avisos "CONTRATO A CONFERIR" / "SALDO DA PLANILHA A CONFERIR".
-5. Gerar 3–5 O.P. de teste e comparar o PDF (Excel no Windows) com o legado; ver a data "Hoje" (criação) e, ao editar, "· REV n dd/mm/aaaa".
-6. Reimportar só se precisar: `Importar_Legado.cmd` agora mostra a **prévia** e pede S/N antes de gravar.
-7. `Testar.cmd` roda os testes leves (precisa de `openpyxl` no Python usado).
+Tudo roda de `D:\Programas\ASCALPI_Project\Modulos\ASCALPI_Producao`:
+
+| Comando | Faz |
+|---|---|
+| `Sincronizar_ASCALPI.cmd <SHA>` | atalho para `ferramentas\sincronizar.py` (com testes): exige o **SHA exato** autorizado no quadro e prova, **antes de mexer no código**, que `origin/modulo/producao-op` é esse SHA (ancestral ou mais novo é recusado); recusa com mudança local versionada ou com o ASCALPI aberto na 8765; guarda e confere uma cópia de `dados` em `D:\Programas\ASCALPI_Local_Archive\snapshots_dados\`; `git pull --ff-only`; confere `HEAD == SHA`. Outra branch só com `--autorizado-admin`. Primeira vez: rodar a cópia do commit revisado (roteiro de Angra, passo 3). Substitui o antigo `Atualizar_Copia_Local.cmd`. |
+| `Iniciar_ASCALPI_Producao.cmd` | abre o sistema com a base `dados` do próprio módulo; se já estiver aberto, só abre o navegador. |
+| `Testar.cmd` | testes leves (precisa de `openpyxl` no Python usado). |
+| `Importar_Legado.cmd` | reimporta os livros (da cópia de referência, só leitura) com **prévia** e confirmação S/N. |
+
+Conferências da base G0 (continuam valendo): logos e fotos dos 27 livros; O.P. do histórico; próxima O.P.; Saldos (itens `0.x` como EXTRA); Configuração → avisos "CONTRATO A CONFERIR" / "SALDO DA PLANILHA A CONFERIR"; data "Hoje" (criação) e, ao editar, "· REV n dd/mm/aaaa".
 
 ## Estado da 1ª etapa funcional
 
@@ -53,9 +101,9 @@ Os dados reais (27 livros `OK-*.xlsm`, o Controle e a pasta `dados/` importada) 
 | Decisões do Carlos: criação imutável + data de cada revisão; `0.x` = extras sem saldo; contratos ficam como estão até o Carlos editar | ✅ |
 | Reimportação segura: prévia, modelo congelado por O.P., conferência do saldo da planilha, montante editado no sistema prevalece | ✅ |
 | Organização do backend: `configuracao.py`, `publicacao.py`, `consultas.py` (Servico como fachada) | ✅ |
-| Pacote de teste local (`Atualizar_Copia_Local.cmd`) | ✅ |
+| Instalação única + `Sincronizar_ASCALPI.cmd` (substitui `Atualizar_Copia_Local.cmd`) | ✅ (em revisão no candidato G1) |
 | Testes de validação pelo Codex sobre o HEAD final | ⏳ Codex |
-| Teste com dados reais, PDF pelo Excel, comparação de amostras | ⏳ Carlos (no PC local) |
+| H-1: O.P. de homologação, PDF pelo Excel, comparação com o padrão do legado | ⏳ Admin (no PC, instalação única) |
 
 Notas da interface:
 - `index.html` carrega `app.js` com `type="module"`; o `servidor.py` força `text/javascript` para `.js` (o registro do Windows às vezes diz `text/plain` e o navegador recusaria o módulo).
@@ -75,9 +123,9 @@ Divisão do trabalho na seção 8 daquele arquivo. Verificado nesta sessão:
 - **Lote D (interface) — corrigido.** Prazo em texto (ex.: A COMBINAR) preservado ao editar; respostas antigas não substituem a tela; Enter/clique repetido ignorado. Parecer do Codex sobre A/B atendido (documento e REV do mesmo retrato; O.P. com contrato ambíguo marcadas "CONTRATO A CONFERIR"). Suíte: **69 testes OK**.
 - **Decisões do Carlos aplicadas:** (1) data de criação imutável ("Hoje" do documento) e cada revisão registra a sua data (`ops.revisado_em`; documento mostra "· REV n dd/mm/aaaa"); (2) itens `0.x` são extras: contam na O.P., não precisam estar no contrato e não têm saldo; (3) contratos ficam como estão; o montante editado no sistema prevalece ao reimportar o livro.
 - **R07 complemento:** `importar --previa`; arquivo de modelo nunca sobrescrito (O.P. emitidas ficam no modelo da emissão, `ops.modelo_arquivo`); falha no banco remove os arquivos novos; conferência do SALDO da planilha e valores ausentes viram pendência.
-- **Lote E:** `configuracao.py`, `publicacao.py` e `consultas.py` extraídos; `Servico` como fachada; API igual. O `web/app.js` não foi dividido de propósito: a divisão só vale depois do teste com dados reais.
+- **Lote E:** `configuracao.py`, `publicacao.py` e `consultas.py` extraídos; `Servico` como fachada; API igual. O `web/app.js` não foi dividido de propósito: a divisão só vale depois da homologação no Windows.
 - Suíte: **78 testes OK**. Fluxos no Playwright (queda de rede, duas abas, Enter repetido, respostas fora de ordem) sem regressão.
-- Pendente: validação com dados reais e PDF pelo Excel (Carlos); testes de validação sobre o HEAD final (Codex); §4 pontos 4 (escala acima de 3.000 O.P.), 5 (Excel em timeout) e 8 (autenticação) ficam para os próximos marcos.
+- Pendente: homologação no Windows e PDF pelo Excel (Admin); testes de validação sobre o HEAD final (Codex); §4 pontos 4 (escala acima de 3.000 O.P.), 5 (Excel em timeout) e 8 (autenticação) ficam para os próximos marcos.
 
 ## API disponível (servidor.py)
 
@@ -129,7 +177,7 @@ Telas:
 
 ## Regras que continuam valendo
 
-- Nunca gravar nos arquivos legados (`D:\MACROS\Legacy_Modules`); trabalhar em cópias.
-- Nada de dados de clientes, banco ou senhas no GitHub (repositório público). A senha dos `.xlsx` é gerada na primeira execução e fica só em `dados/config.json`.
-- Commit com coautoria; push só quando o Carlos pedir.
-- Ao terminar a interface: rodar os testes, capturar telas, copiar a pasta do módulo (sem `dados/`) para `D:\PROGRAMAS\ASCALPI_Project\Modulos\ASCALPI_Producao`.
+- Nunca gravar nos arquivos legados (`D:\MACROS\Legacy_Modules`, só leitura) nem tocar no legado VBA do servidor.
+- Nada de dados de clientes, banco, `dados/`, senhas ou caminhos de servidor no GitHub (repositório público). A senha dos `.xlsx` é gerada na primeira execução e fica só em `dados/config.json`.
+- Commit com coautoria; resposta no quadro após cada commit.
+- Ao terminar uma entrega: rodar os testes, capturar telas, registrar o SHA no quadro; o clone do PC é atualizado pelo Admin com `Sincronizar_ASCALPI.cmd` (nunca copiando pastas).

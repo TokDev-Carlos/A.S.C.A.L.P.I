@@ -85,10 +85,17 @@ class TestReimportacaoLivro(unittest.TestCase):
             if acao == "IMPORTAR_LIVRO":
                 raise RuntimeError("FALHA SINTÉTICA NO BANCO")
             return original(banco, con, acao, detalhe)
+        # 1) rollback do livro, isolado: só importar_livro (sem o Controle, que grava ops.atualizado_em
+        #    legitimamente e tornava a comparação dependente do relógio — V-G1, 2ª revisão)
+        with patch.object(Banco, "evento", falhar), self.assertRaisesRegex(RuntimeError, "FALHA SINTÉTICA"):
+            legado.importar_livro(self.s.banco, self.livro, self.dados / "Modelos", [])
+        self.assertEqual(self._retrato(), antes)                        # banco intacto e nenhum arquivo órfão
+        # 2) pela pasta: a falha do livro é relatada e nada do livro é gravado; o Controle segue normalmente
         with patch.object(Banco, "evento", falhar):
             relatorio = legado.importar_pasta(self.s.banco, self.origem, self.dados)
         self.assertTrue(any("FALHA SINTÉTICA" in l for l in relatorio))
-        self.assertEqual(self._retrato(), antes)
+        tabelas_do_livro, arquivos = self._retrato()
+        self.assertEqual((tabelas_do_livro[:5], arquivos), (antes[0][:5], antes[1]))   # tudo menos `ops`
 
     def test_conferencia_do_saldo_da_planilha(self):
         # item 1: montante 10, quant 2, previsão 3 → saldo esperado 5; a planilha diz 999

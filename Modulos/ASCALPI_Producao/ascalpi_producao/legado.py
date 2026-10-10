@@ -187,10 +187,19 @@ def importar_livro(banco: Banco, caminho: Path, pasta_modelos: Path, relatorio: 
     raiz = pasta_modelos.parent
     escritos: list[Path] = []          # arquivos novos desta importação (apagados se o banco falhar)
     modelos_xlsx = {}
+    mantidos: list[str] = []
     for m in info["modelos"]:
         conteudo = pacote.extrair_aba(caminho, m["aba"])
-        atual = banco.um("SELECT m.arquivo FROM modelos m JOIN prefeituras p ON p.id = m.prefeitura_id "
+        atual = banco.um("SELECT m.arquivo, m.editado_sistema FROM modelos m JOIN prefeituras p ON p.id = m.prefeitura_id "
                          "WHERE p.nome = ? AND m.codename = ?", (info["cliente"], m["codename"]))
+        if atual and atual["editado_sistema"] and (raiz / atual["arquivo"]).exists():
+            # G1: versão publicada pelo ASCALPI prevalece; o livro legado não substitui o modelo
+            vigente = raiz / atual["arquivo"]
+            bytes_vigente = vigente.read_bytes()
+            modelos_xlsx[m["codename"]] = (vigente, documento.linhas_do_modelo(bytes_vigente), False, True)
+            if bytes_vigente != conteudo:
+                mantidos.append(f"  MODELO {m['aba']}: EDITADO NO SISTEMA — MANTIDO (O LIVRO TEM OUTRA VERSÃO)")
+            continue
         base = pasta / f"{sanitizar_nome(m['codename'])}.xlsx"
         destino, mudou = base, True
         if atual and (raiz / atual["arquivo"]).exists():
@@ -200,12 +209,12 @@ def importar_livro(banco: Banco, caminho: Path, pasta_modelos: Path, relatorio: 
                 destino = pasta / f"{sanitizar_nome(m['codename'])}.{datetime.now():%Y%m%d-%H%M%S-%f}.xlsx"
         elif base.exists() and base.read_bytes() != conteudo:
             destino = pasta / f"{sanitizar_nome(m['codename'])}.{datetime.now():%Y%m%d-%H%M%S-%f}.xlsx"
-        modelos_xlsx[m["codename"]] = (destino, documento.linhas_do_modelo(conteudo), mudou and atual is not None)
+        modelos_xlsx[m["codename"]] = (destino, documento.linhas_do_modelo(conteudo), mudou and atual is not None, False)
         if not previa and (mudou or not destino.exists()):
             destino.parent.mkdir(parents=True, exist_ok=True)
             destino.write_bytes(conteudo)
             escritos.append(destino)
-    avisos: list[str] = []
+    avisos: list[str] = list(mantidos)
     try:
         with banco.transacao() as con:
             con.execute("INSERT INTO prefeituras (nome, arquivo_origem) VALUES (?, ?) "
@@ -262,15 +271,22 @@ def importar_livro(banco: Banco, caminho: Path, pasta_modelos: Path, relatorio: 
             con.execute("INSERT OR REPLACE INTO meta VALUES ('saldo_a_conferir', ?)",
                         (json.dumps(todas + pendentes, ensure_ascii=False),))
             for m in info["modelos"]:
-                destino, linhas, trocou = modelos_xlsx[m["codename"]]
+                destino, linhas, trocou, mantido = modelos_xlsx[m["codename"]]
                 rel = destino.relative_to(raiz).as_posix()
                 ata_contrato = m["ata"] if m["ata"] in ids_contrato else re.sub(r"\d+$", "", m["ata"])
                 cid = ids_contrato.get(ata_contrato)
                 con.execute("INSERT INTO modelos (prefeitura_id, contrato_id, codename, aba, titulo, tipo_padrao, arquivo, ativo) "
                             "VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(prefeitura_id, codename) DO UPDATE SET "
-                            "contrato_id = COALESCE(modelos.contrato_id, excluded.contrato_id), aba = excluded.aba, "
-                            "titulo = excluded.titulo, tipo_padrao = excluded.tipo_padrao, arquivo = excluded.arquivo",
-                            (pid, cid, m["codename"], m["aba"], m["titulo"], m["tipo"], rel, 1))
+                            "contrato_id = COALESCE(modelos.contrato_id, excluded.contrato_id), "
+                            # G1: modelo editado no sistema mantém aba, título e tipo da versão publicada
+                            "aba = CASE WHEN ? THEN modelos.aba ELSE excluded.aba END, "
+                            "titulo = CASE WHEN ? THEN modelos.titulo ELSE excluded.titulo END, "
+                            "tipo_padrao = CASE WHEN ? THEN modelos.tipo_padrao ELSE excluded.tipo_padrao END, "
+                            "arquivo = excluded.arquivo, "
+                            # arquivo do sistema perdido: o livro volta a valer nas próximas importações
+                            "editado_sistema = CASE WHEN ? THEN modelos.editado_sistema ELSE 0 END",
+                            (pid, cid, m["codename"], m["aba"], m["titulo"], m["tipo"], rel, 1,
+                             mantido, mantido, mantido, mantido))
                 mid = con.execute("SELECT id FROM modelos WHERE prefeitura_id = ? AND codename = ?",
                                   (pid, m["codename"])).fetchone()[0]
                 con.execute("DELETE FROM modelo_linhas WHERE modelo_id = ?", (mid,))
@@ -308,9 +324,12 @@ def importar_livro(banco: Banco, caminho: Path, pasta_modelos: Path, relatorio: 
 
 
 def _limpar_modelos_sem_uso(banco: Banco, raiz: Path, pasta: Path) -> None:
-    """Remove versões antigas de modelo que nenhum modelo nem O.P. referencia mais."""
-    usados = {r["a"] for r in banco.todos("SELECT arquivo a FROM modelos UNION SELECT modelo_arquivo FROM ops "
-                                          "WHERE modelo_arquivo IS NOT NULL")}
+    """Remove versões antigas de modelo que nenhum modelo, O.P. ou edição (G1) referencia mais."""
+    usados = {r["a"] for r in banco.todos(
+        "SELECT arquivo a FROM modelos UNION SELECT modelo_arquivo FROM ops WHERE modelo_arquivo IS NOT NULL "
+        # G1: toda versão publicada e a origem de cada edição são histórico imutável (V-G1-01)
+        "UNION SELECT arquivo_origem FROM modelo_edicoes UNION SELECT arquivo_publicado FROM modelo_edicoes "
+        "WHERE arquivo_publicado IS NOT NULL")}
     for arq in pasta.glob("*.xlsx"):
         if arq.relative_to(raiz).as_posix() not in usados:
             try:

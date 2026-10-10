@@ -189,7 +189,7 @@ class TestPublicacao(unittest.TestCase):
 
         def post(corpo):
             req = urllib.request.Request(base + "/api/ops", method="POST", data=json.dumps(corpo).encode(),
-                                         headers={"Content-Type": "application/json"})
+                                         headers={"Content-Type": "application/json", "X-ASCALPI": "1"})
             try:
                 with urllib.request.urlopen(req) as r:
                     return r.status, json.loads(r.read())

@@ -11,6 +11,7 @@ from . import consultas, documento, pdf
 from .banco import Banco, agora
 from .configuracao import Configuracao
 from .imagens import CacheImagens
+from .modelos_edicao import EdicaoModelos
 from .publicacao import Publicacao
 from .validacao import (ErroValidacao, data_legada, itens_op, motivo_obrigatorio, numero_finito,
                         valor_acompanhamento)
@@ -72,6 +73,7 @@ class Servico:
         self.arquivo_config = self._configuracao.arquivo
         self.fotos = CacheImagens()
         self._publicacao = Publicacao(self)
+        self.edicao = EdicaoModelos(self)
         self._linhas_cache: dict[tuple, list] = {}
 
     # ------------------------------------------------------------ configuração
@@ -125,7 +127,7 @@ class Servico:
 
     def modelos(self, prefeitura_id: int | None = None, todos: bool = False) -> list[dict]:
         sql = ("SELECT m.id, m.prefeitura_id, p.nome AS prefeitura, m.codename, m.aba, m.titulo, m.tipo_padrao, "
-               "m.ativo, m.contrato_id, c.ata, c.descricao AS contrato_descricao, "
+               "m.ativo, m.editado_sistema, m.contrato_id, c.ata, c.descricao AS contrato_descricao, "
                "(SELECT COUNT(*) FROM modelo_linhas l WHERE l.modelo_id = m.id) AS equipamentos "
                "FROM modelos m JOIN prefeituras p ON p.id = m.prefeitura_id LEFT JOIN contratos c ON c.id = m.contrato_id "
                "WHERE (? IS NULL OR m.prefeitura_id = ?) AND (? OR m.ativo = 1) ORDER BY p.nome, m.aba")
