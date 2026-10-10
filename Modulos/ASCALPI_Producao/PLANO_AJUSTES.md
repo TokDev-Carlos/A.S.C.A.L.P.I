@@ -2,6 +2,10 @@
 
 A versão `producao-base-inicial-v1` (commit `fb96a58`) está **congelada e aceita pelo Carlos**. Registro: `docs/producao/releases/BASE_INICIAL.md`.
 
+## Organização (10/10/2026)
+
+Branches e regras de colaboração: `REGRAS_CENTRAIS.md`; estado das tarefas: `QUADRO_TAREFAS.md`. O G1 segue na branch `claude/producao` (a `ajustes/g1-edicao-modelo` virou histórico).
+
 ## Plano vigente
 
 O plano de evolução é do Codex: `PLANO_POS_BASELINE_ATA_MESTRE_E_PAGINACAO.md` (nesta pasta). Este arquivo só dá a ordem de leitura e o estado.

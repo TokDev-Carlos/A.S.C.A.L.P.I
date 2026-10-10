@@ -1,5 +1,7 @@
 # ASCALPI Produção — instruções do projeto
 
+**Primeiro leia `REGRAS_CENTRAIS.md` (regras comuns Claude ⇄ Codex, branches e integração; precede este arquivo) e `QUADRO_TAREFAS.md` (tarefas e mensagens).** Branch de trabalho do Claude: `claude/producao`; integração: `modulo/producao-op`.
+
 Leia este arquivo inteiro, depois `docs/producao/releases/BASE_INICIAL.md` (versão congelada `producao-base-inicial-v1`), `PLANO_AJUSTES.md` e `PLANO_POS_BASELINE_ATA_MESTRE_E_PAGINACAO.md` (o que fazer a partir da base), `CONTINUAR.md` (estado atual, API, teste local) e `Codex_Plano_para_Claude.md` (achados R01–R09 e divisão Claude ⇄ Codex) antes de qualquer ação.
 
 ## 1. Objetivo
