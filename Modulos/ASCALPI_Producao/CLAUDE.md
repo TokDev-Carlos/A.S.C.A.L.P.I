@@ -16,7 +16,7 @@ Módulo independente de **Ordens de Produção** do sistema **ASCALPI** (esse é
 - Regras da O.P.: (a) modelo por Prefeitura; (b) modelo por ATA; (c) informações e logo de cada O.P.; (d) só equipamentos com quantidade aparecem; (e) data pode ser texto, ex. "DEFINIR"; (f) observação por item.
 - Saldo: `0` se montante ≤ 0, senão `montante − (quant + previsão)`; "ACABOU" em zero; negativo exige confirmação; códigos `0.x` são bônus/ignorados; `2.1` conta como base `2`.
 - Modelo válido = aba cujo nome contém "OP-" (pontos ignorados). Cópias com dígitos finais ligam ao contrato da ATA base.
-- Ambiente oficial Windows (como UStracker): `C:\Program Files\ASCALPI`, `C:\ProgramData\ASCALPI\UserData`, `%LOCALAPPDATA%\ASCALPI`; caminhos de negócio definidos na instalação.
+- Ambientes (decisão do Admin, 10/10/2026): o **uso real** hoje é o legado VBA no servidor da empresa (não tocar). `D:\Programas\ASCALPI_Project` é **desenvolvimento e homologação** (clone Git único, instalação única em `Modulos\ASCALPI_Producao`, base `dados` de teste que pode ser migrada/regerada). Instalador futuro (como UStracker): `C:\Program Files\ASCALPI`, `C:\ProgramData\ASCALPI\UserData`, `%LOCALAPPDATA%\ASCALPI` — só depois da homologação.
 
 ## 3. Mapa da arquitetura
 
@@ -59,7 +59,7 @@ Módulo independente de **Ordens de Produção** do sistema **ASCALPI** (esse é
 
 - Repositório **público**: nunca adicionar dados de clientes, `dados/`, bancos `.db*`, senhas, tokens ou caminhos de servidor. A senha dos `.xlsx` é gerada na primeira execução e fica só em `dados/config.json`.
 - Nunca gravar em `D:\MACROS\Legacy_Modules` nem nos `.xlsm` legados: só ler, trabalhar em cópias.
-- Sem gravações fora do projeto sem autorização do Carlos; desenvolvimento nasce sem dados de produção.
+- Sem gravações fora do projeto sem autorização do Carlos; na nuvem só dados sintéticos. A base local `dados` é de homologação (pode mexer; backup só para recuperar testes) e nunca vai para o GitHub.
 - Não abrir o repositório de credenciais (Chaves-Tokens).
 - Instalação em Program Files exige aprovação UAC do Carlos.
 - Push somente quando o Carlos pedir. Não contornar bloqueios de segurança de `rm` (usar caminhos literais ou `"${D:?}"`).
@@ -73,8 +73,8 @@ Mensagem curta em português; terminar com as linhas de coautoria e sessão exig
 - Interface (7 telas + gaveta) e correções R01–R09 com testes. ✅
 - Decisões do Carlos aplicadas (datas da O.P., `0.x` extras, contratos editados no sistema prevalecem). ✅
 - Testes leves passam; capturas desktop e celular conferidas. ✅
-- Módulo copiado para o PC do Carlos com `Atualizar_Copia_Local.cmd` (backup de `dados`, sem copiar dados) e validado com dados reais. ⏳ Carlos
+- Instalação única no PC sincronizada pelo `Sincronizar_ASCALPI.cmd` e homologada no Windows com Excel. ⏳ Carlos
 
 ## 9. Próximos marcos
 
-Interface completa → amostras reais de O.P. (3–5 xlsx + PDF) para comparação pixel a pixel → teste do PDF via Excel no Windows → ambiente oficial/instalador (Plano 0) → integração ao núcleo ASCALPI → nuvem → módulo Ordens de Compra.
+Interface completa → H-1: 3–5 O.P. de homologação (xlsx + PDF pelo Excel) comparadas ao padrão do legado → teste do PDF via Excel no Windows → instalador (Plano 0) → integração ao núcleo ASCALPI → nuvem → módulo Ordens de Compra.

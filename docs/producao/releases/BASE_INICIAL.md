@@ -15,6 +15,8 @@ Registro formal do congelamento (marco **G0** de `Modulos/ASCALPI_Producao/PLANO
 | Data | 09/10/2026 |
 | Aceite | **Carlos**, 09/10/2026: "já podemos criar essa versão do módulo como modelo base… entrega tudo que preciso"; pediu o congelamento e a execução do plano. |
 
+> **Classificação dos ambientes (Admin, 10/10/2026):** tudo em `D:\Programas` é desenvolvimento e homologação; o uso real é o legado VBA no servidor da empresa (não tocado). A instalação local agora é o clone único `D:\Programas\ASCALPI_Project` (ORG-LOCAL-01). As evidências abaixo são o registro de 09/10, com os caminhos daquela data.
+
 ## Evidências de G0
 
 | Verificação | Resultado |
@@ -30,14 +32,14 @@ Registro formal do congelamento (marco **G0** de `Modulos/ASCALPI_Producao/PLANO
 ## Ressalvas abertas (não bloqueiam a base; tratar antes ou dentro de G1)
 
 1. ~~XLSX de O.P. editável~~ — **encerrada (09/10/2026):** o Carlos confirmou que a edição foi feita pelo próprio sistema (Editar → nova REV), que é o comportamento previsto. Os 3 XLSX emitidos no PC foram conferidos só para leitura: planilha protegida com senha (SHA-512), nenhuma célula desbloqueada e estrutura do livro travada.
-2. Comparação visual de 3–5 O.P. reais (XLSX/PDF) com o legado no Excel/Windows.
+2. Comparação visual de 3–5 O.P. de homologação (XLSX/PDF pelo Excel no Windows) com o padrão do legado (H-1).
 3. Pasta residual `_teste_migracao_*` no PC: remover só com autorização.
 4. Pontos herdados: escala acima de 3.000 O.P., Excel travando no PDF, autenticação (marco de hospedagem).
 
 ## Como voltar à base
 
 - Código: `git checkout producao-base-inicial-v1` (ou `git diff producao-base-inicial-v1..HEAD` para ver o que mudou).
-- Dados: restaurar `dados/` a partir de um `backup_dados_<data>` consistente; nunca sobrescrever dados operacionais sem autorização do Carlos.
+- Dados: `dados/` é a **base de homologação** (não é operação da empresa); restaurar a partir de uma cópia em `D:\Programas\ASCALPI_Local_Archive` quando precisar recuperar testes.
 - Rollback operacional de melhorias novas: desativar as flags de G5 (novas O.P. voltam ao comportamento da base).
 
 ## Regras para evoluir
@@ -45,5 +47,5 @@ Registro formal do congelamento (marco **G0** de `Modulos/ASCALPI_Producao/PLANO
 1. A tag não se move. Ajustes seguem o fluxo de `Modulos/ASCALPI_Producao/REGRAS_CENTRAIS.md` §2: temporária `claude/temp/<tema>`/`codex/temp/<tema>` → executora → `modulo/producao-op` → `Dev-Work` (ordem do Admin) → `main` (Admin).
 2. Um ajuste por vez, commit pequeno, teste junto; suíte inteira verde antes e depois. Nenhum teste é removido ou enfraquecido.
 3. Regra de negócio só muda com decisão registrada do Carlos.
-4. Dados reais, senhas e caminhos de servidor ficam fora do GitHub (repositório público).
+4. `dados/`, banco, documentos de cliente, senhas e caminhos de servidor ficam fora do GitHub (repositório público).
 5. G1–G5 só começam quando o Carlos confirmar o início das evoluções.

@@ -4,7 +4,9 @@ from __future__ import annotations
 import ipaddress
 import json
 import mimetypes
+import os
 import re
+import socket
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -237,7 +239,18 @@ def criar_handler(servico: Servico):
     return Handler
 
 
+class ServidorExclusivo(ThreadingHTTPServer):
+    """Porta de uso exclusivo: no Windows, SO_REUSEADDR deixa um 2º processo abrir a MESMA porta sem erro
+    (duas instâncias na 8765 foram encontradas no PC de homologação); aqui a 2ª abertura falha com OSError."""
+    allow_reuse_address = os.name != "nt"
+
+    def server_bind(self):
+        if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
 def servir(servico: Servico, host: str = "127.0.0.1", porta: int = 8765) -> ThreadingHTTPServer:
-    httpd = ThreadingHTTPServer((host, porta), criar_handler(servico))
+    httpd = ServidorExclusivo((host, porta), criar_handler(servico))
     httpd.daemon_threads = True
     return httpd

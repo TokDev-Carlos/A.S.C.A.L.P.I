@@ -1,6 +1,6 @@
 # ASCALPI Produção (módulo independente)
 
-Ordens de Produção controladas pelo sistema. Este módulo roda sozinho para teste e depois entra no ASCALPI.
+Ordens de Produção controladas pelo sistema. Este módulo roda sozinho para desenvolvimento e homologação e depois entra no ASCALPI, substituindo o legado VBA que hoje roda no servidor da empresa (o legado não é tocado por este projeto).
 
 - **Tudo é editado no sistema**: quantidades, datas (ou "DEFINIR"), observações, obra, solicitante, tipo.
 - **Arquivos são só para ver**: o `.xlsx` publicado sai com todas as células bloqueadas, planilha e estrutura protegidas por senha (SHA-512, gerada na instalação e guardada só no `dados\config.json`); o `.pdf` sai junto.
@@ -14,9 +14,11 @@ Não precisa instalar nada além do Python (só biblioteca padrão). PDF: Excel 
 
 ## Uso
 
-0. `Atualizar_Copia_Local.cmd` → copia este módulo para a pasta de teste local (faz backup de `dados` antes e nunca copia nem apaga `dados`).
-1. `Importar_Legado.cmd` → informe a pasta com os `OK-*.xlsm` e o `2_Controle_...xlsm`. Mostra a **prévia** das diferenças e pede confirmação; os arquivos de origem são apenas lidos.
-2. `Iniciar_ASCALPI_Producao.cmd` → abre `http://127.0.0.1:8765/`.
+Instalação única (homologação): `D:\Programas\ASCALPI_Project\Modulos\ASCALPI_Producao`, que é o próprio clone Git — nunca copiar o módulo para outra pasta.
+
+0. `Sincronizar_ASCALPI.cmd [branch] [sha]` → guarda uma cópia de `dados` em `ASCALPI_Local_Archive\snapshots_dados` e atualiza o clone com o commit autorizado (`git pull --ff-only`, padrão `modulo/producao-op`). `dados` é ignorada pelo Git e não é tocada.
+1. `Importar_Legado.cmd` → informe a pasta com os `OK-*.xlsm` e o `2_Controle_...xlsm` (a cópia de referência, só leitura). Mostra a **prévia** das diferenças e pede confirmação; os arquivos de origem são apenas lidos.
+2. `Iniciar_ASCALPI_Producao.cmd` → abre `http://127.0.0.1:8765/` (se já estiver aberto, só abre o navegador; use `127.0.0.1`, `localhost` ou o IP — nome de domínio é recusado).
 3. Em **Configuração** escolha as pastas onde os `.xlsx`/`.pdf` são publicados (padrão: `dados\Documentos`).
 
 Linha de comando:
@@ -37,11 +39,11 @@ python -m ascalpi_producao --dados <pasta> documento --op 258-26 --formato pdf
 | `ascalpi_producao/pdf.py` | PDF pelo Excel (Windows) ou LibreOffice |
 | `ascalpi_producao/legado.py` | importação dos livros das prefeituras e do Controle |
 | `ascalpi_producao/banco.py` · `servico.py` · `servidor.py` · `web/` | banco SQLite, regras de uso, API e telas |
-| `dados/` | banco, modelos e documentos (fora do git) |
+| `dados/` | base de homologação: banco, modelos e documentos (fora do git) |
 
 ## Testes
 
-`Testar.cmd` (ou `python -m unittest discover -s tests -t .`). Os testes criam um livro sintético; não usam dados reais. Precisam de `openpyxl` só para montar e conferir as planilhas de teste.
+`Testar.cmd` (ou `python -m unittest discover -s tests -t .`). Os testes criam um livro sintético; não usam a base de homologação nem dados de cliente. Precisam de `openpyxl` só para montar e conferir as planilhas de teste.
 
 ## Diferenças conscientes em relação ao VBA
 

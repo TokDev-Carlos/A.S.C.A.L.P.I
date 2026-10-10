@@ -9,7 +9,7 @@
 
 | Papel | Quem | Responsabilidade |
 |---|---|---|
-| **Admin / dono do produto** | Carlos (`ToKDev-Carlos`) | Decide regras de negócio, aprova marcos, **ordena** integrações em `Dev-Work` e decide integrações na `main`. Único que autoriza apagar, renomear ou reescrever branch, tag ou histórico, e mexer em dados reais ou no PC/Windows. |
+| **Admin / dono do produto** | Carlos (`ToKDev-Carlos`) | Decide regras de negócio, aprova marcos, **ordena** integrações em `Dev-Work` e decide integrações na `main`. Único que autoriza apagar, renomear ou reescrever branch, tag ou histórico, e executar ações no PC/Windows (sincronizar o clone, reorganizar pastas, testes com Excel). O legado VBA do servidor não é tocado por ninguém. |
 | **Agente executor de implementação** | Claude / Claude Code | Implementa código, testes de cada correção e documentação de estado. Branch executora: `claude/producao`. |
 | **Agente executor de validação e revisão** | Codex / ChatGPT | Testes de validação, revisão independente, reprodução de falhas, testes no Windows/Excel quando o Admin autorizar. Implementa código **só** quando uma tarefa do quadro for atribuída a ele pelo Admin. Branch executora: `codex/producao`. |
 
@@ -173,7 +173,8 @@ Quem integra: o dono da entrega, depois da revisão; o revisor não integra a en
 
 - Repositório **público**: nunca commitar dados de clientes, livros reais, `dados/`, bancos `.db*`, `config.json`, senhas, tokens, hashes de senha, caminhos de servidor ou mídias reais. Só dados sintéticos.
 - Nunca gravar em `D:\MACROS\Legacy_Modules` nem nos `.xlsm` legados.
-- PC/Windows do Admin: instalação, reimportação de livros reais, alteração do banco operacional e remoção de arquivos só com autorização explícita dele, caso a caso. Sempre backup antes.
+- **Classificação dos ambientes (Admin, 10/10/2026):** o uso real da empresa é o **legado VBA no servidor** — nenhum agente toca nele. Tudo em `D:\Programas` é **desenvolvimento e homologação**: a instalação única `D:\Programas\ASCALPI_Project\Modulos\ASCALPI_Producao` (clone Git) e a base `dados` de teste podem ser reiniciadas, migradas e regeradas; backup (em `D:\Programas\ASCALPI_Local_Archive`) só para recuperar testes. Não criar outra pasta de instalação para testar um marco: sincronizar o clone com o commit autorizado (`Sincronizar_ASCALPI.cmd`). Reorganizar pastas locais ou remover arquivos do PC continua dependendo de autorização do Admin.
+- A base de homologação continua **fora do GitHub** (tem nomes de clientes, modelos e fotos).
 - Não acessar o repositório de credenciais (Chaves-Tokens) nem diretórios de outros projetos.
 
 ## 11. Testes, evidências e commits
@@ -181,6 +182,18 @@ Quem integra: o dono da entrega, depois da revisão; o revisor não integra a en
 - Toda correção ou funcionalidade nasce com teste que falha antes e passa depois. Suíte leve completa verde antes de pedir revisão e depois de integrar. Sem testes pesados.
 - Interface: capturas 1366 px e 390 px, console limpo; erros esperados, como o conflito 409 simulado, são citados no quadro.
 - Excel/Windows é a referência para PDF e paginação; LibreOffice ou mock não provam igualdade visual.
+
+### 11.1 Onde cada verificação vale (Admin, 10/10/2026)
+
+| Ambiente | Serve para | Vale como aceite? |
+|---|---|---|
+| Nuvem (sessões Claude/Codex, Linux) | implementação, suíte, revisão, LibreOffice | não para Excel/PDF/Windows |
+| **WSL (Ubuntu 24.04) no PC** | laboratório de apoio: testes rápidos, git, hashes, comparação com LibreOffice | **não** — Excel, PDF, caminhos do Windows, travas de arquivo e instalador só contam testados no Windows |
+| **Windows + Microsoft Excel** (instalação única) | teste funcional, PDF oficial, paginação, abrir no Excel | **sim** |
+
+- **Não rodar o banco em `/mnt/d` pelo WSL:** SQLite em modo WAL sobre o disco do Windows dá erro de I/O. No WSL, usar uma **cópia** da base dentro do Linux (ex.: `~/ascalpi_dados`), nunca a `dados` da instalação única aberta ao mesmo tempo pelo Windows.
+- Fluxo definitivo: (1) Claude implementa e testa na nuvem; (2) Codex revisa e valida tecnicamente; (3) a entrega aprovada segue a hierarquia de branches; (4) o clone local é sincronizado com o commit autorizado; (5) testes funcionais no Windows com Excel; (6) resultados voltam ao GitHub e as correções seguem o mesmo ciclo.
+- Ação no PC (git pull, Excel real) é pedida ao Admin com o comando exato; nenhum agente presume que foi feita.
 - Revisão do Codex registra: SHA examinado, testes rodados, achados com reprodução e risco, veredito (`DE ACORDO`, `AJUSTES PEDIDOS` ou `BLOQUEANTE`).
 - Commits: mensagem curta em português, prefixo `feat|fix|test|docs|refactor(producao): …`, terminando com as linhas de coautoria/sessão que o ambiente de cada agente exige. Sem identificador de modelo de IA em mensagens, código ou documentos.
 
