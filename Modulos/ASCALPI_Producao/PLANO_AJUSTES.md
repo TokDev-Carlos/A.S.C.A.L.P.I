@@ -14,7 +14,7 @@ O plano de evolução é do Codex: `PLANO_POS_BASELINE_ATA_MESTRE_E_PAGINACAO.md
 |---|---|---|
 | G0 | Validar e congelar a base | **Aprovado**; tag `producao-base-inicial-v1` no GitHub |
 | Estabilização | Proteção do XLSX emitido (ressalva 1) | Encerrada: edição foi pelo sistema (REV), comportamento previsto |
-| G1 | Editar modelo no Excel (cópia de trabalho, nova versão) | **Implementado** na branch `ajustes/g1-edicao-modelo` (flag desligada por padrão); aguardando teste do Carlos no Windows e revisão do Codex |
+| G1 | Editar modelo no Excel (cópia de trabalho, nova versão) | **Implementado** na branch `claude/producao` (antes `ajustes/g1-edicao-modelo`) (flag desligada por padrão); aguardando teste do Carlos no Windows e revisão do Codex |
 | G2 | Paginação pela altura original das linhas | Bloqueado |
 | G3 | Catálogo mestre por ATA e adesões parciais | Bloqueado |
 | G4 | Variantes 1.1 / 1.2 sobre o código-base | Bloqueado |
