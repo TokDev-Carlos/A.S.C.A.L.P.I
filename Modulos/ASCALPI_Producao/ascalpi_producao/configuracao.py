@@ -6,12 +6,15 @@ import os
 import secrets
 from pathlib import Path
 
+from .validacao import ErroValidacao
+
 CONFIG_PADRAO = {
     "senha_arquivos": "",      # vazio = gerada na 1ª execução e guardada só no config.json local
     "motor_pdf": "auto",
     "publicar": True,
     "pasta_xlsx": "",          # vazio = <dados>/Documentos/O.Ps
     "pasta_pdf": "",           # vazio = <dados>/Documentos/PDFs
+    "edicao_modelo_excel": False,   # G1: editar modelo no Excel (desligado até o aceite do Carlos)
 }
 
 
@@ -32,6 +35,9 @@ class Configuracao:
         return {**CONFIG_PADRAO, **{k: v for k, v in atual.items() if k in CONFIG_PADRAO}}
 
     def salvar(self, novos: dict) -> dict:
+        for k, v in novos.items():
+            if k in CONFIG_PADRAO and isinstance(CONFIG_PADRAO[k], bool) and not isinstance(v, bool):
+                raise ErroValidacao(f"{k.upper()}: USE VERDADEIRO OU FALSO.")
         cfg = {**(self.ler() if self.arquivo.exists() else CONFIG_PADRAO),
                **{k: v for k, v in novos.items() if k in CONFIG_PADRAO}}
         tmp = self.arquivo.with_suffix(".tmp")

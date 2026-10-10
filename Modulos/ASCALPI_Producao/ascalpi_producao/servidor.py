@@ -9,6 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, quote, urlparse
 
+from .modelos_edicao import ErroConflitoEdicao
 from .servico import ErroConflito, ErroValidacao, Servico
 from .validacao import booleano, corpo_objeto, inteiro_positivo, itens_op
 
@@ -43,6 +44,12 @@ class Rotas:
             ("GET", r"/api/modelos/(\d+)", lambda q, c, i: self.s.modelo_completo(int(i), _int(q.get("excluir_op")))),
             ("PATCH", r"/api/modelos/(\d+)", lambda q, c, i: self.s.atualizar_modelo(int(i), _contrato(c.get("contrato_id")),
                                                                                 booleano(c.get("ativo"), "ATIVO", None))),
+            ("GET", r"/api/modelos/(\d+)/edicao", lambda q, c, i: self.s.edicao.situacao(int(i))),
+            ("POST", r"/api/modelos/(\d+)/edicao", lambda q, c, i: self.s.edicao.iniciar(int(i))),
+            ("POST", r"/api/edicoes/(\d+)/abrir", lambda q, c, i: self.s.edicao.abrir(int(i))),
+            ("POST", r"/api/edicoes/(\d+)/validar", lambda q, c, i: self.s.edicao.validar(int(i))),
+            ("POST", r"/api/edicoes/(\d+)/publicar", lambda q, c, i: self.s.edicao.publicar(int(i), c.get("motivo"), c.get("hash"))),
+            ("POST", r"/api/edicoes/(\d+)/descartar", lambda q, c, i: self.s.edicao.descartar(int(i), c.get("motivo", ""))),
             ("GET", r"/api/contratos", lambda q, c: self.s.contratos(_int(q.get("prefeitura_id")))),
             ("GET", r"/api/contratos/(\d+)/saldo", lambda q, c, i: self.s.saldo_contrato(int(i))),
             ("POST", r"/api/contratos/(\d+)/ajuste", self._ajuste),
@@ -160,12 +167,16 @@ def criar_handler(servico: Servico):
                     func, grupos = rotas.resolver(metodo, url.path)
                     if not func:
                         return self._json(404, {"erro": "ROTA NÃO ENCONTRADA."})
+                    if ("/edicao" in url.path and metodo == "POST") and self.headers.get("X-ASCALPI") != "1":
+                        # ações que abrem programa ou trocam o modelo: só a tela do ASCALPI (cabeçalho próprio
+                        # obriga o navegador a pedir permissão, que este servidor não concede a outros sites)
+                        return self._json(403, {"erro": "AÇÃO PERMITIDA SÓ PELA TELA DO ASCALPI."})
                     corpo = self._corpo() if metodo in ("POST", "PUT", "PATCH") else {}
                     return self._json(200, func(q, corpo, *grupos))
                 if metodo != "GET":
                     return self._json(405, {"erro": "MÉTODO NÃO PERMITIDO."})
                 return self._estatico(url.path)
-            except ErroConflito as e:
+            except (ErroConflito, ErroConflitoEdicao) as e:
                 return self._json(409, {"erro": str(e)})
             except ErroValidacao as e:
                 return self._json(400, {"erro": str(e)})

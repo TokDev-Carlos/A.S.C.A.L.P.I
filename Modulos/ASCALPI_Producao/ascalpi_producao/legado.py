@@ -187,10 +187,18 @@ def importar_livro(banco: Banco, caminho: Path, pasta_modelos: Path, relatorio: 
     raiz = pasta_modelos.parent
     escritos: list[Path] = []          # arquivos novos desta importação (apagados se o banco falhar)
     modelos_xlsx = {}
+    mantidos: list[str] = []
     for m in info["modelos"]:
         conteudo = pacote.extrair_aba(caminho, m["aba"])
-        atual = banco.um("SELECT m.arquivo FROM modelos m JOIN prefeituras p ON p.id = m.prefeitura_id "
+        atual = banco.um("SELECT m.arquivo, m.editado_sistema FROM modelos m JOIN prefeituras p ON p.id = m.prefeitura_id "
                          "WHERE p.nome = ? AND m.codename = ?", (info["cliente"], m["codename"]))
+        if atual and atual["editado_sistema"] and (raiz / atual["arquivo"]).exists():
+            # G1: versão publicada pelo ASCALPI prevalece; o livro legado não substitui o modelo
+            vigente = raiz / atual["arquivo"]
+            modelos_xlsx[m["codename"]] = (vigente, documento.linhas_do_modelo(vigente.read_bytes()), False)
+            if vigente.read_bytes() != conteudo:
+                mantidos.append(f"  MODELO {m['aba']}: EDITADO NO SISTEMA — MANTIDO (O LIVRO TEM OUTRA VERSÃO)")
+            continue
         base = pasta / f"{sanitizar_nome(m['codename'])}.xlsx"
         destino, mudou = base, True
         if atual and (raiz / atual["arquivo"]).exists():
@@ -205,7 +213,7 @@ def importar_livro(banco: Banco, caminho: Path, pasta_modelos: Path, relatorio: 
             destino.parent.mkdir(parents=True, exist_ok=True)
             destino.write_bytes(conteudo)
             escritos.append(destino)
-    avisos: list[str] = []
+    avisos: list[str] = list(mantidos)
     try:
         with banco.transacao() as con:
             con.execute("INSERT INTO prefeituras (nome, arquivo_origem) VALUES (?, ?) "

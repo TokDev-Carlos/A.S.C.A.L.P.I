@@ -4,6 +4,15 @@ Estado em 09/10/2026 (fim da sessão). Branch: `modulo/producao-op`. **1ª etapa
 
 > **Base inicial congelada:** `producao-base-inicial-v1` (commit `fb96a58`, aceita pelo Carlos). Veja `docs/producao/releases/BASE_INICIAL.md` e `PLANO_AJUSTES.md`. Melhorias só depois do aceite de início de G1.
 
+## G1 — edição do modelo no Excel (branch `ajustes/g1-edicao-modelo`)
+
+- Ligar em **Configuração → EDITAR MODELOS NO EXCEL** (vem desligado). Aparece o botão **EDITAR NO EXCEL** em cada modelo.
+- Fluxo: COMEÇAR EDIÇÃO (cópia sem proteção em `dados/Modelos/_edicao/`) → ABRIR NO EXCEL (só Windows) → salvar e fechar → VALIDAR ALTERAÇÕES (nome, código, equipamento novo/removido, altura da linha, foto, logo, cabeçalho; código sem contrato; prova de geração da O.P.) → PUBLICAR NOVA VERSÃO (motivo obrigatório) ou DESCARTAR (a cópia fica guardada).
+- Garantias: arquivo novo por versão (nada sobrescrito), O.P. emitidas ficam no modelo da emissão, uma edição aberta por modelo, publicar sobre versão que mudou → 409, publica exatamente o arquivo validado (hash), reimportar o livro não substitui modelo editado no sistema (`modelos.editado_sistema`).
+- Código: `ascalpi_producao/modelos_edicao.py`; tabela `modelo_edicoes` (esquema 7); rotas `/api/modelos/{id}/edicao`, `/api/edicoes/{id}/abrir|validar|publicar|descartar` (POST exige o cabeçalho `X-ASCALPI: 1`, enviado pela tela).
+- Testes: `tests/test_edicao_modelo.py` (10). Suíte: **88 testes OK**. Fluxo conferido no navegador (1366 e 390 px), sem erro no console.
+- Falta: teste no Windows com o Excel real (abrir, editar foto/altura, salvar) e revisão do Codex.
+
 ## O que é
 
 Módulo independente de **Ordens de Produção** do ASCALPI: tudo é editado no sistema (quantidades, datas ou "DEFINIR", observações); os arquivos `.xlsx` publicados ficam 100% bloqueados (só visualizar) e o PDF sai no padrão exato do VBA legado (`MOD_GERAR_OP V2.4.22`). Depois de validado, entra no núcleo ASCALPI.

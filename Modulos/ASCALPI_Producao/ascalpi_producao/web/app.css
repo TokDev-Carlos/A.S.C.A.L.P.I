@@ -632,3 +632,13 @@ th.tf-ativo .tf-btn{background:var(--blue-soft);border-color:var(--blue);color:v
 @media (max-width:820px){.campos .prazo-campo{grid-column:auto}}
 .saldo-card.extra{border-top:4px solid var(--purple);background:linear-gradient(180deg,#faf8ff,#fff)}
 .saldo-card.extra .saldo-valor strong{color:var(--purple);font-size:18px}
+
+/* G1 — edição do modelo no Excel */
+.edicao-modelo{display:grid;grid-template-columns:minmax(0,1fr);min-width:0}
+.edicao-passos{list-style:none;counter-reset:passo;margin:0 0 14px;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-width:0}
+.edicao-passos li{counter-increment:passo;display:grid;grid-template-columns:minmax(0,1fr);min-width:0;gap:7px;padding:12px 14px 12px 50px;position:relative;border:1px solid var(--line);border-radius:12px;background:#fff}
+.edicao-passos li::before{content:counter(passo);position:absolute;left:14px;top:12px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--blue);color:#fff;font-size:12px;font-weight:800}
+.edicao-passos li>span{font-size:12px;color:var(--muted);font-weight:600;overflow-wrap:anywhere}
+.edicao-modelo .caminho{overflow-wrap:anywhere}
+@media (max-width:520px){.edicao-passos li{padding-left:44px}.edicao-passos li::before{left:11px}}
+.edicao-passos .btn{justify-self:start}

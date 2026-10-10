@@ -28,6 +28,7 @@ Módulo independente de **Ordens de Produção** do sistema **ASCALPI** (esse é
 | `legado.py` | Importador dos livros e do Controle |
 | `imagens.py` | Fotos e logos extraídos dos desenhos das abas |
 | `validacao.py` | Validação pura das entradas (antes de qualquer gravação) |
+| `modelos_edicao.py` | G1: cópia de trabalho do modelo, validação/prévia, nova versão, descarte |
 | `servico.py` | Fachada e regras de aplicação: situação da O.P., saldos, salvar/cancelar/acompanhar (transação única) |
 | `publicacao.py` | Publicação .xlsx/.pdf por formato, sem apagar o anterior |
 | `consultas.py` | Painel, resumo, eventos e pendências (só leitura) |
