@@ -16,7 +16,7 @@ Não precisa instalar nada além do Python (só biblioteca padrão). PDF: Excel 
 
 Instalação única (homologação): `D:\Programas\ASCALPI_Project\Modulos\ASCALPI_Producao`, que é o próprio clone Git — nunca copiar o módulo para outra pasta.
 
-0. `Sincronizar_ASCALPI.cmd [branch] [sha]` → guarda uma cópia de `dados` em `ASCALPI_Local_Archive\snapshots_dados` e atualiza o clone com o commit autorizado (`git pull --ff-only`, padrão `modulo/producao-op`). `dados` é ignorada pelo Git e não é tocada.
+0. `Sincronizar_ASCALPI.cmd <SHA>` → só com o **SHA exato** autorizado no quadro: confere antes de mexer no código, guarda e confere uma cópia de `dados` em `ASCALPI_Local_Archive\snapshots_dados` e atualiza o clone (`git pull --ff-only` do `modulo/producao-op`). `dados` é ignorada pelo Git e não é tocada.
 1. `Importar_Legado.cmd` → informe a pasta com os `OK-*.xlsm` e o `2_Controle_...xlsm` (a cópia de referência, só leitura). Mostra a **prévia** das diferenças e pede confirmação; os arquivos de origem são apenas lidos.
 2. `Iniciar_ASCALPI_Producao.cmd` → abre `http://127.0.0.1:8765/` (se já estiver aberto, só abre o navegador; use `127.0.0.1`, `localhost` ou o IP — nome de domínio é recusado).
 3. Em **Configuração** escolha as pastas onde os `.xlsx`/`.pdf` são publicados (padrão: `dados\Documentos`).
