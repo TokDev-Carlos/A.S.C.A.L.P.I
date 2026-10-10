@@ -43,9 +43,9 @@ class TestDocumento(unittest.TestCase):
         self.assertEqual(d.texto_dia_prazo("DEFINIR"), "Definir")
         self.assertEqual(d.texto_hoje(datetime(2026, 10, 9, 8, 5)), "Hoje 09/10/2026 8:05-sexta-feira")
 
-    def _gerar(self, prazo, linhas):
+    def _gerar(self, prazo, linhas, paginacao="altura"):
         dados = d.DadosOP("010-26", "PRAÇA <&> TESTE", prazo, "ANA", linhas, rev=2, emitido_em=datetime(2026, 10, 9, 8, 5))
-        return openpyxl.load_workbook(io.BytesIO(d.gerar_xlsx(self.modelo, dados, "senha")))
+        return openpyxl.load_workbook(io.BytesIO(d.gerar_xlsx(self.modelo, dados, "senha", paginacao)))
 
     def test_gerar_xlsx(self):
         wb = self._gerar(date(2026, 10, 30), {10: d.LinhaOP(2, None, "AZUL"), 13: d.LinhaOP(1.5, "X")})
@@ -74,11 +74,11 @@ class TestDocumento(unittest.TestCase):
 
     def test_prazo_texto_e_quebras(self):
         linhas = {r: d.LinhaOP(1) for r in range(10, 40)}
-        wb = self._gerar("DEFINIR", linhas)
+        wb = self._gerar("DEFINIR", linhas, paginacao="legado")
         ws = wb.active
         self.assertEqual(ws["V2"].value, "DEFINIR")
         self.assertEqual(ws["S6"].value, "Definir")
-        self.assertEqual([b.id for b in ws.row_breaks.brk], [22, 31])   # 13 + 9 + 8
+        self.assertEqual([b.id for b in ws.row_breaks.brk], [22, 31])   # motor legado (VBA): 13 + 9 + 8
 
     def test_sem_itens(self):
         with self.assertRaises(ValueError):

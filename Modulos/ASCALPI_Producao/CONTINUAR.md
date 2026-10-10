@@ -59,6 +59,15 @@ Estado em 10/10/2026. **Branches (ordens ORG-2/ORG-3, ver `REGRAS_CENTRAIS.md` �
 
 **EM REVISÃO** na `claude/producao` (`e800f30`), aguardando o V-G2. Não está no candidato de integração do G1 e **o aceite do G1 não aprova o G2**. G3, G4 e G5 seguem bloqueados.
 
+- **Pedido do Carlos:** a regra do VBA (13 itens na 1ª página, até 15 nas demais) mandava itens para a 2ª página mesmo com espaço na 1ª. Agora o item fica na página **enquanto couber inteiro**; se não couber, a quebra vai **antes** dele. Nada é redimensionado, reordenado nem dividido.
+- Cálculo (`ascalpi_producao/paginacao.py`, funções puras): área útil = altura do papel (A4 por padrão) − margens (topo 1,2 cm, base 0), dividida pela escala de "ajustar à largura" que o Excel aplica (colunas B..V em pixels, porcentagem inteira); altura de cada linha visível (`ht` ou a padrão da aba; ocultas = 0); cabeçalho 2..9 na 1ª página; títulos repetidos (`Print_Titles`) em todas; foto que passa da linha (`oneCellAnchor`/`twoCellAnchor`) não é cortada; folga de 4 pt.
+- **Configuração → PAGINAÇÃO DOS DOCUMENTOS:** `PELA ALTURA REAL` (padrão) ou `LEGADO DO VBA` (para comparar na homologação). O motor usado fica registrado em cada publicação (`ops.arquivos.paginacao`).
+- **Conferência automática:** ao publicar, as páginas previstas são comparadas com as do PDF gerado; se divergirem, a tela avisa "PAGINAÇÃO: PREVISTAS n PÁGINA(S), O PDF SAIU COM m" — mandar essa O.P. para ajuste do cálculo.
+- Verificado na nuvem com LibreOffice: 40 combinações de altura (30, 50, 80, 113 pt e mistas) × quantidade (8 a 48 itens), páginas previstas = páginas do PDF em todas. No LibreOffice o cálculo ainda deixa um pouco de sobra (ele escala as colunas de outro jeito); **o ajuste fino vale para o Excel**, que é o motor oficial do PDF — conferir no Windows.
+- Testes: `tests/test_paginacao.py` (11). Suíte da executora (G1 + G2 + porta exclusiva): **120 testes OK**.
+- **Conferir no Windows:** regerar as O.P. que tinham 2 itens sozinhos na 2ª página; comparar com `LEGADO DO VBA`; observar se aparece o aviso de divergência.
+
+
 ## O que é
 
 Módulo independente de **Ordens de Produção** do ASCALPI: tudo é editado no sistema (quantidades, datas ou "DEFINIR", observações); os arquivos `.xlsx` publicados ficam 100% bloqueados (só visualizar) e o PDF sai no padrão exato do VBA legado (`MOD_GERAR_OP V2.4.22`). Depois de validado, entra no núcleo ASCALPI e substitui o legado do servidor.

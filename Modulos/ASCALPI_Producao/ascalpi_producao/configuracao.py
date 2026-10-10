@@ -15,7 +15,9 @@ CONFIG_PADRAO = {
     "pasta_xlsx": "",          # vazio = <dados>/Documentos/O.Ps
     "pasta_pdf": "",           # vazio = <dados>/Documentos/PDFs
     "edicao_modelo_excel": False,   # G1: editar modelo no Excel (desligado até o aceite do Carlos)
+    "paginacao": "altura",     # G2: "altura" (cabe enquanto couber inteiro) ou "legado" (13/15 do VBA)
 }
+VALORES_PERMITIDOS = {"paginacao": ("altura", "legado")}
 
 
 class Configuracao:
@@ -34,12 +36,15 @@ class Configuracao:
             atual = {}
         # valor de tipo errado (config.json editado à mão) vale o padrão: texto "false" não liga nada
         return {**CONFIG_PADRAO, **{k: v for k, v in atual.items() if k in CONFIG_PADRAO
-                                    and (not isinstance(CONFIG_PADRAO[k], bool) or type(v) is bool)}}
+                                    and (not isinstance(CONFIG_PADRAO[k], bool) or type(v) is bool)
+                                    and (k not in VALORES_PERMITIDOS or v in VALORES_PERMITIDOS[k])}}
 
     def salvar(self, novos: dict) -> dict:
         for k, v in novos.items():
             if k in CONFIG_PADRAO and isinstance(CONFIG_PADRAO[k], bool) and not isinstance(v, bool):
                 raise ErroValidacao(f"{k.upper()}: USE VERDADEIRO OU FALSO.")
+            if k in VALORES_PERMITIDOS and v not in VALORES_PERMITIDOS[k]:
+                raise ErroValidacao(f"{k.upper()}: USE " + " OU ".join(x.upper() for x in VALORES_PERMITIDOS[k]) + ".")
         cfg = {**(self.ler() if self.arquivo.exists() else CONFIG_PADRAO),
                **{k: v for k, v in novos.items() if k in CONFIG_PADRAO}}
         tmp = self.arquivo.with_suffix(".tmp")

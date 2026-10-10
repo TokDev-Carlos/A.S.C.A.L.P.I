@@ -537,7 +537,8 @@ class Servico:
             raise ErroValidacao("O.P. DO HISTÓRICO LEGADO: O DOCUMENTO ORIGINAL FICA NA PASTA ANTIGA.")
         modelo = self._modelo(o["modelo_id"])
         bruto = (self.dados / (o.get("modelo_arquivo") or modelo["arquivo"])).read_bytes()   # modelo da emissão
-        xlsx = documento.gerar_xlsx(bruto, self._dados_documento(o), self.config()["senha_arquivos"])
+        cfg = self.config()
+        xlsx = documento.gerar_xlsx(bruto, self._dados_documento(o), cfg["senha_arquivos"], cfg["paginacao"])
         nome = self.nome_base(o)
         if formato == "xlsx":
             return nome + ".xlsx", xlsx

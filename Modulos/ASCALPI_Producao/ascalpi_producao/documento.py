@@ -19,13 +19,14 @@ import struct
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
-from . import pacote
+from . import pacote, paginacao as paginacao_altura
 from .regras import prazo_texto
 
 LINHA_INICIO = 10
 LINHA_FIM = 100
-MAX_PG1 = 13
-MAX_PG_DEMAIS = 15
+MAX_PG1 = 13                     # paginação legada do VBA (motor "legado"): 13 itens na 1ª página
+MAX_PG_DEMAIS = 15               # e páginas equilibradas de até 15
+MOTORES_PAGINACAO = ("altura", "legado")   # G2: "altura" = cabe enquanto couber inteiro (padrão)
 CM_POL = 1 / 2.54
 MARGENS = dict(left=0.1 * CM_POL, right=0.1 * CM_POL, top=1.2 * CM_POL, bottom=0.0, header=0.0, footer=0.0)
 LIMPAR = ["D10:E100", "S10:S100", "V2", "V8", "D3:R4"]
@@ -350,7 +351,21 @@ _DEPOIS_DE_PAGESETUP = ["<colBreaks", "<customProperties", "<cellWatches", "<ign
                         "<webPublishItems", "<tableParts", "<extLst", "</worksheet>"]
 
 
-def gerar_xlsx(modelo: bytes, dados: DadosOP, senha: str) -> bytes:
+def _desenho_da_aba(partes: dict, parte: str) -> str | None:
+    for r in pacote.ler_rels(partes, parte):
+        if r.get("Type", "").endswith("/drawing") and r.get("_alvo") in partes:
+            return partes[r["_alvo"]].decode("utf-8", "ignore")
+    return None
+
+
+def _titulos_impressao(wb: str) -> tuple[int, int] | None:
+    """Linhas repetidas no topo de cada página (_xlnm.Print_Titles da 1ª aba), se o modelo tiver."""
+    m = re.search(r'<definedName name="_xlnm.Print_Titles"[^>]*localSheetId="0"[^>]*>(.*?)</definedName>', wb, re.S)
+    linhas = re.search(r"\$(\d+):\$(\d+)", m.group(1)) if m else None
+    return (int(linhas.group(1)), int(linhas.group(2))) if linhas else None
+
+
+def gerar_xlsx(modelo: bytes, dados: DadosOP, senha: str, paginacao: str = "altura") -> bytes:
     partes = pacote.carregar(io.BytesIO(modelo))
     parte, nome_aba = _sheet_part(partes)
     ws = Planilha(partes[parte].decode("utf-8"))
@@ -450,13 +465,19 @@ def gerar_xlsx(modelo: bytes, dados: DadosOP, senha: str) -> bytes:
         return f'<pageSetup{attrs} fitToWidth="1" fitToHeight="0" orientation="portrait"/>'
     x = re.sub(r"<pageSetup\b([^>]*?)\s*/>", _ps, x, count=1)
 
-    # quebras: 13 linhas na página 1, depois páginas equilibradas de até 15
+    # quebras: G2 pela altura real (padrão) ou legado do VBA (13 na página 1, depois páginas de até 15)
     x = re.sub(r"<rowBreaks\b.*?</rowBreaks>|<rowBreaks\b[^>]*/>", "", x, flags=re.S)
-    plano = plano_paginas(len(visiveis))
-    quebras, acumulado = [], 0
-    for n in plano[:-1]:
-        acumulado += n
-        quebras.append(visiveis[acumulado])          # linha real do ordinal acumulado+1
+    if paginacao == "legado":
+        plano = plano_paginas(len(visiveis))
+        quebras, acumulado = [], 0
+        for n in plano[:-1]:
+            acumulado += n
+            quebras.append(visiveis[acumulado])      # linha real do ordinal acumulado+1
+    elif paginacao == "altura":
+        quebras = paginacao_altura.quebras_por_altura(
+            x, visiveis, 2, _desenho_da_aba(partes, parte), _titulos_impressao(partes["xl/workbook.xml"].decode("utf-8")))
+    else:
+        raise ValueError(f"PAGINAÇÃO DESCONHECIDA: {paginacao}")
     if quebras:
         brks = "".join(f'<brk id="{r - 1}" max="16383" man="1"/>' for r in quebras)
         x = _inserir_antes(x, f'<rowBreaks count="{len(quebras)}" manualBreakCount="{len(quebras)}">{brks}</rowBreaks>',
