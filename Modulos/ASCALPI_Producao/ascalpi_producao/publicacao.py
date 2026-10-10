@@ -5,6 +5,7 @@ anterior depois que o novo foi gravado; a mesma O.P. nunca é publicada por duas
 """
 from __future__ import annotations
 
+import io
 import json
 import os
 import tempfile
@@ -41,7 +42,7 @@ class Publicacao:
             o = s.op(op_id)
             px, pp = s.pastas_publicacao()
             ant = o["arquivos"] or {}
-            res = {"rev": o["rev"], "tentativa_em": agora(),
+            res = {"rev": o["rev"], "tentativa_em": agora(), "paginacao": s.config()["paginacao"],   # motor usado (G2)
                    "xlsx": ant.get("xlsx"), "xlsx_rev": ant.get("xlsx_rev"),
                    "pdf": ant.get("pdf"), "pdf_rev": ant.get("pdf_rev")}
             xlsx = nome_x = None
@@ -61,6 +62,7 @@ class Publicacao:
             else:
                 try:
                     conteudo_pdf = pdf.gerar_pdf(xlsx, s.config()["motor_pdf"])
+                    res["paginas"] = _conferir_paginas(xlsx, conteudo_pdf)
                     pp.mkdir(parents=True, exist_ok=True)
                     destino_p = pp / (nome_x[:-5] + ".pdf")
                     gravar_atomico(destino_p, conteudo_pdf)
@@ -75,6 +77,19 @@ class Publicacao:
                 s.banco.evento(con, "OP_PUBLICADA" if res["estado"] == "PUBLICADA" else "OP_PUBLICACAO_PENDENTE",
                                   {"op": op_id, **res})
             return res
+
+
+def _conferir_paginas(xlsx: bytes, conteudo_pdf: bytes) -> dict:
+    """G2: páginas previstas pelas quebras x páginas do PDF real (Excel/LibreOffice). Divergência vira aviso."""
+    from . import pacote, paginacao
+    partes = pacote.carregar(io.BytesIO(xlsx))
+    aba = pacote.abas(partes)[0]["parte"]
+    previstas, reais = paginacao.paginas_previstas(partes[aba].decode("utf-8")), paginacao.paginas_pdf(conteudo_pdf)
+    saida = {"previstas": previstas, "pdf": reais}
+    if reais != previstas:
+        saida["aviso"] = (f"PAGINAÇÃO: PREVISTAS {previstas} PÁGINA(S), O PDF SAIU COM {reais}. "
+                          "CONFIRA O DOCUMENTO E AVISE (AJUSTE DO CÁLCULO DE ALTURA).")
+    return saida
 
 
 def gravar_atomico(destino: Path, conteudo: bytes) -> None:

@@ -4,6 +4,16 @@ Estado em 10/10/2026. **Branches (ordens ORG-2/ORG-3, ver `REGRAS_CENTRAIS.md` �
 
 > **Base inicial congelada:** `producao-base-inicial-v1` (commit `fb96a58`, aceita pelo Carlos). Veja `docs/producao/releases/BASE_INICIAL.md` e `PLANO_AJUSTES.md`. Melhorias só depois do aceite de início de G1.
 
+## G2 — paginação pela altura real (branch `claude/producao`, por ordem do Admin em 10/10/2026)
+
+- **Pedido do Carlos:** a regra do VBA (13 itens na 1ª página, até 15 nas demais) mandava itens para a 2ª página mesmo com espaço na 1ª. Agora o item fica na página **enquanto couber inteiro**; se não couber, a quebra vai **antes** dele. Nada é redimensionado, reordenado nem dividido.
+- Cálculo (`ascalpi_producao/paginacao.py`, funções puras): área útil = altura do papel (A4 por padrão) − margens (topo 1,2 cm, base 0), dividida pela escala de "ajustar à largura" que o Excel aplica (colunas B..V em pixels, porcentagem inteira); altura de cada linha visível (`ht` ou a padrão da aba; ocultas = 0); cabeçalho 2..9 na 1ª página; títulos repetidos (`Print_Titles`) em todas; foto que passa da linha (`oneCellAnchor`/`twoCellAnchor`) não é cortada; folga de 4 pt.
+- **Configuração → PAGINAÇÃO DOS DOCUMENTOS:** `PELA ALTURA REAL` (padrão) ou `LEGADO DO VBA` (para comparar na homologação). O motor usado fica registrado em cada publicação (`ops.arquivos.paginacao`).
+- **Conferência automática:** ao publicar, as páginas previstas são comparadas com as do PDF gerado; se divergirem, a tela avisa "PAGINAÇÃO: PREVISTAS n PÁGINA(S), O PDF SAIU COM m" — mandar essa O.P. para ajuste do cálculo.
+- Verificado na nuvem com LibreOffice: 40 combinações de altura (30, 50, 80, 113 pt e mistas) × quantidade (8 a 48 itens), páginas previstas = páginas do PDF em todas. No LibreOffice o cálculo ainda deixa um pouco de sobra (ele escala as colunas de outro jeito); **o ajuste fino vale para o Excel**, que é o motor oficial do PDF — conferir no Windows.
+- Testes: `tests/test_paginacao.py` (11). Suíte: **117 testes OK**.
+- **Conferir no Windows:** regerar as O.P. que tinham 2 itens sozinhos na 2ª página; comparar com `LEGADO DO VBA`; observar se aparece o aviso de divergência.
+
 ## G1 — edição do modelo no Excel (branch `claude/producao`, PR #5; origem preservada na tag `historico/2026-10-09/g1-edicao-modelo`)
 
 **Estado:** **DE ACORDO técnico do Codex** em `0ac1f8a` (V-G1 em 4 passadas) e na correção da prévia para o Excel real em `955826a` (validada no Windows: 47 diferenças falsas de altura → 0; relatórios em `docs/producao/revisao/V-G1_*.md`). Falta o **teste do Carlos no Windows com o Excel real** e a H-1; só depois o G1 entra no módulo e o G2 começa.

@@ -128,9 +128,9 @@ class TestPublicacao(unittest.TestCase):
         gerar_original = documento.gerar_xlsx
         usadas = []
 
-        def gerar_espiao(bruto, dados, senha):
+        def gerar_espiao(bruto, dados, senha, *resto):
             usadas.append((dados.rev, dados.obra))
-            return gerar_original(bruto, dados, senha)
+            return gerar_original(bruto, dados, senha, *resto)
         with pdf_ok(), patch.object(self.s, "pastas_publicacao", side_effect=pastas_com_edicao), \
                 patch("ascalpi_producao.servico.documento.gerar_xlsx", side_effect=gerar_espiao):
             pub = self.s.publicar(oid)

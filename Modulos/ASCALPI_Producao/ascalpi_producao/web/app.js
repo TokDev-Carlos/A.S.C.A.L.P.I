@@ -1020,6 +1020,7 @@ async function telaNova(tela, editId, q, vivo) {
     const pub = r.publicacao;
     if (r.repetida) aviso(`O.P. ${r.op.numero} JÁ TINHA SIDO GERADA POR ESTE RASCUNHO (PEDIDO REPETIDO, NADA FOI DUPLICADO).`, 'ok');
     else if (pub && pub.estado !== 'PUBLICADA') aviso(`O.P. ${r.op.numero} SALVA, MAS A PUBLICAÇÃO FICOU ${pub.estado}: ${pub.xlsx_erro || pub.pdf_erro || ''}. USE "REPUBLICAR" NA O.P.`, 'erro');
+    else if (pub && pub.paginas && pub.paginas.aviso) aviso(`O.P. ${r.op.numero} ${editId ? 'SALVA' : 'GERADA'}. ${pub.paginas.aviso}`, 'erro');
     else aviso(editId ? `O.P. ${r.op.numero} SALVA NA REV ${r.op.rev}.` : `O.P. ${r.op.numero} GERADA.`, 'ok');
     location.hash = `#/ordens?op=${r.op_id}`;
   }
@@ -1637,7 +1638,8 @@ gavetaConteudo.addEventListener('click', async e => {
     try {
       const r = await ocupado(b, () => api(`/api/ops/${o.id}/publicar`, { metodo: 'POST' }));
       if (r === OCUPADO || gav.id !== o.id) return;      // gaveta já mostra outra O.P.
-      if (r.estado === 'PUBLICADA') aviso(`O.P. ${o.numero} REPUBLICADA (XLSX E PDF).`, 'ok');
+      if (r.estado === 'PUBLICADA' && r.paginas && r.paginas.aviso) aviso(`O.P. ${o.numero} REPUBLICADA. ${r.paginas.aviso}`, 'erro');
+      else if (r.estado === 'PUBLICADA') aviso(`O.P. ${o.numero} REPUBLICADA (XLSX E PDF, ${r.paginas ? r.paginas.pdf + ' PÁGINA(S)' : 'OK'}).`, 'ok');
       else aviso(`PUBLICAÇÃO ${r.estado}: ${r.xlsx_erro || r.pdf_erro || ''}. O ARQUIVO ANTERIOR FOI MANTIDO.`, 'erro');
       const nova = await api('/api/ops/' + o.id);
       if (gav.id !== o.id) return;
@@ -2093,6 +2095,9 @@ TELAS.config = async (tela, arg, q, vivo) => {
         <label class="campo">MOTOR DE PDF<select id="c-motor">
           ${[['auto', 'AUTOMÁTICO (EXCEL NO WINDOWS, SENÃO LIBREOFFICE)'], ['excel', 'MICROSOFT EXCEL (IGUAL AO VBA)'], ['libreoffice', 'LIBREOFFICE']]
             .map(([v, r]) => `<option value="${v}"${cfg.motor_pdf === v ? ' selected' : ''}>${r}</option>`).join('')}</select></label>
+        <label class="campo">PAGINAÇÃO DOS DOCUMENTOS<select id="c-paginacao">
+          ${[['altura', 'PELA ALTURA REAL (CABE ENQUANTO COUBER INTEIRO)'], ['legado', 'LEGADO DO VBA (13 NA 1ª PÁGINA, ATÉ 15 NAS DEMAIS)']]
+            .map(([v, r]) => `<option value="${v}"${cfg.paginacao === v ? ' selected' : ''}>${r}</option>`).join('')}</select></label>
         <p class="mudo" style="margin:0;font-size:11.5px;font-weight:600">DEIXE A PASTA EM BRANCO PARA USAR O PADRÃO (DADOS\\DOCUMENTOS).</p>
         <div><button class="btn primary" type="submit" id="c-salvar">${ic('save')}SALVAR CONFIGURAÇÃO</button></div>
       </form>
@@ -2128,7 +2133,7 @@ TELAS.config = async (tela, arg, q, vivo) => {
 
   $('#c-form', tela).addEventListener('submit', async e => {
     e.preventDefault();
-    const corpo = { publicar: $('#c-publicar', tela).checked, edicao_modelo_excel: $('#c-edicao', tela).checked, pasta_xlsx: $('#c-xlsx', tela).value.trim(), pasta_pdf: $('#c-pdf', tela).value.trim(), motor_pdf: $('#c-motor', tela).value };
+    const corpo = { publicar: $('#c-publicar', tela).checked, edicao_modelo_excel: $('#c-edicao', tela).checked, pasta_xlsx: $('#c-xlsx', tela).value.trim(), pasta_pdf: $('#c-pdf', tela).value.trim(), motor_pdf: $('#c-motor', tela).value, paginacao: $('#c-paginacao', tela).value };
     try {
       if (await ocupado($('#c-salvar', tela), () => api('/api/config', { metodo: 'PUT', corpo })) === OCUPADO) return;
       aviso('CONFIGURAÇÃO SALVA.', 'ok');
