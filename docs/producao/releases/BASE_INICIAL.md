@@ -1,5 +1,7 @@
 # ASCALPI Produção — BASE INICIAL v1
 
+**G0: APROVADO** (base aceita pelo Carlos; tag publicada). G1 liberado pelo Carlos em 09/10/2026 ("prossiga").
+
 Registro formal do congelamento (marco **G0** de `Modulos/ASCALPI_Producao/PLANO_POS_BASELINE_ATA_MESTRE_E_PAGINACAO.md`). Sem dados de clientes: só contagens agregadas.
 
 ## Identificação
@@ -8,7 +10,7 @@ Registro formal do congelamento (marco **G0** de `Modulos/ASCALPI_Producao/PLANO
 |---|---|
 | Versão | `producao-base-inicial-v1` |
 | Commit validado (código) | `fb96a584fb848679d02e6f46e8010cc90f1c92cd` |
-| Tag | `producao-base-inicial-v1` (anotada, deve apontar para o commit acima; **não mover nem recriar**). **Estado: ainda não está no GitHub** — a sessão na nuvem não consegue enviar tags (HTTP 403). Criar no PC: `git tag -a producao-base-inicial-v1 fb96a58 -m "ASCALPI Producao - BASE INICIAL v1"` e `git push origin producao-base-inicial-v1`. Até lá, a base é identificada pelo SHA. |
+| Tag | `producao-base-inicial-v1` (anotada, criada pelo Carlos e enviada ao GitHub em 09/10/2026; aponta para `fb96a58`). **Não mover nem recriar.** |
 | Branch | `modulo/producao-op` (commits posteriores à base são só documentação) |
 | Data | 09/10/2026 |
 | Aceite | **Carlos**, 09/10/2026: "já podemos criar essa versão do módulo como modelo base… entrega tudo que preciso"; pediu o congelamento e a execução do plano. |
