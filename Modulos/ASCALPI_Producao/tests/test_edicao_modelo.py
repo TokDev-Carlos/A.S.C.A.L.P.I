@@ -298,6 +298,50 @@ class TestEdicaoModelo(unittest.TestCase):
                          "O.P-ATA-TESTE2")
 
 
+    # ------------------------------------------------------------ V-G1 (Codex, 10/10/2026)
+    def _publicar(self, texto: str) -> str:
+        e = self.s.edicao.iniciar(self.modelo["id"])
+        self._editar(e, lambda ws: ws.__setitem__("B10", texto))
+        r = self.s.edicao.validar(e["id"])
+        self.s.edicao.publicar(e["id"], texto, r["hash"])
+        return self.modelo_arquivo()
+
+    def test_vg1_01_reimportacao_preserva_todas_as_versoes_publicadas(self):
+        original = self.modelo_arquivo()
+        v1 = self._publicar("VERSÃO 1")
+        v2 = self._publicar("VERSÃO 2")                            # nenhuma O.P. usa v1 nem o original
+        legado.importar_pasta(self.s.banco, self.base / "legado", self.base / "dados")
+        for arq in (original, v1, v2):
+            self.assertTrue((self.s.dados / arq).exists(), arq)
+        historico = self.s.banco.todos("SELECT arquivo_origem, arquivo_publicado FROM modelo_edicoes "
+                                       "WHERE estado = 'PUBLICADA' ORDER BY id")
+        self.assertEqual([(h["arquivo_origem"], h["arquivo_publicado"]) for h in historico], [(original, v1), (v1, v2)])
+        for h in historico:
+            for arq in (h["arquivo_origem"], h["arquivo_publicado"]):
+                self.assertTrue((self.s.dados / arq).is_file(), arq)
+        self.assertEqual(self.modelo_arquivo(), v2)
+
+    def test_vg1_02_origem_alterada_no_mesmo_caminho_e_conflito(self):
+        e = self.s.edicao.iniciar(self.modelo["id"])
+        self._editar(e, lambda ws: ws.__setitem__("B10", "EDITADO NA CÓPIA"))
+        r = self.s.edicao.validar(e["id"])                          # validação boa, antes da mudança externa
+        origem = self.s.dados / self.modelo_arquivo()
+        wb = openpyxl.load_workbook(origem)
+        wb.active["B11"] = "MUDADO POR FORA"
+        wb.save(origem)                                            # mesmo caminho, conteúdo diferente
+        antes_banco = (self.modelo_arquivo(),
+                       self.s.banco.um("SELECT estado FROM modelo_edicoes WHERE id = ?", (e["id"],))["estado"])
+        antes_arquivos = set((self.s.dados / "Modelos").rglob("*.xlsx"))
+        with self.assertRaises(ErroConflitoEdicao):
+            self.s.edicao.validar(e["id"])
+        with self.assertRaises(ErroConflitoEdicao):
+            self.s.edicao.publicar(e["id"], "motivo", r["hash"])
+        self.assertEqual((self.modelo_arquivo(),
+                          self.s.banco.um("SELECT estado FROM modelo_edicoes WHERE id = ?", (e["id"],))["estado"]),
+                         antes_banco)
+        self.assertEqual(set((self.s.dados / "Modelos").rglob("*.xlsx")), antes_arquivos)   # nenhum arquivo órfão
+
+
 class TestProtecaoDaApi(unittest.TestCase):
     """Toda ação que grava exige o cabeçalho da tela; nomes de domínio no Host são recusados (DNS rebinding)."""
 

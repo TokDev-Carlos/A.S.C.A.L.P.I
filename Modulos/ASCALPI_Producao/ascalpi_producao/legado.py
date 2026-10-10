@@ -324,9 +324,12 @@ def importar_livro(banco: Banco, caminho: Path, pasta_modelos: Path, relatorio: 
 
 
 def _limpar_modelos_sem_uso(banco: Banco, raiz: Path, pasta: Path) -> None:
-    """Remove versões antigas de modelo que nenhum modelo nem O.P. referencia mais."""
-    usados = {r["a"] for r in banco.todos("SELECT arquivo a FROM modelos UNION SELECT modelo_arquivo FROM ops "
-                                          "WHERE modelo_arquivo IS NOT NULL")}
+    """Remove versões antigas de modelo que nenhum modelo, O.P. ou edição (G1) referencia mais."""
+    usados = {r["a"] for r in banco.todos(
+        "SELECT arquivo a FROM modelos UNION SELECT modelo_arquivo FROM ops WHERE modelo_arquivo IS NOT NULL "
+        # G1: toda versão publicada e a origem de cada edição são histórico imutável (V-G1-01)
+        "UNION SELECT arquivo_origem FROM modelo_edicoes UNION SELECT arquivo_publicado FROM modelo_edicoes "
+        "WHERE arquivo_publicado IS NOT NULL")}
     for arq in pasta.glob("*.xlsx"):
         if arq.relative_to(raiz).as_posix() not in usados:
             try:

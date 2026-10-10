@@ -208,9 +208,12 @@ class EdicaoModelos:
         if modelo["arquivo"] != e["arquivo_origem"]:
             raise ErroConflitoEdicao("O MODELO FOI ATUALIZADO DEPOIS QUE ESTA EDIÇÃO COMEÇOU. DESCARTE E COMECE OUTRA.")
         try:
-            return (self.s.dados / e["arquivo_origem"]).read_bytes()
+            conteudo = (self.s.dados / e["arquivo_origem"]).read_bytes()
         except FileNotFoundError:
             raise ErroConflitoEdicao("O ARQUIVO DO MODELO NÃO EXISTE MAIS. DESCARTE E COMECE OUTRA.")
+        if _hash(conteudo) != e["hash_origem"]:            # mesmo caminho, conteúdo trocado por fora (V-G1-02)
+            raise ErroConflitoEdicao("O ARQUIVO DO MODELO MUDOU DEPOIS QUE ESTA EDIÇÃO COMEÇOU. DESCARTE E COMECE OUTRA.")
+        return conteudo
 
     def _codigos_contrato(self, modelo: dict) -> set[str] | None:
         if not modelo.get("contrato_id"):
