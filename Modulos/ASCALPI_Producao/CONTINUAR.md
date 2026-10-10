@@ -16,7 +16,7 @@ Estado em 10/10/2026. **Branches (ordens ORG-2/ORG-3, ver `REGRAS_CENTRAIS.md` �
 | Nuvem (sessões do Claude/Codex) | implementação e revisão com dados sintéticos | tudo, sem dados de cliente |
 | WSL (Ubuntu 24.04) no PC | laboratório de apoio: testes rápidos, git, hashes, LibreOffice | **não vale como aceite** (ver `REGRAS_CENTRAIS.md` §11.1) |
 
-- **Uma instalação só:** `D:\Programas\ASCALPI_Project\Modulos\ASCALPI_Producao`, que é o próprio clone Git. Não criar outra pasta para testar marco nenhum: troca-se o commit do clone (`Sincronizar_ASCALPI.cmd`), não a pasta.
+- **Uma instalação só:** `D:\Programas\ASCALPI_Project\Modulos\ASCALPI_Producao`, que é o próprio clone Git. Não criar outra pasta para testar marco nenhum: troca-se o commit do clone (`Sincronizar_ASCALPI.cmd <SHA>`), não a pasta.
 - Nada de `dados/`, banco, documentos de cliente, senhas ou caminhos de servidor no GitHub (repositório público). As O.P. locais são de teste, mas têm nomes de clientes, modelos e fotos.
 
 ## Fluxo de uma entrega até o teste no Windows
@@ -24,7 +24,7 @@ Estado em 10/10/2026. **Branches (ordens ORG-2/ORG-3, ver `REGRAS_CENTRAIS.md` �
 1. Claude implementa e testa na nuvem (`claude/producao` ou `claude/temp/*`).
 2. Codex revisa e valida tecnicamente no GitHub; parecer no `QUADRO_TAREFAS.md`.
 3. A entrega aprovada sobe pela hierarquia (`executora → modulo/producao-op`).
-4. O Admin sincroniza o clone local com o commit autorizado: `Sincronizar_ASCALPI.cmd` (padrão `modulo/producao-op`).
+4. O Admin sincroniza o clone local com o **SHA exato** autorizado: `Sincronizar_ASCALPI.cmd <SHA>` (só `modulo/producao-op`).
 5. Testes funcionais no **Windows com Microsoft Excel**, na instalação única.
 6. Resultado volta ao GitHub (quadro); correção segue o mesmo ciclo.
 
@@ -85,7 +85,7 @@ Tudo roda de `D:\Programas\ASCALPI_Project\Modulos\ASCALPI_Producao`:
 
 | Comando | Faz |
 |---|---|
-| `Sincronizar_ASCALPI.cmd [branch] [sha]` | confere o clone (branch, mudanças locais, servidor fechado), guarda uma cópia de `dados` em `D:\Programas\ASCALPI_Local_Archive\snapshots_dados\`, faz `git fetch` + `git pull --ff-only` da branch autorizada (padrão `modulo/producao-op`), confere o SHA pedido e mostra SHA antes/depois. Substitui o antigo `Atualizar_Copia_Local.cmd` (que copiava o código para uma 2ª instalação). |
+| `Sincronizar_ASCALPI.cmd <SHA>` | atalho para `ferramentas\sincronizar.py` (com testes): exige o **SHA exato** autorizado no quadro e prova, **antes de mexer no código**, que `origin/modulo/producao-op` é esse SHA (ancestral ou mais novo é recusado); recusa com mudança local versionada ou com o ASCALPI aberto na 8765; guarda e confere uma cópia de `dados` em `D:\Programas\ASCALPI_Local_Archive\snapshots_dados\`; `git pull --ff-only`; confere `HEAD == SHA`. Outra branch só com `--autorizado-admin`. Primeira vez: rodar a cópia do commit revisado (roteiro de Angra, passo 3). Substitui o antigo `Atualizar_Copia_Local.cmd`. |
 | `Iniciar_ASCALPI_Producao.cmd` | abre o sistema com a base `dados` do próprio módulo; se já estiver aberto, só abre o navegador. |
 | `Testar.cmd` | testes leves (precisa de `openpyxl` no Python usado). |
 | `Importar_Legado.cmd` | reimporta os livros (da cópia de referência, só leitura) com **prévia** e confirmação S/N. |

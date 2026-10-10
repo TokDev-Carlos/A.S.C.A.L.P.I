@@ -6,18 +6,18 @@ Anote para cada passo: **OK** / **FALHOU** + o que apareceu na tela (texto do av
 
 ## 0. Preparar (uma vez)
 
-1. Confirmar no `QUADRO_TAREFAS.md` qual SHA do `modulo/producao-op` foi autorizado para o teste (o merge do G1).
-2. Fechar o ASCALPI (janela do servidor) se estiver aberto.
-3. `D:\Programas\ASCALPI_Project\Modulos\ASCALPI_Producao\Sincronizar_ASCALPI.cmd modulo/producao-op <SHA autorizado>`
-   - Esperado: "COPIA DE DADOS: …\ASCALPI_Local_Archive\snapshots_dados\dados_<data>_<sha>" e "SINCRONIZADO: <antes> -> <depois>" e "SHA PEDIDO … CONFERIDO".
-   - Se o script ainda não existir no clone (primeira vez), fazer à mão:
-     ```bat
-     cd /d D:\Programas\ASCALPI_Project
-     git status -sb
-     git fetch origin --prune
-     git pull --ff-only origin modulo/producao-op
-     git rev-parse --short HEAD
-     ```
+1. Pegar no `QUADRO_TAREFAS.md` o **SHA exato** autorizado para o teste (o merge do G1 no `modulo/producao-op`). Só esse SHA é aceito: nem um anterior, nem um mais novo.
+2. **Fechar o ASCALPI** (a janela do servidor). A sincronização recusa se a porta 8765 estiver em uso.
+3. **Primeira vez** (o clone ainda está no G0 e não tem o sincronizador): rodar a cópia do sincronizador **tirada do próprio commit autorizado**, sem checkout e sem criar outra instalação. Ela confere o SHA, **guarda a cópia de `dados` antes de trazer o código** (a 1ª abertura do G1 migra o banco para o esquema 7) e só então atualiza:
+   ```bat
+   git -C D:\Programas\ASCALPI_Project fetch origin --prune
+   git -C D:\Programas\ASCALPI_Project show <SHA>:Modulos/ASCALPI_Producao/ferramentas/sincronizar.py > "%TEMP%\sincronizar.py"
+   python "%TEMP%\sincronizar.py" --raiz D:\Programas\ASCALPI_Project --sha <SHA>
+   ```
+   **Das próximas vezes:** `D:\Programas\ASCALPI_Project\Modulos\ASCALPI_Producao\Sincronizar_ASCALPI.cmd <SHA>`.
+   - Esperado: `AUTORIZADO: <sha> = origin/modulo/producao-op`, `CÓPIA DE DADOS: …\snapshots_dados\dados_<data>_<sha antigo> (N ARQUIVOS CONFERIDOS)` e `SINCRONIZADO: <antes> -> <SHA>`.
+   - Se aparecer `RECUSADO:` ou `FALHA:`, **não testar**: anotar a mensagem no quadro. `RECUSADO` significa que nada foi alterado.
+   - Conferência: `git -C D:\Programas\ASCALPI_Project rev-parse --short HEAD` deve mostrar o SHA autorizado.
 4. `Testar.cmd` → anotar a linha "Ran N tests … OK".
 5. `Iniciar_ASCALPI_Producao.cmd` → o navegador abre em `http://127.0.0.1:8765`. Usar **esse endereço** (ou `localhost`); nome do PC ou outro nome de domínio é recusado.
    - Na 1ª abertura o banco migra do esquema 6 para o 7 sozinho (sem perder O.P.).
