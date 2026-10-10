@@ -8,7 +8,7 @@ Registro formal do congelamento (marco **G0** de `Modulos/ASCALPI_Producao/PLANO
 |---|---|
 | Versão | `producao-base-inicial-v1` |
 | Commit validado (código) | `fb96a584fb848679d02e6f46e8010cc90f1c92cd` |
-| Tag | `producao-base-inicial-v1` (anotada, aponta para o commit acima; **não mover nem recriar**) |
+| Tag | `producao-base-inicial-v1` (anotada, deve apontar para o commit acima; **não mover nem recriar**). **Estado: ainda não está no GitHub** — a sessão na nuvem não consegue enviar tags (HTTP 403). Criar no PC: `git tag -a producao-base-inicial-v1 fb96a58 -m "ASCALPI Producao - BASE INICIAL v1"` e `git push origin producao-base-inicial-v1`. Até lá, a base é identificada pelo SHA. |
 | Branch | `modulo/producao-op` (commits posteriores à base são só documentação) |
 | Data | 09/10/2026 |
 | Aceite | **Carlos**, 09/10/2026: "já podemos criar essa versão do módulo como modelo base… entrega tudo que preciso"; pediu o congelamento e a execução do plano. |
