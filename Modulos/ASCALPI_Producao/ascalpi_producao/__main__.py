@@ -67,8 +67,17 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     from .servidor import servir
-    httpd = servir(servico, args.host, args.porta)
     url = f"http://{args.host}:{args.porta}/"
+    try:
+        httpd = servir(servico, args.host, args.porta)
+    except OSError:
+        # já existe um ASCALPI (ou outro programa) nesta porta: não abre um 2º servidor sobre a mesma base
+        print(f"JÁ EXISTE UM PROGRAMA USANDO A PORTA {args.porta}. SE FOR O ASCALPI, ELE JÁ ESTÁ ABERTO: {url}",
+              file=sys.stderr)
+        if args.abrir:
+            webbrowser.open(url)
+        servico.banco.fechar()
+        return 3
     print(f"ASCALPI Produção {__version__} — {url}  (dados: {dados})  Ctrl+C para sair")
     if args.abrir:
         webbrowser.open(url)
