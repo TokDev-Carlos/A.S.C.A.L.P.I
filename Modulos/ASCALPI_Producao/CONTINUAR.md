@@ -6,7 +6,7 @@ Estado em 10/10/2026. **Branches (ordens ORG-2/ORG-3, ver `REGRAS_CENTRAIS.md` �
 
 ## G1 — edição do modelo no Excel (branch `claude/producao`, PR #5; origem preservada na tag `historico/2026-10-09/g1-edicao-modelo`)
 
-**Estado:** `0ac1f8a` com **DE ACORDO técnico do Codex** (V-G1 em 4 passadas; relatórios em `docs/producao/revisao/V-G1_*.md`). Falta o **teste do Carlos no Windows com o Excel real** e a H-1; só depois o G1 entra no módulo e o G2 começa.
+**Estado:** **DE ACORDO técnico do Codex** em `0ac1f8a` (V-G1 em 4 passadas) e na correção da prévia para o Excel real em `955826a` (validada no Windows: 47 diferenças falsas de altura → 0; relatórios em `docs/producao/revisao/V-G1_*.md`). Falta o **teste do Carlos no Windows com o Excel real** e a H-1; só depois o G1 entra no módulo e o G2 começa.
 
 - Ligar em **Configuração → EDITAR MODELOS NO EXCEL** (vem desligado; `config.json` com texto no lugar de verdadeiro/falso vale desligado). Aparece o botão **EDITAR NO EXCEL** em cada modelo.
 - Fluxo: COMEÇAR EDIÇÃO (cópia sem proteção em `dados/Modelos/_edicao/`) → ABRIR NO EXCEL (só Windows) → salvar e fechar → VALIDAR ALTERAÇÕES (nome, código, equipamento novo/removido, altura da linha, foto, logo, cabeçalho B3/B8/D2/S4/L2, nome da aba; código sem contrato; prova de geração da O.P.) → PUBLICAR NOVA VERSÃO (motivo obrigatório) ou DESCARTAR (a cópia fica guardada).
@@ -18,10 +18,11 @@ Estado em 10/10/2026. **Branches (ordens ORG-2/ORG-3, ver `REGRAS_CENTRAIS.md` �
   - publica exatamente o arquivo da última validação gravada (hash e `ok`);
   - gravação por temporário + promoção: falha de disco não deixa `.tmp`, cópia parcial nem pasta vazia (V-G1-03);
   - validar uma edição já descartada/publicada → conflito, nada gravado (V-G1-04);
+  - a prévia segue a precisão real do Excel: altura comparada como número (linha sem altura = altura padrão; < 0,25 pt é arredondamento) e código numérico sem a precisão binária (2.1000000000000001 = 2.1);
   - aba sem `OP-` é recusada; reimportar o livro não substitui aba, título (S4), tipo (B8) nem arquivo do modelo editado no sistema.
 - Servidor local: **toda gravação** exige o cabeçalho `X-ASCALPI: 1` (a tela envia) e endereços por **nome de domínio** são recusados. Acesse por `http://127.0.0.1:8765`, `localhost` ou pelo **IP** do PC (nome do PC na rede não funciona mais).
 - Código: `ascalpi_producao/modelos_edicao.py`; tabela `modelo_edicoes` (esquema 7); rotas `/api/modelos/{id}/edicao`, `/api/edicoes/{id}/abrir|validar|publicar|descartar`.
-- Testes: `tests/test_edicao_modelo.py` (24, incluindo `test_vg1_*` e a proteção da API). Suíte: **102 testes OK**.
+- Testes: `tests/test_edicao_modelo.py` (28, incluindo `test_vg1_*`, `test_excel_*` e a proteção da API). Suíte: **106 testes OK** (só `openpyxl` como dependência de teste).
 
 ### Roteiro do teste do G1 no Windows (Carlos)
 
