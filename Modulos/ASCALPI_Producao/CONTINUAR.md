@@ -1,8 +1,18 @@
 # Continuar o módulo ASCALPI Produção na nuvem
 
-Estado em 09/10/2026 (fim da sessão). Branch: `modulo/producao-op`. **1ª etapa funcional pronta para o teste local.**
+Estado em 10/10/2026. **Branches (ordens ORG-2/ORG-3, ver `REGRAS_CENTRAIS.md` §2):** fluxo `temporária → claude/producao | codex/producao → modulo/producao-op → Dev-Work → main`. Somente `main`, `Dev-Work`, `claude/*`, `codex/*` e `modulo/*` são permitidas; histórico encerrado fica em tags anotadas `historico/*`. O módulo (`modulo/producao-op`) tem a base G0 aceita; o G1 está só na executora do Claude (`claude/producao`). Integração em `Dev-Work` só por ordem do Admin; `main` só o Admin.
 
 > **Base inicial congelada:** `producao-base-inicial-v1` (commit `fb96a58`, aceita pelo Carlos). Veja `docs/producao/releases/BASE_INICIAL.md` e `PLANO_AJUSTES.md`. Melhorias só depois do aceite de início de G1.
+
+## G1 — edição do modelo no Excel (branch `claude/producao`; origem preservada na tag `historico/2026-10-09/g1-edicao-modelo`)
+
+- Ligar em **Configuração → EDITAR MODELOS NO EXCEL** (vem desligado). Aparece o botão **EDITAR NO EXCEL** em cada modelo.
+- Fluxo: COMEÇAR EDIÇÃO (cópia sem proteção em `dados/Modelos/_edicao/`) → ABRIR NO EXCEL (só Windows) → salvar e fechar → VALIDAR ALTERAÇÕES (nome, código, equipamento novo/removido, altura da linha, foto, logo, cabeçalho; código sem contrato; prova de geração da O.P.) → PUBLICAR NOVA VERSÃO (motivo obrigatório) ou DESCARTAR (a cópia fica guardada).
+- Garantias: arquivo novo por versão (nada sobrescrito), O.P. emitidas ficam no modelo da emissão, uma edição aberta por modelo, publicar sobre versão que mudou → 409, publica exatamente o arquivo validado (hash), reimportar o livro não substitui modelo editado no sistema (`modelos.editado_sistema`).
+- Código: `ascalpi_producao/modelos_edicao.py`; tabela `modelo_edicoes` (esquema 7); rotas `/api/modelos/{id}/edicao`, `/api/edicoes/{id}/abrir|validar|publicar|descartar` (POST exige o cabeçalho `X-ASCALPI: 1`, enviado pela tela).
+- Testes: `tests/test_edicao_modelo.py` (10). Suíte: **88 testes OK**. Fluxo conferido no navegador (1366 e 390 px), sem erro no console.
+- Falta: validação do Codex (tarefa V-G1 no quadro) e teste do Carlos no Windows com o Excel real (abrir, editar foto/altura, salvar).
+- **Teste do G1 no PC:** o G1 muda o esquema do banco para a versão 7. Testar com o código da `claude/producao` numa **pasta separada**, com uma **cópia** de `dados`; a instalação operacional só recebe o G1 depois do aceite e com autorização do Admin.
 
 ## O que é
 
@@ -24,9 +34,9 @@ python -m ascalpi_producao --dados /tmp/demo servir --porta 8765
 
 Os dados reais (27 livros `OK-*.xlsm`, o Controle e a pasta `dados/` importada) **não vão para o GitHub**: o repositório é público e contém dados de clientes. Na máquina do Carlos eles estão em `D:\PROGRAMAS\ASCALPI_Project\Modulos\ASCALPI_Producao\dados` (importados: 27 prefeituras, 45 modelos com o padrão "OP-" no nome da aba, 1.033 itens de contrato, 230 O.P. do histórico; próxima O.P. 258-26). Para testar com eles numa sessão em nuvem, anexe os arquivos na conversa.
 
-## Teste local no PC do Carlos (próximo passo)
+## Teste local no PC do Carlos (base aceita)
 
-1. No clone do repositório: `git pull origin modulo/producao-op`.
+1. No clone do repositório: `git pull origin modulo/producao-op` (módulo com a base G0; para o G1 veja a seção acima).
 2. Rodar `Modulos\ASCALPI_Producao\Atualizar_Copia_Local.cmd`: faz **backup de `dados`** (`backup_dados_<data>`) e copia o módulo para `D:\PROGRAMAS\ASCALPI_Project\Modulos\ASCALPI_Producao` sem tocar em `dados`, `config.json` nem bancos.
 3. Abrir `Iniciar_ASCALPI_Producao.cmd`. Na 1ª abertura o banco antigo (versão 1) é migrado sozinho até a versão 6, sem apagar nada (verificado com um banco criado pelo código original).
 4. Conferir: logos e fotos dos 27 livros; as 230 O.P. do histórico; próxima O.P.; Saldos (itens `0.x` como EXTRA); Configuração → avisos "CONTRATO A CONFERIR" / "SALDO DA PLANILHA A CONFERIR".

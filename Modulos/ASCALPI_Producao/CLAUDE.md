@@ -1,6 +1,6 @@
 # ASCALPI Produção — instruções do projeto
 
-**Primeiro leia `REGRAS_CENTRAIS.md` (regras comuns Claude ⇄ Codex, branches e integração; precede este arquivo) e `QUADRO_TAREFAS.md` (tarefas e mensagens).** Branch de trabalho do Claude: `claude/producao`; integração: `modulo/producao-op`.
+**Primeiro leia `REGRAS_CENTRAIS.md` (regras comuns Claude ⇄ Codex, branches e integração; precede este arquivo) e `QUADRO_TAREFAS.md` (tarefas e mensagens).** Branch executora do Claude: `claude/producao` (temporárias `claude/temp/<tema>` nascem dela e voltam para ela); módulo: `modulo/producao-op`; `Dev-Work` só por ordem do Admin; `main` só o Admin. Branches permitidas: `main`, `Dev-Work`, `claude/*`, `codex/*`, `modulo/*`; histórico encerrado fica em tags anotadas `historico/*`. Após cada commit, responder no quadro (SHA, o que fez, arquivos, testes, limitações, estado, próxima ação).
 
 Leia este arquivo inteiro, depois `docs/producao/releases/BASE_INICIAL.md` (versão congelada `producao-base-inicial-v1`), `PLANO_AJUSTES.md` e `PLANO_POS_BASELINE_ATA_MESTRE_E_PAGINACAO.md` (o que fazer a partir da base), `CONTINUAR.md` (estado atual, API, teste local) e `Codex_Plano_para_Claude.md` (achados R01–R09 e divisão Claude ⇄ Codex) antes de qualquer ação.
 
@@ -30,6 +30,7 @@ Módulo independente de **Ordens de Produção** do sistema **ASCALPI** (esse é
 | `legado.py` | Importador dos livros e do Controle |
 | `imagens.py` | Fotos e logos extraídos dos desenhos das abas |
 | `validacao.py` | Validação pura das entradas (antes de qualquer gravação) |
+| `modelos_edicao.py` | G1: cópia de trabalho do modelo, validação/prévia, nova versão, descarte |
 | `servico.py` | Fachada e regras de aplicação: situação da O.P., saldos, salvar/cancelar/acompanhar (transação única) |
 | `publicacao.py` | Publicação .xlsx/.pdf por formato, sem apagar o anterior |
 | `consultas.py` | Painel, resumo, eventos e pendências (só leitura) |
