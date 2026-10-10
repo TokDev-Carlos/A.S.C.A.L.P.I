@@ -41,6 +41,17 @@ def _hash(conteudo: bytes) -> str:
     return hashlib.sha256(conteudo).hexdigest()
 
 
+def _gravar_novo(destino: Path, conteudo: bytes) -> None:
+    """Grava num temporário ao lado e promove; em qualquer falha não sobra .tmp nem arquivo parcial."""
+    tmp = destino.with_name(destino.name + f".{secrets.token_hex(4)}.tmp")
+    try:
+        tmp.write_bytes(conteudo)
+        os.replace(tmp, destino)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
+
+
 def _sem_protecao(conteudo: bytes) -> bytes:
     """Cópia de trabalho editável: tira a proteção só da cópia (o modelo publicado não muda)."""
     partes = pacote.carregar(io.BytesIO(conteudo))
@@ -251,9 +262,9 @@ class EdicaoModelos:
         token = f"{datetime.now():%Y%m%d-%H%M%S}-{secrets.token_hex(3)}"
         rel = Path("Modelos") / PASTA_EDICAO / f"{modelo_id}-{token}" / f"{sanitizar_nome(m['codename'])}.xlsx"
         destino = self.s.dados / rel
-        destino.parent.mkdir(parents=True, exist_ok=True)
-        destino.write_bytes(_sem_protecao(conteudo))
         try:
+            destino.parent.mkdir(parents=True, exist_ok=True)
+            _gravar_novo(destino, _sem_protecao(conteudo))
             with self.s.banco.transacao() as con:
                 cur = con.execute("INSERT INTO modelo_edicoes (modelo_id, arquivo_origem, hash_origem, arquivo_trabalho, "
                                   "estado, criado_em) VALUES (?,?,?,?, 'ABERTA', ?)",
@@ -261,16 +272,24 @@ class EdicaoModelos:
                 self.s.banco.evento(con, "MODELO_EDICAO_INICIADA", {"modelo": modelo_id, "edicao": cur.lastrowid})
         except sqlite3.IntegrityError:
             # outra requisição abriu a edição ao mesmo tempo (índice único): devolve a que ficou valendo
-            destino.unlink(missing_ok=True)
+            self._limpar_copia(destino)
             existente = self.s.banco.um("SELECT * FROM modelo_edicoes WHERE modelo_id = ? AND estado = 'ABERTA'",
                                         (modelo_id,))
             if not existente:
                 raise
             return self._publico(existente)
-        except Exception:
-            destino.unlink(missing_ok=True)
+        except BaseException:
+            self._limpar_copia(destino)                     # nem cópia parcial nem pasta vazia (V-G1-03B)
             raise
         return self._publico(self._sessao(cur.lastrowid))
+
+    @staticmethod
+    def _limpar_copia(destino: Path) -> None:
+        destino.unlink(missing_ok=True)
+        try:
+            destino.parent.rmdir()                          # só a pasta desta edição, e só se vazia
+        except OSError:
+            pass
 
     def abrir(self, sessao_id: int) -> dict:
         """Abre a cópia de trabalho no programa padrão do .xlsx (Excel) — só no Windows, por ação do usuário."""
@@ -296,7 +315,11 @@ class EdicaoModelos:
         r = analisar(self._origem(e, m), novo, self._codigos_contrato(m))
         r["usada_em_ops"] = self.s.banco.um("SELECT COUNT(*) n FROM ops WHERE modelo_id = ?", (m["id"],))["n"]
         with self.s.banco.transacao() as con:
-            con.execute("UPDATE modelo_edicoes SET validacao = ? WHERE id = ?", (json.dumps(r, ensure_ascii=False), sessao_id))
+            n = con.execute("UPDATE modelo_edicoes SET validacao = ? WHERE id = ? AND estado = 'ABERTA'",
+                            (json.dumps(r, ensure_ascii=False), sessao_id)).rowcount
+            if not n:                                       # finalizada enquanto validava (V-G1-04)
+                atual = con.execute("SELECT estado FROM modelo_edicoes WHERE id = ?", (sessao_id,)).fetchone()
+                raise ErroConflitoEdicao(f"ESTA EDIÇÃO JÁ FOI {atual[0] if atual else 'REMOVIDA'}.")
         return r
 
     def publicar(self, sessao_id: int, motivo: object, hash_validado: object) -> dict:
@@ -325,13 +348,11 @@ class EdicaoModelos:
             raise ErroValidacao("NENHUMA ALTERAÇÃO PARA PUBLICAR.")
         pasta = (self.s.dados / e["arquivo_origem"]).parent
         destino = pasta / f"{sanitizar_nome(m['codename'])}.{datetime.now():%Y%m%d-%H%M%S-%f}.xlsx"
-        tmp = destino.with_name(destino.name + f".{secrets.token_hex(4)}.tmp")
-        tmp.write_bytes(novo)
-        os.replace(tmp, destino)                            # arquivo novo; nenhum existente é sobrescrito
         rel = destino.relative_to(self.s.dados).as_posix()
         linhas = documento.linhas_do_modelo(novo)
         cab = documento.cabecalho_do_modelo(novo)
         try:
+            _gravar_novo(destino, novo)                     # arquivo novo; .tmp limpo se a promoção falhar (V-G1-03A)
             with self.s.banco.transacao() as con:
                 atual = con.execute("SELECT arquivo FROM modelos WHERE id = ?", (m["id"],)).fetchone()[0]
                 if atual != e["arquivo_origem"]:

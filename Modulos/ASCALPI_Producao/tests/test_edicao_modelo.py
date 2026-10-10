@@ -8,11 +8,12 @@ import urllib.error
 import urllib.request
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
 
 import openpyxl
 
 from ascalpi_producao import legado
-from ascalpi_producao.modelos_edicao import ErroConflitoEdicao
+from ascalpi_producao.modelos_edicao import PASTA_EDICAO, ErroConflitoEdicao
 from ascalpi_producao.servico import ErroValidacao, Servico
 from ascalpi_producao.servidor import servir
 from tests.apoio import criar_controle, criar_livro
@@ -340,6 +341,67 @@ class TestEdicaoModelo(unittest.TestCase):
                           self.s.banco.um("SELECT estado FROM modelo_edicoes WHERE id = ?", (e["id"],))["estado"]),
                          antes_banco)
         self.assertEqual(set((self.s.dados / "Modelos").rglob("*.xlsx")), antes_arquivos)   # nenhum arquivo órfão
+
+
+    # ------------------------------------------------------------ V-G1, 3ª revisão (Codex, 10/10/2026)
+    def _arquivos(self) -> set:
+        return {p.relative_to(self.s.dados).as_posix() for p in (self.s.dados / "Modelos").rglob("*")}
+
+    def test_vg1_03a_falha_ao_promover_publicacao_nao_deixa_tmp(self):
+        e = self.s.edicao.iniciar(self.modelo["id"])
+        self._editar(e, lambda ws: ws.__setitem__("B10", "NOVO"))
+        r = self.s.edicao.validar(e["id"])
+        antes, arquivo = self._arquivos(), self.modelo_arquivo()
+        with patch("ascalpi_producao.modelos_edicao.os.replace", side_effect=OSError("DISCO CHEIO (SIMULADO)")):
+            with self.assertRaises(OSError):
+                self.s.edicao.publicar(e["id"], "motivo", r["hash"])
+        self.assertEqual(self._arquivos(), antes)                    # nem .tmp nem versão parcial
+        self.assertEqual(self.modelo_arquivo(), arquivo)             # versão anterior intacta
+        self.assertEqual(self.s.banco.um("SELECT estado FROM modelo_edicoes WHERE id = ?", (e["id"],))["estado"], "ABERTA")
+        self.assertTrue(self.s.edicao.publicar(e["id"], "motivo", r["hash"])["ok"])   # e dá para tentar de novo
+
+    def test_vg1_03b_escrita_parcial_ao_iniciar_nao_deixa_copia(self):
+        antes = self._arquivos()
+        original = Path.write_bytes
+
+        def parcial(caminho, dados):
+            original(caminho, dados[:32])                             # grava um pedaço e o disco falha
+            raise OSError("DISCO CHEIO (SIMULADO)")
+        with patch.object(Path, "write_bytes", parcial):
+            with self.assertRaises(OSError):
+                self.s.edicao.iniciar(self.modelo["id"])
+        self.assertEqual(self.s.banco.um("SELECT COUNT(*) n FROM modelo_edicoes")["n"], 0)
+        self.assertLessEqual(self._arquivos() - antes, {f"Modelos/{PASTA_EDICAO}"})   # nada além da pasta raiz
+        e = self.s.edicao.iniciar(self.modelo["id"])                  # e dá para tentar de novo
+        with zipfile.ZipFile(self._copia(e)) as z:
+            self.assertIsNone(z.testzip())
+
+    def test_vg1_04_validar_nao_grava_em_edicao_descartada(self):
+        e = self.s.edicao.iniciar(self.modelo["id"])
+        sem_validacao = self.s.banco.um("SELECT validacao FROM modelo_edicoes WHERE id = ?", (e["id"],))["validacao"]
+        from ascalpi_producao import modelos_edicao
+        real, entrou, liberar, saida = modelos_edicao.analisar, threading.Event(), threading.Event(), {}
+
+        def analisar_lento(*a, **k):
+            entrou.set()
+            liberar.wait(10)
+            return real(*a, **k)
+
+        def validar():
+            try:
+                saida["r"] = self.s.edicao.validar(e["id"])
+            except Exception as erro:
+                saida["erro"] = erro
+        with patch.object(modelos_edicao, "analisar", analisar_lento):
+            t = threading.Thread(target=validar)
+            t.start()
+            self.assertTrue(entrou.wait(10))
+            self.s.edicao.descartar(e["id"])                          # descartada no meio da validação
+            liberar.set()
+            t.join(10)
+        self.assertIsInstance(saida.get("erro"), ErroConflitoEdicao, saida)
+        s = self.s.banco.um("SELECT estado, validacao FROM modelo_edicoes WHERE id = ?", (e["id"],))
+        self.assertEqual((s["estado"], s["validacao"]), ("DESCARTADA", sem_validacao))   # nada gravado depois do descarte
 
 
 class TestProtecaoDaApi(unittest.TestCase):
