@@ -11,7 +11,8 @@ Antes de qualquer ação neste módulo, leia nesta ordem:
 Resumo (ordem ORG-2 do Admin `ToKDev-Carlos`, 10/10/2026):
 
 - Agentes autorizados: Claude/Claude Code (implementação, `claude/producao`) e Codex/ChatGPT (validação e revisão, `codex/producao`). Nenhum outro.
-- Fluxo: `temporária → executora → modulo/producao-op → Dev-Work → main`. Temporárias nascem da sua executora (`codex/tmp-<tema>`) e voltam para ela.
+- Fluxo: `temporária → executora → modulo/producao-op → Dev-Work → main`. Temporárias nascem da sua executora (`codex/temp/<tema>`) e voltam para ela.
+- Branches permitidas: `main`, `Dev-Work`, `claude/*`, `codex/*`, `modulo/*`. Histórico encerrado fica em tags anotadas `historico/AAAA-MM-DD/<nome>` e só é consultado quando solicitado.
 - Na `modulo/producao-op`: só merge da sua entrega já revisada e atualizações do `QUADRO_TAREFAS.md`. Em `Dev-Work`: só com ordem expressa do Admin. Na `main`: nunca (só o Admin).
 - Após **cada commit**, responder no quadro: SHA, o que fez, arquivos, testes, limitações, estado e próxima ação.
 - Não apagar, renomear ou reescrever branch, tag ou histórico sem ordem expressa do Admin.

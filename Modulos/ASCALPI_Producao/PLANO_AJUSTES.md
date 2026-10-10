@@ -4,7 +4,7 @@ A versão `producao-base-inicial-v1` (commit `fb96a58`) está **congelada e acei
 
 ## Organização (10/10/2026)
 
-Branches e regras de colaboração: `REGRAS_CENTRAIS.md`; estado das tarefas: `QUADRO_TAREFAS.md`. Fluxo (ordem ORG-2): `temporária → executora → modulo/producao-op → Dev-Work → main`. O G1 segue na executora `claude/producao` (a `ajustes/g1-edicao-modelo` virou histórico).
+Branches e regras de colaboração: `REGRAS_CENTRAIS.md`; estado das tarefas: `QUADRO_TAREFAS.md`. Fluxo (ordens ORG-2/ORG-3): `temporária → executora → modulo/producao-op → Dev-Work → main`. O G1 segue na executora `claude/producao`; a antiga branch solta foi encerrada e preservada na tag `historico/2026-10-09/g1-edicao-modelo`.
 
 ## Plano vigente
 
@@ -14,7 +14,7 @@ O plano de evolução é do Codex: `PLANO_POS_BASELINE_ATA_MESTRE_E_PAGINACAO.md
 |---|---|---|
 | G0 | Validar e congelar a base | **Aprovado**; tag `producao-base-inicial-v1` no GitHub |
 | Estabilização | Proteção do XLSX emitido (ressalva 1) | Encerrada: edição foi pelo sistema (REV), comportamento previsto |
-| G1 | Editar modelo no Excel (cópia de trabalho, nova versão) | **Implementado** na branch `claude/producao` (antes `ajustes/g1-edicao-modelo`) (flag desligada por padrão); aguardando teste do Carlos no Windows e revisão do Codex |
+| G1 | Editar modelo no Excel (cópia de trabalho, nova versão) | **Implementado** na branch `claude/producao` (histórico inicial preservado na tag `historico/2026-10-09/g1-edicao-modelo`) (flag desligada por padrão); aguardando teste do Carlos no Windows e revisão do Codex |
 | G2 | Paginação pela altura original das linhas | Bloqueado |
 | G3 | Catálogo mestre por ATA e adesões parciais | Bloqueado |
 | G4 | Variantes 1.1 / 1.2 sobre o código-base | Bloqueado |
@@ -29,4 +29,4 @@ O plano de evolução é do Codex: `PLANO_POS_BASELINE_ATA_MESTRE_E_PAGINACAO.md
 
 ## Material histórico
 
-Branch histórica `Codex_Rev` (somente leitura): revisão sobre `b691e8e` (R01–R09, já corrigidos na base). `reproduzir_achados.py` não roda mais contra a base (código reorganizado); use a suíte em `tests/`.
+Tag histórica `historico/2026-10-09/codex-revisao-r01-r09` (`4b90e72`): revisão sobre `b691e8e` (R01–R09, já corrigidos na base). Consultar somente quando solicitado. `reproduzir_achados.py` não roda mais contra a base (código reorganizado); use a suíte em `tests/`.

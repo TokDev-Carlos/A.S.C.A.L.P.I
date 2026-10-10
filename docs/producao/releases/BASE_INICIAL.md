@@ -42,7 +42,7 @@ Registro formal do congelamento (marco **G0** de `Modulos/ASCALPI_Producao/PLANO
 
 ## Regras para evoluir
 
-1. A tag não se move. Ajustes seguem o fluxo de `Modulos/ASCALPI_Producao/REGRAS_CENTRAIS.md` §2 (ordem ORG-2): temporária `claude/tmp-<tema>`/`codex/tmp-<tema>` → executora → `modulo/producao-op` → `Dev-Work` (ordem do Admin) → `main` (Admin).
+1. A tag não se move. Ajustes seguem o fluxo de `Modulos/ASCALPI_Producao/REGRAS_CENTRAIS.md` §2: temporária `claude/temp/<tema>`/`codex/temp/<tema>` → executora → `modulo/producao-op` → `Dev-Work` (ordem do Admin) → `main` (Admin).
 2. Um ajuste por vez, commit pequeno, teste junto; suíte inteira verde antes e depois. Nenhum teste é removido ou enfraquecido.
 3. Regra de negócio só muda com decisão registrada do Carlos.
 4. Dados reais, senhas e caminhos de servidor ficam fora do GitHub (repositório público).

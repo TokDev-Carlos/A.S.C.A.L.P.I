@@ -1,6 +1,6 @@
 # ASCALPI Produção — instruções do projeto
 
-**Primeiro leia `REGRAS_CENTRAIS.md` (regras comuns Claude ⇄ Codex, branches e integração; precede este arquivo) e `QUADRO_TAREFAS.md` (tarefas e mensagens).** Branch executora do Claude: `claude/producao` (temporárias `claude/tmp-<tema>` nascem dela e voltam para ela); módulo: `modulo/producao-op`; `Dev-Work` só por ordem do Admin; `main` só o Admin. Após cada commit, responder no quadro (SHA, o que fez, arquivos, testes, limitações, estado, próxima ação).
+**Primeiro leia `REGRAS_CENTRAIS.md` (regras comuns Claude ⇄ Codex, branches e integração; precede este arquivo) e `QUADRO_TAREFAS.md` (tarefas e mensagens).** Branch executora do Claude: `claude/producao` (temporárias `claude/temp/<tema>` nascem dela e voltam para ela); módulo: `modulo/producao-op`; `Dev-Work` só por ordem do Admin; `main` só o Admin. Branches permitidas: `main`, `Dev-Work`, `claude/*`, `codex/*`, `modulo/*`; histórico encerrado fica em tags anotadas `historico/*`. Após cada commit, responder no quadro (SHA, o que fez, arquivos, testes, limitações, estado, próxima ação).
 
 Leia este arquivo inteiro, depois `docs/producao/releases/BASE_INICIAL.md` (versão congelada `producao-base-inicial-v1`), `PLANO_AJUSTES.md` e `PLANO_POS_BASELINE_ATA_MESTRE_E_PAGINACAO.md` (o que fazer a partir da base), `CONTINUAR.md` (estado atual, API, teste local) e `Codex_Plano_para_Claude.md` (achados R01–R09 e divisão Claude ⇄ Codex) antes de qualquer ação.
 

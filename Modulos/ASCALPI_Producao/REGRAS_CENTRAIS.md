@@ -1,7 +1,7 @@
 # ASCALPI Produção — Regras Centrais de Colaboração (Claude ⇄ Codex)
 
-> **Versão:** 2 · 10/10/2026 · ordem administrativa **ORG-2** do Admin `ToKDev-Carlos` (registrada no `QUADRO_TAREFAS.md`, commit `ba18b27`).
-> **Estado:** entregue pelo Claude em `claude/producao`; aguarda a validação do Codex e o aceite final do Admin (seção 13).
+> **Versão:** 3 · 10/10/2026 · ordens administrativas **ORG-2/ORG-3** do Admin `ToKDev-Carlos`.
+> **Estado:** ORG-2 entregue pelo Claude em `b9ae904`; padrão final de nomes e preservação histórica em tags aplicado pelo Codex por ordem do Admin (seção 13).
 > **Vale para:** todo trabalho no módulo `Modulos/ASCALPI_Producao` e nos documentos `docs/producao/`.
 > **Precedência:** ordem/decisão registrada do Admin > **este documento** > `CLAUDE.md` / `AGENTS.md` > planos de marco (`PLANO_POS_BASELINE_*`, `PLANO_AJUSTES.md`) > `CONTINUAR.md` > `Codex_Plano_para_Claude.md` (histórico). Em conflito, vale o de maior precedência, e o conflito é anotado no quadro.
 
@@ -41,12 +41,37 @@ branch temporária ──► branch da IA executora ──► branch do módulo 
 | **Módulo** | `modulo/producao-op` | Integração do módulo de Produção: junta e testa o trabalho dos dois agentes. | Claude e Codex, só por merge commit de entrega revisada (seção 5) e pelo `QUADRO_TAREFAS.md` |
 | **Executora** | `claude/producao` | Linha de trabalho do Claude | Só o Claude |
 | **Executora** | `codex/producao` | Linha de trabalho do Codex | Só o Codex |
-| **Temporária** | `claude/tmp-<tema>` · `codex/tmp-<tema>` | Uma tarefa curta, criada **a partir da executora do mesmo agente** e integrada de volta **nela**. Nunca vira linha permanente nem recebe trabalho de outro agente. Depois de integrada fica parada (apagar só com ordem do Admin). | Só o agente dono |
-| **Histórica (somente leitura)** | ver 2.3 | Registro; ninguém trabalha nelas | Ninguém |
+| **Temporária** | `claude/temp/<tema>` · `codex/temp/<tema>` | Uma tarefa curta, criada **a partir da executora do mesmo agente** e integrada de volta **nela**. Nunca vira linha permanente nem recebe trabalho de outro agente. Depois de integrada, seu SHA final é preservado por tag quando necessário e a branch é removida com autorização do Admin. | Só o agente dono |
+| **Histórico** | tag anotada `historico/AAAA-MM-DD/<nome>` | Referência imutável de trabalho encerrado. Não é branch, não recebe commits e só é consultada quando solicitada. | Ninguém move ou recria; criação/remoção só por ordem do Admin |
 
 Referência imutável: tag **`producao-base-inicial-v1`** → `fb96a58` (base aceita, G0). **Nunca mover, recriar nem apagar.**
 
-### 2.3 Inventário em 10/10/2026
+### 2.3 Padrão obrigatório de nomes
+
+Somente estes nomes ou prefixos são permitidos:
+
+- `main`;
+- `Dev-Work`;
+- `modulo/*`;
+- `claude/*`;
+- `codex/*`.
+
+Não criar branches soltas como `ajustes/*`, `feature/*`, `fix/*`, `Codex_Rev` ou qualquer nome sem o responsável e o nível do fluxo. Agente novo recebe prefixo próprio somente por ordem do Admin. Branch temporária usa obrigatoriamente `claude/temp/*` ou `codex/temp/*`.
+
+### 2.4 Preservação e encerramento de branches
+
+Quando uma branch temporária ou histórica não for mais necessária:
+
+1. confirmar o SHA final e que nenhum trabalho ativo depende dela;
+2. confirmar a integração ou registrar por que ela é somente referência;
+3. criar tag **anotada** `historico/AAAA-MM-DD/<nome>` no SHA final;
+4. conferir a tag no remoto e o SHA apontado;
+5. remover a branch remota somente após ordem expressa do Admin;
+6. registrar tag, SHA e remoção no `QUADRO_TAREFAS.md`.
+
+Tags históricas são somente para consulta quando solicitada. Nunca são origem de merge automático. Qualquer recuperação nasce em nova branch temporária do agente responsável, a partir do SHA exato e com autorização do Admin.
+
+### 2.5 Inventário ativo após a ORG-3
 
 Contagens: commits à frente (+) e atrás (−) da `main`.
 
@@ -54,18 +79,21 @@ Contagens: commits à frente (+) e atrás (−) da `main`.
 |---|---|---|---|---|
 | `main` | `07b3611` | Oficial | Sem o módulo de Produção; ancestral de todas as abaixo | — |
 | `Dev-Work` | `3a3946c` | Desenvolvimento conjunto | 3 commits próprios (bootstrap sanitizado de 31/08 e 01/09); **ainda sem o módulo**; integração só por ordem do Admin | +3 / −0 |
-| `modulo/producao-op` | `ba18b27` | Módulo | Base G0 + documentação + ordem ORG-2; origem do PR #4 (ver 2.4) | +47 / −0 |
-| `claude/producao` | entrega ORG-2 | Executora (Claude) | Contém o **G1** (`e9638d2`) + regras v2; não integrada no módulo | +48 / −0 antes desta entrega |
-| `codex/producao` | `773735f` | Executora (Codex) | Criada da integração; sem trabalho próprio ainda | +45 / −0 |
-| `ajustes/g1-edicao-modelo` | `e9638d2` | Histórica | Foi a temporária do G1; conteúdo inteiro em `claude/producao` | +45 / −0 |
-| `codex/apoio-producao` | `91f2864` | Histórica | Entrega do Codex (R06/R08/R09, testes R07); já no módulo (PR #3) | +14 / −0 |
-| `Codex_Rev` | `4b90e72` | Histórica | Auditoria R01–R09 sobre `b691e8e`; 3 commits só de documentação de revisão | +9 / −0 |
-| `codex/revisao-plano-op-2026-10-09` | `8662eae` | Histórica | 1ª entrega da revisão; substituída por `Codex_Rev` | +7 / −0 |
+| `modulo/producao-op` | atualizado pela ORG-3 | Módulo | Base G0 + documentação de organização; origem do PR #4 (ver 2.6) | consultar Git |
+| `claude/producao` | `b9ae904` na entrega ORG-2 | Executora (Claude) | Contém o **G1** (`e9638d2`) + entrega ORG-2; G1 ainda não integrado no módulo | consultar Git |
+| `codex/producao` | atualizado pela ORG-3 | Executora (Codex) | Validação da ORG-2 e política final de branches/tags | consultar Git |
 | tag `producao-base-inicial-v1` | `fb96a58` | Tag imutável | Base G0 aceita | — |
 
-Nenhuma branch, tag ou histórico foi apagado, renomeado ou reescrito nesta reorganização.
+Histórico convertido em tags por ordem do Admin:
 
-### 2.4 Ponto para decisão do Admin: PR #4
+| Tag | SHA preservado | Origem encerrada |
+|---|---|---|
+| `historico/2026-10-09/g1-edicao-modelo` | `e9638d2` | `ajustes/g1-edicao-modelo` |
+| `historico/2026-10-09/codex-apoio-producao` | `91f2864` | `codex/apoio-producao` |
+| `historico/2026-10-09/codex-revisao-r01-r09` | `4b90e72` | `Codex_Rev` |
+| `historico/2026-10-09/codex-primeira-revisao-plano` | `8662eae` | `codex/revisao-plano-op-2026-10-09` |
+
+### 2.6 Ponto para decisão do Admin: PR #4
 
 O PR #4 está aberto como `modulo/producao-op` → `main`, o que **pula a `Dev-Work`** no fluxo da seção 2.1. Os agentes não mexem nele. Cabe ao Admin decidir se o PR fica como está, é fechado ou é refeito como `modulo/producao-op` → `Dev-Work` quando ordenar essa integração.
 
@@ -85,7 +113,7 @@ Estados no quadro: `A FAZER` → `EM ANDAMENTO` → `EM REVISÃO` → `AJUSTES P
 ## 4. Regras gerais de git
 
 - Toda integração entre branches é por **merge commit** (`git merge --no-ff`). Nada de rebase, `--force`, `reset` ou reescrita de histórico em branch publicada.
-- Branch temporária nasce da executora do mesmo agente e volta para ela. Nunca de `main`, `Dev-Work` ou do módulo.
+- Branch temporária nasce da executora do mesmo agente, usa `claude/temp/*` ou `codex/temp/*` e volta para a executora. Nunca nasce de `main`, `Dev-Work` ou do módulo.
 - Integração que deixa a suíte vermelha é desfeita com `git revert` do merge (nunca apagando histórico), e a tarefa volta para `AJUSTES PEDIDOS`.
 
 ## 5. Integração da executora no módulo (`modulo/producao-op`)
@@ -162,6 +190,8 @@ Quem integra: o dono da entrega, depois da revisão; o revisor não integra a en
 - Integrar qualquer módulo na `Dev-Work` sem ordem expressa do Admin; criar outra branch `Dev`.
 - Push na executora ou numa temporária do outro agente.
 - Criar temporária fora da própria executora, ou mantê-la como linha permanente.
+- Criar branch fora de `main`, `Dev-Work`, `modulo/*`, `claude/*` ou `codex/*`.
+- Usar branch como arquivo histórico; trabalho encerrado é preservado por tag anotada e registrado no quadro.
 - `push --force`, rebase ou reset de qualquer branch publicada.
 - Apagar, renomear ou reescrever branch, tag ou histórico sem ordem expressa do Admin; mover ou recriar a tag `producao-base-inicial-v1`.
 - Apagar ou enfraquecer teste.
@@ -172,8 +202,8 @@ Quem integra: o dono da entrega, depois da revisão; o revisor não integra a en
 
 | Quem | Situação | Data | Observações |
 |---|---|---|---|
-| Admin (`ToKDev-Carlos`) | Concordou com a cooperação e ordenou a topologia (ORG-2) | 10/10/2026 | Aceite final pendente após a validação do Codex |
-| Claude | Entregou a versão 2 | 10/10/2026 | `claude/producao` |
-| Codex | PENDENTE | — | Validar topologia, documentos e preservação; registrar `DE ACORDO` ou `AJUSTES PEDIDOS` no quadro |
+| Admin (`ToKDev-Carlos`) | APROVOU a topologia e o padrão final de branches/tags (ORG-2/ORG-3) | 10/10/2026 | Somente cinco grupos: `main`, `Dev-Work`, `claude/*`, `codex/*`, `modulo/*` |
+| Claude | Entregou a versão 2 | 10/10/2026 | `b9ae904` em `claude/producao` |
+| Codex | DE ACORDO COM AJUSTE APLICADO | 10/10/2026 | Versão 3: nomes padronizados e histórico preservado em tags anotadas |
 
 Mudanças neste documento: proposta no quadro → acordo dos dois agentes → aprovação do Admin → nova versão aqui (número e data).

@@ -1,10 +1,10 @@
 # Continuar o módulo ASCALPI Produção na nuvem
 
-Estado em 10/10/2026. **Branches (ordem ORG-2, ver `REGRAS_CENTRAIS.md` §2):** fluxo `temporária → claude/producao | codex/producao → modulo/producao-op → Dev-Work → main`. O módulo (`modulo/producao-op`) tem a base G0 aceita; o G1 está só na executora do Claude (`claude/producao`). Integração em `Dev-Work` só por ordem do Admin; `main` só o Admin.
+Estado em 10/10/2026. **Branches (ordens ORG-2/ORG-3, ver `REGRAS_CENTRAIS.md` §2):** fluxo `temporária → claude/producao | codex/producao → modulo/producao-op → Dev-Work → main`. Somente `main`, `Dev-Work`, `claude/*`, `codex/*` e `modulo/*` são permitidas; histórico encerrado fica em tags anotadas `historico/*`. O módulo (`modulo/producao-op`) tem a base G0 aceita; o G1 está só na executora do Claude (`claude/producao`). Integração em `Dev-Work` só por ordem do Admin; `main` só o Admin.
 
 > **Base inicial congelada:** `producao-base-inicial-v1` (commit `fb96a58`, aceita pelo Carlos). Veja `docs/producao/releases/BASE_INICIAL.md` e `PLANO_AJUSTES.md`. Melhorias só depois do aceite de início de G1.
 
-## G1 — edição do modelo no Excel (branch `claude/producao`; a antiga `ajustes/g1-edicao-modelo` é histórica)
+## G1 — edição do modelo no Excel (branch `claude/producao`; origem preservada na tag `historico/2026-10-09/g1-edicao-modelo`)
 
 - Ligar em **Configuração → EDITAR MODELOS NO EXCEL** (vem desligado). Aparece o botão **EDITAR NO EXCEL** em cada modelo.
 - Fluxo: COMEÇAR EDIÇÃO (cópia sem proteção em `dados/Modelos/_edicao/`) → ABRIR NO EXCEL (só Windows) → salvar e fechar → VALIDAR ALTERAÇÕES (nome, código, equipamento novo/removido, altura da linha, foto, logo, cabeçalho; código sem contrato; prova de geração da O.P.) → PUBLICAR NOVA VERSÃO (motivo obrigatório) ou DESCARTAR (a cópia fica guardada).
