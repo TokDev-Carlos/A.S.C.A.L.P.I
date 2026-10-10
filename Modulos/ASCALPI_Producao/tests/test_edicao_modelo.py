@@ -404,6 +404,76 @@ class TestEdicaoModelo(unittest.TestCase):
         self.assertEqual((s["estado"], s["validacao"]), ("DESCARTADA", sem_validacao))   # nada gravado depois do descarte
 
 
+    # ------------------------------------------------------------ teste real no Excel (Codex, 10/10/2026)
+    def _mexer_xml(self, caminho: Path, trocar) -> None:
+        """Altera o XML da aba como o Excel faria ao salvar (sem openpyxl, que reescreve tudo)."""
+        from ascalpi_producao import pacote
+        partes = pacote.carregar(io.BytesIO(caminho.read_bytes()))
+        aba = next(n for n in partes if n.startswith("xl/worksheets/sheet"))
+        partes[aba] = trocar(partes[aba].decode("utf-8")).encode("utf-8")
+        caminho.write_bytes(pacote.salvar(partes))
+
+    def _com_altura_80(self):
+        """Modelo publicado com a linha 11 em 80 pt, antes de começar a edição."""
+        import re
+        self._mexer_xml(self.s.dados / self.modelo_arquivo(),
+                        lambda x: re.sub(r'<row r="11"', '<row r="11" ht="80" customHeight="1"', x, count=1))
+
+    @staticmethod
+    def _salvo_pelo_excel(x: str) -> str:
+        """O que o Excel muda só por abrir e salvar: altura no grid de pixels (80 → 80.05), altura padrão
+        escrita nas linhas sem altura e número com a precisão binária completa (2.1 → 2.1000000000000001)."""
+        import re
+        x = x.replace('ht="80"', 'ht="80.05"')
+        x = re.sub(r'<row r="(1[02-9])"(?![^>]*\bht=)', r'<row r="\1" ht="15"', x)
+        return x.replace('<c r="A12" t="inlineStr"><is><t>2.1</t></is></c>', '<c r="A12"><v>2.1000000000000001</v></c>')
+
+    def test_excel_abrir_e_salvar_sem_editar_nao_gera_diferencas(self):
+        self._com_altura_80()
+        e = self.s.edicao.iniciar(self.modelo["id"])
+        self._mexer_xml(self._copia(e), self._salvo_pelo_excel)
+        r = self.s.edicao.validar(e["id"])
+        self.assertTrue(r["ok"], r["erros"])
+        self.assertEqual(r["diferencas"], [])
+        self.assertIn("NENHUMA ALTERAÇÃO EM RELAÇÃO AO MODELO PUBLICADO.", r["avisos"])
+
+    def test_excel_normalizacao_de_altura_nao_polui_a_previa(self):
+        self._com_altura_80()
+        e = self.s.edicao.iniciar(self.modelo["id"])
+        for ht in ("80.05", "79.95", "80.04999999999999"):         # ~0,05 pt: arredondamento do Excel
+            self._mexer_xml(self._copia(e), lambda x, ht=ht: __import__("re").sub(r'\bht="[^"]+"', f'ht="{ht}"', x, count=1))
+            self.assertFalse([d for d in self.s.edicao.validar(e["id"])["diferencas"] if d["tipo"] == "ALTURA"], ht)
+
+    def test_excel_alteracao_real_de_altura_continua_detectada(self):
+        self._com_altura_80()
+        e = self.s.edicao.iniciar(self.modelo["id"])
+        self._mexer_xml(self._copia(e), lambda x: self._salvo_pelo_excel(x).replace('ht="80.05"', 'ht="110"'))
+        alturas = [d for d in self.s.edicao.validar(e["id"])["diferencas"] if d["tipo"] == "ALTURA"]
+        self.assertEqual(alturas, [{"tipo": "ALTURA", "linha": 11, "antes": "80", "depois": "110"}])
+
+    def test_excel_nome_e_foto_continuam_detectados(self):
+        self._com_altura_80()
+        e = self.s.edicao.iniciar(self.modelo["id"])
+        caminho = self._copia(e)
+        wb = openpyxl.load_workbook(caminho)
+        ws = wb.active
+        ws["B10"] = "BALANÇO NOVO"
+        from openpyxl.drawing.image import Image as Imagem
+        from PIL import Image as PIL
+        png = io.BytesIO()
+        PIL.new("RGB", (8, 8), (200, 0, 0)).save(png, "PNG")
+        png.seek(0)
+        img = Imagem(png)
+        img.anchor = "C12"
+        ws.add_image(img)
+        wb.save(caminho)
+        self._mexer_xml(caminho, self._salvo_pelo_excel)
+        tipos = {(d["tipo"], d["linha"]) for d in self.s.edicao.validar(e["id"])["diferencas"]}
+        self.assertIn(("NOME", 10), tipos)
+        self.assertTrue(any(t == "FOTO" for t, _ in tipos), tipos)
+        self.assertFalse([t for t in tipos if t[0] in ("CODIGO", "ALTURA")], tipos)
+
+
 class TestProtecaoDaApi(unittest.TestCase):
     """Toda ação que grava exige o cabeçalho da tela; nomes de domínio no Host são recusados (DNS rebinding)."""
 

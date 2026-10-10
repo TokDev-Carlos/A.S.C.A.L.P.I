@@ -31,6 +31,10 @@ from .validacao import ErroValidacao, motivo_obrigatorio
 
 PASTA_EDICAO = "_edicao"          # dentro de <dados>/Modelos (fora das pastas varridas pela limpeza do legado)
 _ROW = re.compile(r"<row\b([^>]*)>|<row\b([^>]*)/>")
+# Excel guarda a altura em pontos no grid de pixels: abrir e salvar move ~0,05 pt. O menor ajuste possível pela
+# tela é 1 pixel (0,75 pt a 100%, 0,375 pt a 200%); abaixo de 0,25 pt é arredondamento, não alteração.
+TOLERANCIA_ALTURA = 0.25
+_NUMERO_BINARIO = re.compile(r"-?\d+\.\d{12,}")   # 2.1000000000000001: precisão binária completa do Excel
 
 
 class ErroConflitoEdicao(ValueError):
@@ -64,17 +68,36 @@ def _sem_protecao(conteudo: bytes) -> bytes:
     return pacote.salvar(partes)
 
 
-def _alturas(partes: dict, parte: str) -> dict[int, str | None]:
+def _alturas(partes: dict, parte: str) -> tuple[dict[int, float], float]:
+    """Altura explícita de cada linha (pt) e a altura padrão da aba (linhas sem `ht`)."""
     xml = partes[parte].decode("utf-8")
-    saida: dict[int, str | None] = {}
+    padrao = re.search(r'<sheetFormatPr\b[^>]*\bdefaultRowHeight="([^"]+)"', xml)
+    saida: dict[int, float] = {}
     for m in _ROW.finditer(xml):
         attrs = m.group(1) or m.group(2) or ""
         r = re.search(r'\br="(\d+)"', attrs)
-        if not r:
-            continue
         ht = re.search(r'\bht="([^"]+)"', attrs)
-        saida[int(r.group(1))] = ht.group(1) if ht else None
-    return saida
+        if r and ht:
+            try:
+                saida[int(r.group(1))] = float(ht.group(1))
+            except ValueError:
+                pass
+    try:
+        return saida, float(padrao.group(1)) if padrao else 15.0
+    except ValueError:
+        return saida, 15.0
+
+
+def _pt(valor: float) -> str:
+    return f"{round(valor, 2):g}"
+
+
+def _codigo(texto: object) -> str:
+    """Código comparável: desfaz a precisão binária que o Excel grava em números (2.1000000000000001 → 2.1)."""
+    t = str(texto or "").strip()
+    if _NUMERO_BINARIO.fullmatch(t):
+        t = format(float(t), ".15g")
+    return normalizar_codigo(t)
 
 
 def _fotos(partes: dict) -> dict[object, str]:
@@ -115,7 +138,7 @@ def analisar(original: bytes, novo: bytes, codigos_contrato: set[str] | None) ->
     def repetidos(linhas: dict) -> set[str]:
         vistos, rep = set(), set()
         for l in linhas.values():
-            c = normalizar_codigo(l["codigo"])
+            c = _codigo(l["codigo"])
             if c:
                 (rep if c in vistos else vistos).add(c)
         return rep
@@ -140,16 +163,21 @@ def analisar(original: bytes, novo: bytes, codigos_contrato: set[str] | None) ->
         elif b and not a:
             dif.append({"tipo": "ADICIONADO", "linha": r, "antes": "", "depois": f"{b['codigo']} {b['equipamento']}".strip()})
         else:
-            if normalizar_codigo(a["codigo"]) != normalizar_codigo(b["codigo"]):
+            if _codigo(a["codigo"]) != _codigo(b["codigo"]):
                 dif.append({"tipo": "CODIGO", "linha": r, "antes": a["codigo"], "depois": b["codigo"]})
             if a["equipamento"] != b["equipamento"]:
                 dif.append({"tipo": "NOME", "linha": r, "antes": a["equipamento"], "depois": b["equipamento"]})
 
     # alturas originais das linhas (nunca recalculadas pelo sistema; só registradas)
-    h_orig, h_nova = _alturas(p_orig, aba_orig["parte"]), _alturas(partes, aba_nova["parte"])
+    # comparação numérica: linha sem `ht` vale a altura padrão da aba; diferença < TOLERANCIA_ALTURA é do Excel
+    (h_orig, pad_orig), (h_nova, pad_nova) = _alturas(p_orig, aba_orig["parte"]), _alturas(partes, aba_nova["parte"])
     for r in range(1, documento.LINHA_FIM + 1):
-        if h_orig.get(r) != h_nova.get(r) and (r in l_orig or r in l_nova or r < documento.LINHA_INICIO):
-            dif.append({"tipo": "ALTURA", "linha": r, "antes": h_orig.get(r) or "PADRÃO", "depois": h_nova.get(r) or "PADRÃO"})
+        if not (r in l_orig or r in l_nova or r < documento.LINHA_INICIO):
+            continue
+        antes, depois = h_orig.get(r, pad_orig), h_nova.get(r, pad_nova)
+        if abs(antes - depois) >= TOLERANCIA_ALTURA:
+            dif.append({"tipo": "ALTURA", "linha": r,
+                        "antes": _pt(antes) if r in h_orig else "PADRÃO", "depois": _pt(depois) if r in h_nova else "PADRÃO"})
 
     # fotos e logo
     f_orig, f_nova = _fotos(p_orig), _fotos(partes)
@@ -164,9 +192,9 @@ def analisar(original: bytes, novo: bytes, codigos_contrato: set[str] | None) ->
 
     # contrato: código sem item (0.x são extras e não precisam estar no contrato)
     if codigos_contrato is not None:
-        faltam = sorted({normalizar_codigo(l["codigo"]) for l in l_nova.values()
-                         if normalizar_codigo(l["codigo"]) and not normalizar_codigo(l["codigo"]).startswith("0.")
-                         and codigo_base(normalizar_codigo(l["codigo"])) not in codigos_contrato})
+        faltam = sorted({_codigo(l["codigo"]) for l in l_nova.values()
+                         if _codigo(l["codigo"]) and not _codigo(l["codigo"]).startswith("0.")
+                         and codigo_base(_codigo(l["codigo"])) not in codigos_contrato})
         if faltam:
             avisos.append("CÓDIGO SEM ITEM NO CONTRATO (NÃO TERÁ SALDO): " + ", ".join(faltam))
 
@@ -365,7 +393,7 @@ class EdicaoModelos:
                                              cab["tipo"] or m["tipo_padrao"], m["id"]))
                 con.execute("DELETE FROM modelo_linhas WHERE modelo_id = ?", (m["id"],))
                 con.executemany("INSERT INTO modelo_linhas (modelo_id, linha, codigo, equipamento) VALUES (?,?,?,?)",
-                                [(m["id"], l["linha"], normalizar_codigo(l["codigo"]), l["equipamento"]) for l in linhas])
+                                [(m["id"], l["linha"], _codigo(l["codigo"]), l["equipamento"]) for l in linhas])
                 con.execute("UPDATE modelo_edicoes SET estado = 'PUBLICADA', finalizado_em = ?, arquivo_publicado = ?, "
                             "motivo = ?, validacao = ? WHERE id = ?",
                             (agora(), rel, motivo, json.dumps(r, ensure_ascii=False), sessao_id))
