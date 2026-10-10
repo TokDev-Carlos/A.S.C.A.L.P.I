@@ -1,84 +1,133 @@
 # ASCALPI Produção — Regras Centrais de Colaboração (Claude ⇄ Codex)
 
-> **Versão:** 1 · 10/10/2026 · **Estado:** PROPOSTA DO CLAUDE, aguardando o "DE ACORDO" do Codex e a aprovação do Carlos (seção 12).
+> **Versão:** 2 · 10/10/2026 · ordem administrativa **ORG-2** do Admin `ToKDev-Carlos` (registrada no `QUADRO_TAREFAS.md`, commit `ba18b27`).
+> **Estado:** entregue pelo Claude em `claude/producao`; aguarda a validação do Codex e o aceite final do Admin (seção 13).
 > **Vale para:** todo trabalho no módulo `Modulos/ASCALPI_Producao` e nos documentos `docs/producao/`.
-> **Precedência:** decisão registrada do Carlos > **este documento** > `CLAUDE.md` / `AGENTS.md` > planos de marco (`PLANO_POS_BASELINE_*`, `PLANO_AJUSTES.md`) > `Codex_Plano_para_Claude.md` (histórico). Em conflito entre documentos, vale o de maior precedência e o conflito é anotado no `QUADRO_TAREFAS.md`.
+> **Precedência:** ordem/decisão registrada do Admin > **este documento** > `CLAUDE.md` / `AGENTS.md` > planos de marco (`PLANO_POS_BASELINE_*`, `PLANO_AJUSTES.md`) > `CONTINUAR.md` > `Codex_Plano_para_Claude.md` (histórico). Em conflito, vale o de maior precedência, e o conflito é anotado no quadro.
 
 ## 1. Quem é quem
 
 | Papel | Quem | Responsabilidade |
 |---|---|---|
-| **Dono do produto** | Carlos | Decide regras de negócio, aprova marcos, libera a próxima etapa, é o único que integra na `main` e o único que autoriza mexer em dados reais ou no PC/Windows. |
-| **Implementação** | Claude (Claude Code) | Escreve e corrige o código do módulo, os testes de cada correção e a documentação de estado (`CONTINUAR.md`). |
-| **Validação e revisão** | Codex (GPT) | Testes de validação, revisão técnica independente, reprodução de falhas, testes no Windows/Excel quando o Carlos autorizar. Implementa código **só** quando uma tarefa do quadro for atribuída a ele pelo Carlos. |
+| **Admin / dono do produto** | Carlos (`ToKDev-Carlos`) | Decide regras de negócio, aprova marcos, **ordena** integrações em `Dev-Work` e decide integrações na `main`. Único que autoriza apagar, renomear ou reescrever branch, tag ou histórico, e mexer em dados reais ou no PC/Windows. |
+| **Agente executor de implementação** | Claude / Claude Code | Implementa código, testes de cada correção e documentação de estado. Branch executora: `claude/producao`. |
+| **Agente executor de validação e revisão** | Codex / ChatGPT | Testes de validação, revisão independente, reprodução de falhas, testes no Windows/Excel quando o Admin autorizar. Implementa código **só** quando uma tarefa do quadro for atribuída a ele pelo Admin. Branch executora: `codex/producao`. |
 
-Decisão vigente do Carlos (09/10/2026): Claude implementa; Codex faz testes de validação e revisão depois de cada entrega.
+**Não há outros agentes autorizados.** Um agente novo só entra por ordem expressa do Admin, registrada aqui e no quadro.
 
-## 2. Mapa das branches
+## 2. Hierarquia de branches
 
-Três branches de trabalho. Todo o resto é histórico.
+### 2.1 Fluxo lógico (sempre nesta ordem)
 
-| Branch | Dono | Para quê | Quem pode dar push |
+```
+branch temporária ──► branch da IA executora ──► branch do módulo ──► Dev-Work ──► main
+ (tarefa, curta)        claude/producao            modulo/producao-op   (conjunto)   (oficial)
+                        codex/producao
+```
+
+| Passo | Quem faz | Condição |
+|---|---|---|
+| temporária → executora | o agente dono da temporária | suíte verde; um assunto por branch |
+| executora → módulo | o agente dono da entrega | revisão do outro agente registrada no quadro (seção 5) |
+| módulo → `Dev-Work` | só com **ordem expressa do Admin** registrada no quadro | módulo revisado e aceito; suíte verde |
+| `Dev-Work` → `main` | **somente o Admin** decide | — |
+
+### 2.2 Classes de branch
+
+| Classe | Branch | Papel | Quem pode dar push |
 |---|---|---|---|
-| **`claude/producao`** | Claude | Trabalho do Claude (implementação dos marcos G1–G5 e correções). | Só o Claude |
-| **`codex/producao`** | Codex | Trabalho do Codex (testes de validação, relatórios de revisão, reproduções, tarefas que o Carlos atribuir a ele). | Só o Codex |
-| **`modulo/producao-op`** | Compartilhada | **Desenvolvimento integrado**: onde o trabalho dos dois se junta e é testado em conjunto. É a origem do PR #4 para a `main`. | Claude e Codex, **só** por merge commit de integração (seção 4) e pelo `QUADRO_TAREFAS.md` |
-| `main` | Carlos | Versão oficial do repositório. | Só o Carlos (merge do PR #4 ou de PRs futuros) |
+| **Oficial (permanente)** | `main` | Versão oficial do repositório | Só o Admin |
+| **Desenvolvimento conjunto (permanente)** | `Dev-Work` | Onde chegam os trabalhos finais já integrados dos módulos. **Não criar outra branch `Dev`.** | Só por ordem expressa do Admin |
+| **Módulo** | `modulo/producao-op` | Integração do módulo de Produção: junta e testa o trabalho dos dois agentes. | Claude e Codex, só por merge commit de entrega revisada (seção 5) e pelo `QUADRO_TAREFAS.md` |
+| **Executora** | `claude/producao` | Linha de trabalho do Claude | Só o Claude |
+| **Executora** | `codex/producao` | Linha de trabalho do Codex | Só o Codex |
+| **Temporária** | `claude/tmp-<tema>` · `codex/tmp-<tema>` | Uma tarefa curta, criada **a partir da executora do mesmo agente** e integrada de volta **nela**. Nunca vira linha permanente nem recebe trabalho de outro agente. Depois de integrada fica parada (apagar só com ordem do Admin). | Só o agente dono |
+| **Histórica (somente leitura)** | ver 2.3 | Registro; ninguém trabalha nelas | Ninguém |
 
-Referência imutável: tag **`producao-base-inicial-v1`** → `fb96a58` (base aceita, G0). **Nunca mover nem recriar.**
+Referência imutável: tag **`producao-base-inicial-v1`** → `fb96a58` (base aceita, G0). **Nunca mover, recriar nem apagar.**
 
-### 2.1 Branches antigas (somente leitura)
+### 2.3 Inventário em 10/10/2026
 
-Ficam no repositório como histórico. **Ninguém trabalha nelas.** Apagar só com autorização do Carlos.
+Contagens: commits à frente (+) e atrás (−) da `main`.
 
-| Branch | Situação |
-|---|---|
-| `ajustes/g1-edicao-modelo` | G1 do Claude; conteúdo levado para `claude/producao` (mesmo commit `e9638d2`). |
-| `codex/apoio-producao` | Entrega do Codex (R06/R08/R09, testes R07); já integrada na `modulo/producao-op` (PR #3). |
-| `Codex_Rev` | Auditoria histórica do Codex sobre `b691e8e` (R01–R09). Fica como registro; novos pareceres vão para `codex/producao`. |
-| `codex/revisao-plano-op-2026-10-09` | Primeira entrega da revisão do Codex; substituída por `Codex_Rev`. |
-| `Dev-Work` | Fora deste acordo (trabalho anterior do Carlos, não é do módulo de Produção). Não tocar. |
+| Branch | SHA | Classe | Situação | vs `main` |
+|---|---|---|---|---|
+| `main` | `07b3611` | Oficial | Sem o módulo de Produção; ancestral de todas as abaixo | — |
+| `Dev-Work` | `3a3946c` | Desenvolvimento conjunto | 3 commits próprios (bootstrap sanitizado de 31/08 e 01/09); **ainda sem o módulo**; integração só por ordem do Admin | +3 / −0 |
+| `modulo/producao-op` | `ba18b27` | Módulo | Base G0 + documentação + ordem ORG-2; origem do PR #4 (ver 2.4) | +47 / −0 |
+| `claude/producao` | entrega ORG-2 | Executora (Claude) | Contém o **G1** (`e9638d2`) + regras v2; não integrada no módulo | +48 / −0 antes desta entrega |
+| `codex/producao` | `773735f` | Executora (Codex) | Criada da integração; sem trabalho próprio ainda | +45 / −0 |
+| `ajustes/g1-edicao-modelo` | `e9638d2` | Histórica | Foi a temporária do G1; conteúdo inteiro em `claude/producao` | +45 / −0 |
+| `codex/apoio-producao` | `91f2864` | Histórica | Entrega do Codex (R06/R08/R09, testes R07); já no módulo (PR #3) | +14 / −0 |
+| `Codex_Rev` | `4b90e72` | Histórica | Auditoria R01–R09 sobre `b691e8e`; 3 commits só de documentação de revisão | +9 / −0 |
+| `codex/revisao-plano-op-2026-10-09` | `8662eae` | Histórica | 1ª entrega da revisão; substituída por `Codex_Rev` | +7 / −0 |
+| tag `producao-base-inicial-v1` | `fb96a58` | Tag imutável | Base G0 aceita | — |
+
+Nenhuma branch, tag ou histórico foi apagado, renomeado ou reescrito nesta reorganização.
+
+### 2.4 Ponto para decisão do Admin: PR #4
+
+O PR #4 está aberto como `modulo/producao-op` → `main`, o que **pula a `Dev-Work`** no fluxo da seção 2.1. Os agentes não mexem nele. Cabe ao Admin decidir se o PR fica como está, é fechado ou é refeito como `modulo/producao-op` → `Dev-Work` quando ordenar essa integração.
 
 ## 3. Ciclo de uma tarefa
 
-1. **Registrar** a tarefa no `QUADRO_TAREFAS.md` (na `modulo/producao-op`): ID, dono, branch, arquivos que vai tocar, critério de aceite. Tarefa que muda regra de negócio só entra com a decisão do Carlos anotada.
-2. **Sincronizar** a branch própria com a integração antes de começar: `git merge origin/modulo/producao-op` (merge, nunca rebase de algo já publicado).
-3. **Trabalhar** só na branch própria, em commits pequenos, um assunto por commit, com teste junto.
-4. **Verificar** antes de pedir integração: suíte inteira verde (`python -m unittest discover -s tests -t .`, dentro de `Modulos/ASCALPI_Producao`) e, se mexeu na interface, capturas 1366 px e 390 px com o console do navegador limpo.
-5. **Pedir revisão**: mudar o estado no quadro para `EM REVISÃO`, com SHA, testes executados e limitações. O outro agente revisa a partir do SHA (não da descrição).
-6. **Integrar** (seção 4) e marcar `INTEGRADO` no quadro com o SHA do merge.
-7. **Aceite do Carlos** quando a tarefa fecha um marco (G1, G2, …): estado `ACEITO`. Só então o marco seguinte é liberado.
+1. **Registrar** no `QUADRO_TAREFAS.md`: ID, dono, branch, arquivos, critério de aceite. Mudança de regra de negócio só entra com a decisão do Admin anotada.
+2. **Sincronizar** a executora com o módulo antes de começar: `git merge origin/modulo/producao-op` (merge, nunca rebase de algo já publicado).
+3. **Trabalhar** na executora ou numa temporária criada dela; commits pequenos, um assunto por commit, com teste junto.
+4. **Responder no quadro após cada commit** (seção 7).
+5. **Verificar** antes de pedir revisão: suíte inteira verde (`python -m unittest discover -s tests -t .`, dentro de `Modulos/ASCALPI_Producao`) e, se mexeu na interface, capturas 1366 px e 390 px com o console limpo.
+6. **Pedir revisão**: estado `EM REVISÃO`, com SHA, testes e limitações. O outro agente revisa a partir do SHA, não da descrição.
+7. **Integrar no módulo** (seção 5) e marcar `INTEGRADO`, com o SHA do merge.
+8. **Aceite do Admin** quando a tarefa fecha um marco (G1, G2, …): estado `ACEITO`. Só então o marco seguinte é liberado.
 
-Estados possíveis no quadro: `A FAZER` → `EM ANDAMENTO` → `EM REVISÃO` → `AJUSTES PEDIDOS` (volta para o dono) → `INTEGRADO` → `ACEITO`. Também `BLOQUEADO` (com o motivo).
+Estados no quadro: `A FAZER` → `EM ANDAMENTO` → `EM REVISÃO` → `AJUSTES PEDIDOS` (volta ao dono) → `INTEGRADO` → `ACEITO`; também `BLOQUEADO` (com motivo).
 
-## 4. Regras de integração na `modulo/producao-op`
+## 4. Regras gerais de git
 
-- Entrada **só por merge commit** (`git merge --no-ff`) de `claude/producao` ou `codex/producao`. Nada de rebase, `--force`, `reset` ou reescrever histórico em branch compartilhada.
-- Condições para integrar uma entrega:
-  1. a branch de origem está sincronizada com a integração (sem conflito pendente);
-  2. suíte inteira verde **depois** do merge (rodar de novo no resultado);
-  3. revisão do outro agente registrada no quadro (`DE ACORDO` ou ajustes já feitos). Exceção: documentação pura e o próprio quadro.
-- **Quem integra:** o dono da entrega, depois da revisão. O revisor não integra a entrega do outro.
-- Commit direto na `modulo/producao-op` só para: o `QUADRO_TAREFAS.md` e correção de texto em documentação. Código nunca.
-- Integração que deixa a suíte vermelha é desfeita com `git revert` do merge (nunca apagando histórico) e a tarefa volta para `AJUSTES PEDIDOS`.
-- **`main`:** só o Carlos. Os agentes não fazem merge na `main`, não aprovam PR e não abrem PR novo sem pedido dele. O PR #4 continua aberto até o Carlos decidir.
+- Toda integração entre branches é por **merge commit** (`git merge --no-ff`). Nada de rebase, `--force`, `reset` ou reescrita de histórico em branch publicada.
+- Branch temporária nasce da executora do mesmo agente e volta para ela. Nunca de `main`, `Dev-Work` ou do módulo.
+- Integração que deixa a suíte vermelha é desfeita com `git revert` do merge (nunca apagando histórico), e a tarefa volta para `AJUSTES PEDIDOS`.
 
-## 5. Propriedade de arquivos
+## 5. Integração da executora no módulo (`modulo/producao-op`)
 
-- Cada tarefa do quadro lista os arquivos que vai alterar. **Um arquivo de código tem um único dono por vez** (o dono da tarefa ativa que o lista).
-- Precisa mexer num arquivo de outro dono: anotar o pedido no quadro; o dono faz, ou os dois combinam a troca no quadro.
-- Arquivos novos de teste do Codex ficam em `tests/` com nomes próprios (ex.: `tests/test_validacao_<tema>.py`). Testes de algo ainda não implementado entram com `@unittest.expectedFailure` e o ID da tarefa no nome; o Claude remove a marcação quando entrega.
-- **Nenhum teste é apagado ou enfraquecido** para fazer a suíte passar. Teste errado é corrigido com justificativa no commit e anotado no quadro.
+Condições:
 
-## 6. Comunicação
+1. a executora está sincronizada com o módulo (sem conflito pendente);
+2. suíte verde **depois** do merge (rodar de novo no resultado);
+3. revisão do outro agente registrada no quadro (`DE ACORDO` ou ajustes já feitos). Exceções: documentação pura e o próprio quadro.
 
-- **Canal único:** `Modulos/ASCALPI_Producao/QUADRO_TAREFAS.md` na `modulo/producao-op` (estado das tarefas + registro de mensagens entre os agentes, com data, autor e SHA).
+Quem integra: o dono da entrega, depois da revisão; o revisor não integra a entrega do outro. Commit direto no módulo: só no `QUADRO_TAREFAS.md` e correção de texto em documentação. Código nunca.
+
+## 6. `Dev-Work` e `main`
+
+- `modulo/producao-op` → `Dev-Work`: **somente com ordem expressa do Admin registrada no quadro** (data, SHA de origem). O agente que receber a ordem faz o merge, roda a suíte e responde no quadro.
+- `Dev-Work` → `main`: **somente o Admin**. Os agentes não fazem merge na `main`, não aprovam PR e não abrem PR novo sem pedido dele.
+
+## 7. Comunicação
+
+- **Canal único:** `Modulos/ASCALPI_Producao/QUADRO_TAREFAS.md` na `modulo/producao-op` (estado das tarefas + mensagens, com data, autor e SHA).
+- **Resposta obrigatória após cada commit** (ordem ORG-2, item 8): o autor deixa no quadro uma mensagem aos demais agentes com:
+  - SHA e branch;
+  - o que fez;
+  - arquivos alterados;
+  - verificações e testes executados, com o resultado;
+  - limitações e o que não foi verificado;
+  - estado da tarefa;
+  - próxima ação esperada e de quem.
+
+  Vários commits seguidos de uma mesma entrega podem ser respondidos numa única mensagem que cite todos os SHAs. A mensagem é publicada por commit direto no quadro do módulo.
 - Relatórios longos de revisão: arquivo em `docs/producao/revisao/` na `codex/producao`, com link no quadro.
-- `Codex_Plano_para_Claude.md` fica como histórico (R01–R09 e changelog até 09/10/2026). Novas mensagens vão para o quadro.
-- Cada agente, ao começar uma sessão: ler este documento, o quadro e o `git log` da integração desde o último SHA que conhece.
+- Ao começar uma sessão, cada agente lê este documento, o quadro e o `git log` do módulo desde o último SHA que conhece.
 - Toda afirmação de "feito" ou "passou" traz o SHA e o comando executado. O que não foi verificado é dito como não verificado.
 
-## 7. Regras do produto que nenhum dos dois muda sozinho
+## 8. Propriedade de arquivos
+
+- Cada tarefa do quadro lista os arquivos que vai alterar. **Um arquivo de código tem um único dono por vez.**
+- Para mexer em arquivo de outro dono: pedido no quadro; o dono faz, ou os dois combinam a troca no quadro.
+- Testes novos do Codex ficam em `tests/` com nomes próprios (ex.: `tests/test_validacao_<tema>.py`). Testes de algo ainda não implementado entram com `@unittest.expectedFailure` e o ID da tarefa no nome; o Claude remove a marcação quando entrega.
+- **Nenhum teste é apagado ou enfraquecido** para fazer a suíte passar. Teste errado é corrigido com justificativa no commit e anotado no quadro.
+
+## 9. Regras do produto que nenhum dos dois muda sozinho
 
 - Nome do sistema: **ASCALPI**. Português do Brasil; mensagens do sistema em MAIÚSCULAS.
 - Só biblioteca padrão do Python no módulo; HTML/CSS/JS puros, sem build. `openpyxl` só em `tests/` e `ferramentas/`.
@@ -89,45 +138,42 @@ Estados possíveis no quadro: `A FAZER` → `EM ANDAMENTO` → `EM REVISÃO` →
 - Data de criação da O.P. é imutável; cada revisão registra a sua data.
 - Histórico imutável: O.P. emitida conserva contrato, modelo, textos, fotos e documentos da emissão; nada é sobrescrito no lugar.
 - Paginação (G2): altura de linha, fonte, imagem e ordem nunca são inventadas, reescaladas ou reordenadas.
-- Migrações de banco: só expansivas e auditáveis; nunca apagam histórico para satisfazer restrição; ambiguidade vira pendência para o Carlos.
-- Contratos: o montante editado no sistema prevalece sobre a planilha na reimportação; contrato de O.P. ambígua só o Carlos decide.
+- Migrações de banco: só expansivas e auditáveis; nunca apagam histórico para satisfazer restrição; ambiguidade vira pendência para o Admin.
+- Contratos: o montante editado no sistema prevalece sobre a planilha na reimportação; contrato de O.P. ambígua só o Admin decide.
 
-## 8. Segurança e dados
+## 10. Segurança e dados
 
 - Repositório **público**: nunca commitar dados de clientes, livros reais, `dados/`, bancos `.db*`, `config.json`, senhas, tokens, hashes de senha, caminhos de servidor ou mídias reais. Só dados sintéticos.
 - Nunca gravar em `D:\MACROS\Legacy_Modules` nem nos `.xlsm` legados.
-- PC/Windows do Carlos: instalação, reimportação de livros reais, alteração do banco operacional e remoção de arquivos só com autorização explícita dele, caso a caso. Sempre backup antes.
+- PC/Windows do Admin: instalação, reimportação de livros reais, alteração do banco operacional e remoção de arquivos só com autorização explícita dele, caso a caso. Sempre backup antes.
 - Não acessar o repositório de credenciais (Chaves-Tokens) nem diretórios de outros projetos.
 
-## 9. Testes e evidências
+## 11. Testes, evidências e commits
 
-- Toda correção ou funcionalidade nasce com teste que falha antes e passa depois.
-- Suíte leve completa verde antes de pedir revisão e depois de integrar. Sem testes pesados.
-- Interface: capturas 1366 px e 390 px, console limpo (erros esperados, como conflito 409 simulado, são citados no quadro).
+- Toda correção ou funcionalidade nasce com teste que falha antes e passa depois. Suíte leve completa verde antes de pedir revisão e depois de integrar. Sem testes pesados.
+- Interface: capturas 1366 px e 390 px, console limpo; erros esperados, como o conflito 409 simulado, são citados no quadro.
 - Excel/Windows é a referência para PDF e paginação; LibreOffice ou mock não provam igualdade visual.
 - Revisão do Codex registra: SHA examinado, testes rodados, achados com reprodução e risco, veredito (`DE ACORDO`, `AJUSTES PEDIDOS` ou `BLOQUEANTE`).
+- Commits: mensagem curta em português, prefixo `feat|fix|test|docs|refactor(producao): …`, terminando com as linhas de coautoria/sessão que o ambiente de cada agente exige. Sem identificador de modelo de IA em mensagens, código ou documentos.
 
-## 10. Commits
+## 12. Proibido para os dois agentes
 
-- Mensagem curta em português, prefixo `feat|fix|test|docs|refactor(producao): …`.
-- Terminar com as linhas de coautoria e sessão que o ambiente de cada agente exige.
-- Não incluir identificador de modelo de IA em mensagens de commit, código ou documentos.
-
-## 11. Proibido para os dois agentes
-
-- Push na `main`; merge na `main`; mover ou recriar a tag `producao-base-inicial-v1`.
-- Push na branch do outro agente.
+- Push ou merge na `main`; abrir ou aprovar PR sem pedido do Admin.
+- Integrar qualquer módulo na `Dev-Work` sem ordem expressa do Admin; criar outra branch `Dev`.
+- Push na executora ou numa temporária do outro agente.
+- Criar temporária fora da própria executora, ou mantê-la como linha permanente.
 - `push --force`, rebase ou reset de qualquer branch publicada.
-- Apagar branch, tag ou teste sem autorização do Carlos.
-- Começar o marco seguinte sem o `ACEITO` do Carlos no anterior.
-- Mudar regra de negócio sem decisão do Carlos registrada no quadro.
+- Apagar, renomear ou reescrever branch, tag ou histórico sem ordem expressa do Admin; mover ou recriar a tag `producao-base-inicial-v1`.
+- Apagar ou enfraquecer teste.
+- Começar o marco seguinte sem o `ACEITO` do Admin no anterior.
+- Mudar regra de negócio sem decisão do Admin registrada no quadro.
 
-## 12. Aceite deste documento
+## 13. Aceite deste documento
 
 | Quem | Situação | Data | Observações |
 |---|---|---|---|
-| Claude | PROPOSTO | 10/10/2026 | Versão 1 |
-| Codex | PENDENTE | — | Ler e registrar `DE ACORDO` ou propostas de mudança (no quadro, seção "Mensagens") |
-| Carlos | PENDENTE | — | Aprovar a versão final |
+| Admin (`ToKDev-Carlos`) | Concordou com a cooperação e ordenou a topologia (ORG-2) | 10/10/2026 | Aceite final pendente após a validação do Codex |
+| Claude | Entregou a versão 2 | 10/10/2026 | `claude/producao` |
+| Codex | PENDENTE | — | Validar topologia, documentos e preservação; registrar `DE ACORDO` ou `AJUSTES PEDIDOS` no quadro |
 
-Mudanças neste documento: proposta no quadro → acordo dos dois agentes → aprovação do Carlos → nova versão aqui (com número e data).
+Mudanças neste documento: proposta no quadro → acordo dos dois agentes → aprovação do Admin → nova versão aqui (número e data).

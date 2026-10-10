@@ -8,16 +8,19 @@ Estados: `A FAZER` · `EM ANDAMENTO` · `EM REVISÃO` · `AJUSTES PEDIDOS` · `I
 | Item | Valor |
 |---|---|
 | Base aceita (G0) | tag `producao-base-inicial-v1` → `fb96a58` |
-| Integração | `modulo/producao-op` (origem do PR #4 → `main`, decisão do Carlos) |
-| Branch do Claude | `claude/producao` |
-| Branch do Codex | `codex/producao` |
+| Fluxo (ORG-2) | `temporária → executora → modulo/producao-op → Dev-Work → main` |
+| Oficial | `main` (só o Admin) |
+| Desenvolvimento conjunto | `Dev-Work` (módulo entra só por ordem expressa do Admin) |
+| Módulo | `modulo/producao-op` (origem do PR #4 → `main`: decisão do Admin, ver `REGRAS_CENTRAIS.md` §2.4) |
+| Executora do Claude | `claude/producao` |
+| Executora do Codex | `codex/producao` |
 
 ## Tarefas
 
 | ID | Tarefa | Dono | Branch | Arquivos | Aceite | Estado | SHA / observação |
 |---|---|---|---|---|---|---|---|
-| ORG-1 | Regras centrais, quadro e branches por agente | Claude | `modulo/producao-op` | `REGRAS_CENTRAIS.md`, `QUADRO_TAREFAS.md`, `AGENTS.md`, `CLAUDE.md` | Codex `DE ACORDO` + aprovação do Carlos | AJUSTES PEDIDOS | `773735f` · Carlos concordou com a cooperação e determinou a topologia definitiva em ORG-2 |
-| ORG-2 | Adequar a organização lógica do repositório à hierarquia administrativa definitiva | Claude | `claude/producao` (branch temporária permitida, integrada depois nesta branch executora) | `REGRAS_CENTRAIS.md`, `QUADRO_TAREFAS.md`, `AGENTS.md`, `CLAUDE.md`, `CONTINUAR.md` e documentos que contradigam a nova hierarquia | Codex valida documentos, branches e preservação do histórico; Carlos dá o aceite final | A FAZER | Ordem expressa de `ToKDev-Carlos` em 10/10/2026; detalhes na mensagem abaixo |
+| ORG-1 | Regras centrais, quadro e branches por agente | Claude | `modulo/producao-op` | `REGRAS_CENTRAIS.md`, `QUADRO_TAREFAS.md`, `AGENTS.md`, `CLAUDE.md` | Codex `DE ACORDO` + aprovação do Carlos | AJUSTES PEDIDOS → absorvida pela ORG-2 | `773735f` · Carlos concordou com a cooperação e determinou a topologia definitiva em ORG-2 |
+| ORG-2 | Adequar a organização lógica do repositório à hierarquia administrativa definitiva | Claude | `claude/producao` (branch temporária permitida, integrada depois nesta branch executora) | `REGRAS_CENTRAIS.md`, `QUADRO_TAREFAS.md`, `AGENTS.md`, `CLAUDE.md`, `CONTINUAR.md` e documentos que contradigam a nova hierarquia | Codex valida documentos, branches e preservação do histórico; Carlos dá o aceite final | EM REVISÃO | Ordem expressa de `ToKDev-Carlos` em 10/10/2026; entregue em `claude/producao` (SHA na mensagem de resposta) |
 | G1 | Editar modelo no Excel (cópia de trabalho, validação, nova versão; flag desligada) | Claude | `claude/producao` | `modelos_edicao.py`, `banco.py`, `configuracao.py`, `legado.py`, `servico.py`, `servidor.py`, `web/app.js`, `web/app.css`, `tests/test_edicao_modelo.py` | Teste do Carlos no Windows com Excel real; O.P. antiga mantém documento antigo, nova usa versão nova | EM REVISÃO | `e9638d2` em `claude/producao` (merge com as regras: `2af4328`) · 88 testes OK (nuvem) |
 | V-G1 | Validação independente do G1 (suíte, revisão do código, roteiro Windows com o Carlos) | Codex | `codex/producao` | `tests/test_validacao_g1*.py`, `docs/producao/revisao/` | Parecer `DE ACORDO` ou ajustes com reprodução | A FAZER | revisar a partir de `e9638d2` |
 | H-1 | Comparar 3–5 O.P. reais (XLSX/PDF pelo Excel) com o legado | Carlos (+ Codex no Windows, se autorizado) | — | nada no GitHub | Aceite visual do Carlos | A FAZER | ressalva aberta da base |

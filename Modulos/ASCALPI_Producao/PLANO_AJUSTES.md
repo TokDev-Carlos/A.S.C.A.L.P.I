@@ -4,7 +4,7 @@ A versão `producao-base-inicial-v1` (commit `fb96a58`) está **congelada e acei
 
 ## Organização (10/10/2026)
 
-Branches e regras de colaboração: `REGRAS_CENTRAIS.md`; estado das tarefas: `QUADRO_TAREFAS.md`. O G1 segue na branch `claude/producao` (a `ajustes/g1-edicao-modelo` virou histórico).
+Branches e regras de colaboração: `REGRAS_CENTRAIS.md`; estado das tarefas: `QUADRO_TAREFAS.md`. Fluxo (ordem ORG-2): `temporária → executora → modulo/producao-op → Dev-Work → main`. O G1 segue na executora `claude/producao` (a `ajustes/g1-edicao-modelo` virou histórico).
 
 ## Plano vigente
 
@@ -29,4 +29,4 @@ O plano de evolução é do Codex: `PLANO_POS_BASELINE_ATA_MESTRE_E_PAGINACAO.md
 
 ## Material histórico
 
-Branch `Codex_Rev`: revisão sobre `b691e8e` (R01–R09, já corrigidos na base). `reproduzir_achados.py` não roda mais contra a base (código reorganizado); use a suíte em `tests/`.
+Branch histórica `Codex_Rev` (somente leitura): revisão sobre `b691e8e` (R01–R09, já corrigidos na base). `reproduzir_achados.py` não roda mais contra a base (código reorganizado); use a suíte em `tests/`.
