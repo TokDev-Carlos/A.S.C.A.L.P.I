@@ -1,5 +1,6 @@
 # Plano de evolução pós-base inicial — ASCALPI Produção
 
+> **Nota de 10/10/2026 (ORG-2):** a execução acontece na executora `claude/producao` e chega ao módulo `modulo/producao-op` conforme `REGRAS_CENTRAIS.md`.
 > **Destinatário e responsável técnico:** Claude, branch `modulo/producao-op`.  
 > **Solicitante:** Carlos. **Planejamento:** Codex, 09/10/2026.  
 > **Estado deste documento:** PLANEJADO / **EXECUÇÃO BLOQUEADA PELO MARCO G0**.  

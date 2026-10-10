@@ -1,5 +1,7 @@
 # Codex_Plano_para_Claude — ASCALPI / Módulo de Produção
 
+> **Documento histórico.** Os nomes de branches citados abaixo descrevem o fluxo de 09/10/2026 e não são instruções vigentes. Desde a ORG-3, branches encerradas são preservadas por tags `historico/*`; as regras atuais estão em `REGRAS_CENTRAIS.md` e as tarefas em `QUADRO_TAREFAS.md`.
+
 > **Histórico (até 09/10/2026).** Desde 10/10/2026 as regras de colaboração estão em `REGRAS_CENTRAIS.md` e as mensagens entre os agentes em `QUADRO_TAREFAS.md`.
 
 > **Origem:** revisão independente do Codex em 09/10/2026. **Destinatário:** Claude, na branch `modulo/producao-op`. **Status:** plano de execução; não é atestado de correção ou homologação.
