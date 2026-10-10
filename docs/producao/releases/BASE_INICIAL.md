@@ -29,7 +29,7 @@ Registro formal do congelamento (marco **G0** de `Modulos/ASCALPI_Producao/PLANO
 
 ## Ressalvas abertas (não bloqueiam a base; tratar antes ou dentro de G1)
 
-1. **XLSX de O.P. editável:** o Carlos observou que conseguiu editar um XLSX emitido. Verificar a proteção (senha, `sheetProtection`, `workbookProtection`) num arquivo emitido pela base; corrigir como estabilização separada, não misturada às melhorias.
+1. ~~XLSX de O.P. editável~~ — **encerrada (09/10/2026):** o Carlos confirmou que a edição foi feita pelo próprio sistema (Editar → nova REV), que é o comportamento previsto. Os 3 XLSX emitidos no PC foram conferidos só para leitura: planilha protegida com senha (SHA-512), nenhuma célula desbloqueada e estrutura do livro travada.
 2. Comparação visual de 3–5 O.P. reais (XLSX/PDF) com o legado no Excel/Windows.
 3. Pasta residual `_teste_migracao_*` no PC: remover só com autorização.
 4. Pontos herdados: escala acima de 3.000 O.P., Excel travando no PDF, autenticação (marco de hospedagem).

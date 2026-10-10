@@ -9,8 +9,8 @@ O plano de evolução é do Codex: `PLANO_POS_BASELINE_ATA_MESTRE_E_PAGINACAO.md
 | Marco | Conteúdo | Estado |
 |---|---|---|
 | G0 | Validar e congelar a base | **Aprovado**; tag `producao-base-inicial-v1` no GitHub |
-| Estabilização | Proteção do XLSX emitido (ressalva 1) | Em andamento — branch `ajustes/protecao-xlsx` |
-| G1 | Editar modelo no Excel (cópia de trabalho, nova versão) | Liberado pelo Carlos (09/10); começa após a estabilização |
+| Estabilização | Proteção do XLSX emitido (ressalva 1) | Encerrada: edição foi pelo sistema (REV), comportamento previsto |
+| G1 | Editar modelo no Excel (cópia de trabalho, nova versão) | Em andamento — branch `ajustes/g1-edicao-modelo` |
 | G2 | Paginação pela altura original das linhas | Bloqueado |
 | G3 | Catálogo mestre por ATA e adesões parciais | Bloqueado |
 | G4 | Variantes 1.1 / 1.2 sobre o código-base | Bloqueado |
