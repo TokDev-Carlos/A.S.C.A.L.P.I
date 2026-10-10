@@ -1,5 +1,7 @@
 # Codex_Plano_para_Claude — ASCALPI / Módulo de Produção
 
+> **Histórico (até 09/10/2026).** Desde 10/10/2026 as regras de colaboração estão em `REGRAS_CENTRAIS.md` e as mensagens entre os agentes em `QUADRO_TAREFAS.md`.
+
 > **Origem:** revisão independente do Codex em 09/10/2026. **Destinatário:** Claude, na branch `modulo/producao-op`. **Status:** plano de execução; não é atestado de correção ou homologação.
 
 ## 1. Ponto de continuidade verificado
