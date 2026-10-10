@@ -11,7 +11,7 @@ Registro formal do congelamento (marco **G0** de `Modulos/ASCALPI_Producao/PLANO
 | Versão | `producao-base-inicial-v1` |
 | Commit validado (código) | `fb96a584fb848679d02e6f46e8010cc90f1c92cd` |
 | Tag | `producao-base-inicial-v1` (anotada, criada pelo Carlos e enviada ao GitHub em 09/10/2026; aponta para `fb96a58`). **Não mover nem recriar.** |
-| Branch | `modulo/producao-op` (commits posteriores à base são só documentação) |
+| Branch | `modulo/producao-op` (branch do módulo; commits posteriores à base são só documentação) |
 | Data | 09/10/2026 |
 | Aceite | **Carlos**, 09/10/2026: "já podemos criar essa versão do módulo como modelo base… entrega tudo que preciso"; pediu o congelamento e a execução do plano. |
 
@@ -42,7 +42,7 @@ Registro formal do congelamento (marco **G0** de `Modulos/ASCALPI_Producao/PLANO
 
 ## Regras para evoluir
 
-1. A tag não se move. Ajustes em `ajustes/<tema>` criadas a partir da tag ou do HEAD aceito.
+1. A tag não se move. Ajustes seguem o fluxo de `Modulos/ASCALPI_Producao/REGRAS_CENTRAIS.md` §2: temporária `claude/temp/<tema>`/`codex/temp/<tema>` → executora → `modulo/producao-op` → `Dev-Work` (ordem do Admin) → `main` (Admin).
 2. Um ajuste por vez, commit pequeno, teste junto; suíte inteira verde antes e depois. Nenhum teste é removido ou enfraquecido.
 3. Regra de negócio só muda com decisão registrada do Carlos.
 4. Dados reais, senhas e caminhos de servidor ficam fora do GitHub (repositório público).
